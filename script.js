@@ -682,7 +682,6 @@ function makeMessageElement(msg, isSameUserRecent) {
             const replyDiv = document.createElement('div');
             replyDiv.className = 'message-reply';
 
-
             const replyText = document.createElement('div');
             replyText.className = 'username';
             replyText.textContent = replyUser.username + ": " + replyTo.content;

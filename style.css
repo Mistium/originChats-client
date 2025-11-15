@@ -889,6 +889,9 @@ p {
 }
 
 .message-reply {
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: flex;
     align-items: center;
 }
@@ -934,4 +937,13 @@ p {
 
 .context-menu-item:hover {
     background: #5865f2;
+}
+
+.typing {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 15px;
 }
