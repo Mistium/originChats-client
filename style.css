@@ -25,7 +25,6 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--background);
     color: var(--text);
-    overflow: hidden;
     height: 100dvh;
     touch-action: pan-y;
 }
@@ -403,10 +402,17 @@ p {
 .messages {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 15px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    min-height: 0;
+}
+
+.messages::before {
+    content: '';
+    flex: 1;
+    min-height: 0;
 }
 
 .message {

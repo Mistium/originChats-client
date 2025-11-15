@@ -734,7 +734,7 @@ function editMessage(msg) {
 }
 
 function deleteMessage(msg) {
-    console.log("DELETE:", msg);
+    wsSend({ cmd: 'message_delete', id: msg.id });
 }
 
 
