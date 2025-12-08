@@ -16,7 +16,8 @@ let state = {
     unreadPings: {},
     _avatarCache: {},
     _avatarLoading: {},
-    typingUsers: {}
+    typingUsers: {},
+    _embedCache: {}
 };
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -89,6 +90,8 @@ window.onload = function () {
 
     // Mobile swipe gesture for channel menu
     let touchStartX = 0;
+
+    if (window.lucide) window.lucide.createIcons();
     let touchEndX = 0;
     const messagesContainer = document.querySelector('.messages-container');
 
@@ -102,6 +105,8 @@ window.onload = function () {
     }, { passive: true });
 
     function handleSwipe() {
+        if (touchStartX > 50) return;
+
         const swipeDistance = touchEndX - touchStartX;
         if (swipeDistance > 100) {
             toggleMenu();
@@ -120,6 +125,7 @@ window.onload = function () {
     });
 
     setupTypingListener();
+    setupInfiniteScroll();
 
     window.shortcodes = null;
     window.shortcodeMap = {};
@@ -145,12 +151,6 @@ window.onload = function () {
         });
 };
 
-function replaceShortcodes(text) {
-  return text.replace(/:[a-z0-9_]+:|[:;xX]['()D]|xD|XD/g, match => {
-    return shortcodeMap[match] || match;
-  });
-}
-
 function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
@@ -175,14 +175,19 @@ function toggleMenu() {
     const channels = document.getElementById('channels');
     const overlay = document.querySelector('.overlay');
     channels.classList.toggle('open');
-    overlay.classList.toggle('active');
+    document.querySelector('.overlay').classList.toggle('active');
+}
+
+function toggleMembersList() {
+    const membersList = document.getElementById('members-list');
+    membersList.classList.toggle('open');
+    document.querySelector('.overlay').classList.toggle('active');
 }
 
 function closeMenu() {
-    const channels = document.getElementById('channels');
-    const overlay = document.querySelector('.overlay');
-    channels.classList.remove('open');
-    overlay.classList.remove('active');
+    document.querySelector('.channels').classList.remove('open');
+    document.getElementById('members-list').classList.remove('open');
+    document.querySelector('.overlay').classList.remove('active');
 }
 
 function toggleServerDropdown() {
@@ -257,7 +262,12 @@ function switchServer(url) {
     state.serverUrl = url;
     localStorage.setItem('serverUrl', url);
     if (ws) {
-        ws.close();
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState !== WebSocket.CLOSED) {
+            ws.close();
+        }
+        ws = null;
     }
     state.channels = [];
     state.messages = {};
@@ -279,6 +289,12 @@ function saveServer(server) {
 function connectToServer() {
     document.getElementById('auth-screen').classList.remove('active');
     document.getElementById('chat-screen').classList.add('active');
+
+    if (ws) {
+        console.warn('Closing existing connection before reconnecting');
+        ws.onclose = null;
+        ws.close();
+    }
 
     ws = new WebSocket(`wss://${state.serverUrl}`);
 
@@ -379,9 +395,64 @@ async function handleMessage(msg) {
             break;
         }
         case 'messages_get':
-            state.messages[msg.channel] = msg.messages;
-            if (msg.channel === state.currentChannel?.name) {
-                renderMessages();
+            {
+                const ch = msg.channel;
+                const existing = state.messages[ch];
+                const req = state._loadingOlder?.[ch];
+                const isOlder = !!req && req.start > 0;
+                if (isOlder && existing) {
+                    const container = document.getElementById('messages');
+                    if (container && ch === state.currentChannel?.name) {
+                        const oldScrollHeight = container.scrollHeight;
+                        const oldScrollTop = container.scrollTop;
+
+                        let prevUser = null;
+                        let prevTime = 0;
+                        const frag = document.createDocumentFragment();
+                        for (const m of msg.messages) {
+                            const sameUserRecent = prevUser === m.user && (m.timestamp - prevTime) < 300000;
+                            const el = makeMessageElement(m, sameUserRecent);
+                            frag.appendChild(el);
+                            prevUser = m.user;
+                            prevTime = m.timestamp;
+                        }
+                        container.insertBefore(frag, container.firstChild);
+
+                        // Merge state after DOM insert
+                        const merged = [...msg.messages, ...existing];
+                        const seen = new Set();
+                        state.messages[ch] = merged.filter(m => {
+                            if (seen.has(m.id)) return false;
+                            seen.add(m.id);
+                            return true;
+                        });
+
+                        // Preserve viewport position without smooth behavior
+                        const newScrollHeight = container.scrollHeight;
+                        const delta = newScrollHeight - oldScrollHeight;
+                        const prevBehavior = container.style.scrollBehavior;
+                        container.style.scrollBehavior = 'auto';
+                        container.scrollTop = oldScrollTop + delta;
+                        container.style.scrollBehavior = prevBehavior || '';
+                    } else {
+                        // No container or not current channel; just merge state
+                        const merged = [...msg.messages, ...existing];
+                        const seen = new Set();
+                        state.messages[ch] = merged.filter(m => {
+                            if (seen.has(m.id)) return false;
+                            seen.add(m.id);
+                            return true;
+                        });
+                    }
+                    state._olderStart[ch] = req.start;
+                    state._loadingOlder[ch] = null;
+                    state._olderLoading = false;
+                } else {
+                    state.messages[ch] = msg.messages;
+                    if (ch === state.currentChannel?.name) {
+                        renderMessages();
+                    }
+                }
             }
             break;
 
@@ -398,7 +469,7 @@ async function handleMessage(msg) {
                     updateTypingIndicator();
                 }
             }
-            
+
             if (state.currentUser && msg.message.user !== state.currentUser.username) {
                 const content = msg.message.content.toLowerCase();
                 const username = state.currentUser.username.toLowerCase();
@@ -407,7 +478,7 @@ async function handleMessage(msg) {
 
                 if (matches) {
                     const pings = matches.filter(m => m.trim().toLowerCase() === '@' + username)
-                    
+
                     if (pings.length > 0) {
                         if (msg.channel !== state.currentChannel?.name) {
                             if (!state.unreadPings[msg.channel]) {
@@ -429,10 +500,10 @@ async function handleMessage(msg) {
             }
 
             if (msg.channel === state.currentChannel?.name) {
-                renderMessages();
+                appendMessage(msg.message);
             }
             break;
-        
+
         case 'message_edit': {
             if (!state.messages[msg.channel]) {
                 break;
@@ -441,7 +512,7 @@ async function handleMessage(msg) {
             const message = state.messages[msg.channel].find(m => m.id === id);
             message.content = msg.content;
             if (msg.channel === state.currentChannel?.name) {
-                renderMessages();
+                updateMessageContent(msg.id, msg.content);
             }
             break;
         }
@@ -452,7 +523,7 @@ async function handleMessage(msg) {
             const id = msg.id;
             state.messages[msg.channel] = state.messages[msg.channel].filter(m => m.id !== id);
             if (msg.channel === state.currentChannel?.name) {
-                renderMessages();
+                removeMessage(id);
             }
             break;
         }
@@ -465,27 +536,66 @@ async function handleMessage(msg) {
                 state.typingUsers[channel] = new Map();
             }
 
+            const typingMap = state.typingUsers[channel];
+            const expireAt = Date.now() + 10000;
+            typingMap.set(user, expireAt);
+
+            updateChannelListTyping(channel);
             if (channel === state.currentChannel?.name) {
-                const typingMap = state.typingUsers[channel];
-
-                const expireAt = Date.now() + 10000;
-                typingMap.set(user, expireAt);
-
                 updateTypingIndicator();
+            }
 
-                setTimeout(() => {
-                    if (typingMap.get(user) <= Date.now()) {
-                        typingMap.delete(user);
+            setTimeout(() => {
+                if (typingMap.get(user) <= Date.now()) {
+                    typingMap.delete(user);
+                    updateChannelListTyping(channel);
+                    if (channel === state.currentChannel?.name) {
                         updateTypingIndicator();
                     }
-                }, 5000);
-            }
+                }
+            }, 10000);
 
             break;
         case 'error':
         case 'auth_error':
             showError(msg.val);
             break;
+        case 'message_react_add': {
+            if (!state.messages[msg.channel]) break;
+            const message = state.messages[msg.channel].find(m => m.id === msg.id);
+            if (!message) break;
+
+            if (!message.reactions) message.reactions = {};
+            if (!message.reactions[msg.emoji]) {
+                message.reactions[msg.emoji] = [];
+            }
+            if (!message.reactions[msg.emoji].includes(msg.from)) {
+                message.reactions[msg.emoji].push(msg.from);
+            }
+
+            if (msg.channel === state.currentChannel?.name) {
+                updateMessageReactions(msg.id);
+            }
+            break;
+        }
+        case 'message_react_remove': {
+            if (!state.messages[msg.channel]) break;
+            const message = state.messages[msg.channel].find(m => m.id === msg.id);
+            if (!message || !message.reactions || !message.reactions[msg.emoji]) break;
+
+            const users = message.reactions[msg.emoji];
+            const idx = users.indexOf(msg.from);
+            if (idx > -1) users.splice(idx, 1);
+
+            if (users.length === 0) {
+                delete message.reactions[msg.emoji];
+            }
+
+            if (msg.channel === state.currentChannel?.name) {
+                updateMessageReactions(msg.id);
+            }
+            break;
+        }
     }
 }
 
@@ -508,6 +618,7 @@ function updateTypingIndicator() {
 
     if (users.length === 0) {
         typingEl.textContent = "";
+        typingEl.style.visibility = 'hidden';
         return;
     }
 
@@ -521,12 +632,42 @@ function updateTypingIndicator() {
     }
 
     typingEl.textContent = text;
+    typingEl.style.visibility = 'visible';
 }
 
 
 function wsSend(data) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(data));
+    }
+}
+
+function updateChannelListTyping(channelName) {
+    const channelItems = document.querySelectorAll('.channel-item');
+    for (const item of channelItems) {
+        const nameEl = item.querySelector('span:nth-child(2)');
+        if (nameEl && nameEl.textContent === channelName) {
+            let indicator = item.querySelector('.channel-typing-indicator');
+            const typingMap = state.typingUsers[channelName];
+
+            if (typingMap && typingMap.size > 0) {
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.className = 'channel-typing-indicator';
+                    indicator.innerHTML = `
+                        <div class="channel-typing-dot"></div>
+                        <div class="channel-typing-dot"></div>
+                        <div class="channel-typing-dot"></div>
+                    `;
+                    item.appendChild(indicator);
+                }
+            } else {
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+            break;
+        }
     }
 }
 
@@ -553,6 +694,18 @@ function renderChannels() {
                 badge.textContent = state.unreadPings[channel.name];
                 div.appendChild(badge);
             }
+
+            const typingMap = state.typingUsers[channel.name];
+            if (typingMap && typingMap.size > 0) {
+                const typingInd = document.createElement('div');
+                typingInd.className = 'channel-typing-indicator';
+                typingInd.innerHTML = `
+                    <div class="channel-typing-dot"></div>
+                    <div class="channel-typing-dot"></div>
+                    <div class="channel-typing-dot"></div>
+                `;
+                div.appendChild(typingInd);
+            }
             div.onclick = () => {
                 selectChannel(channel);
                 closeMenu();
@@ -572,6 +725,14 @@ function selectChannel(channel) {
     if (!channel) return;
 
     state.currentChannel = channel;
+    state._olderStart[channel.name] = 0;
+    state._olderCooldown[channel.name] = 0;
+    state._olderStart[channel.name] = 0;
+    state._olderCooldown[channel.name] = 0;
+
+    const messagesContainer = document.getElementById('messages');
+    messagesContainer.innerHTML = '<div class="loading-throbber"></div>';
+
     document.getElementById('channel-name').textContent = `#${channel.name}`;
     if (state.unreadPings[channel.name]) {
         delete state.unreadPings[channel.name];
@@ -639,50 +800,222 @@ async function fetchAvatarBase64(username) {
     return await blobToDataURL(blob);
 }
 
-function blobToDataURL(blob) {
-    return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-    });
-}
-
 let lastRenderedChannel = null;
 let lastUser = null;
 let lastTime = 0;
 let lastGroup = null;
+state._loadingOlder = {};
+state._olderLoading = false;
+state._olderStart = {};
+state._olderCooldown = {};
 
-function renderMessages() {
+async function renderMessages(scrollToBottom = true) {
     const container = document.getElementById("messages");
     const channel = state.currentChannel.name;
     const messages = state.messages[channel] || [];
 
-    container.innerHTML = "";
+    const fragment = document.createDocumentFragment();
+
     lastUser = null;
     lastTime = 0;
     lastGroup = null;
+
+    const loadPromises = [];
 
     for (const msg of messages) {
         const isSameUserRecent =
             msg.user === lastUser &&
             msg.timestamp - lastTime < 300000;
 
-        const element = makeMessageElement(msg, isSameUserRecent);
-        container.appendChild(element);
+        const element = makeMessageElement(msg, isSameUserRecent, loadPromises);
+        fragment.appendChild(element);
 
         lastUser = msg.user;
         lastTime = msg.timestamp;
     }
 
-    container.scrollTop = container.scrollHeight;
+    if (loadPromises.length > 0) {
+        try {
+            const timeout = new Promise(resolve => setTimeout(resolve, 3000));
+            await Promise.race([Promise.all(loadPromises), timeout]);
+        } catch (e) {
+            console.warn("Error waiting for images", e);
+        }
+    }
+
+    container.innerHTML = "";
+    container.appendChild(fragment);
+
+    const scrollBottom = () => { container.scrollTop = container.scrollHeight; };
+    const nearBottom = () => (container.scrollHeight - (container.scrollTop + container.clientHeight)) < 80;
+    if (scrollToBottom) scrollBottom();
+
+    if (scrollToBottom) {
+        let observer;
+        try {
+            observer = new MutationObserver(() => {
+                if (!state._olderLoading && nearBottom()) scrollBottom();
+            });
+            observer.observe(container, { childList: true, subtree: true });
+        } catch {}
+        const imgs = container.querySelectorAll('img');
+        imgs.forEach(img => {
+            if (!img.complete) {
+                const handler = () => { if (!state._olderLoading && nearBottom()) scrollBottom(); };
+                img.addEventListener('load', handler, { once: true });
+                img.addEventListener('error', handler, { once: true });
+            }
+        });
+        setTimeout(() => { if (observer) observer.disconnect(); }, 2000);
+    }
+    updateTypingIndicator();
 }
 
+ 
 
-function makeMessageElement(msg, isSameUserRecent) {
+function appendMessage(msg) {
+    const container = document.getElementById("messages");
+    const messages = state.messages[state.currentChannel.name] || [];
+
+    const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
+    const isSameUserRecent = prevMsg &&
+        msg.user === prevMsg.user &&
+        msg.timestamp - prevMsg.timestamp < 300000;
+
+    const element = makeMessageElement(msg, isSameUserRecent);
+    const nearBottom = () => (container.scrollHeight - (container.scrollTop + container.clientHeight)) < 80;
+    container.appendChild(element);
+
+    lastUser = msg.user;
+    lastTime = msg.timestamp;
+
+    if (nearBottom()) {
+        const prevBehavior = container.style.scrollBehavior;
+        container.style.scrollBehavior = 'auto';
+        container.scrollTop = container.scrollHeight;
+        container.style.scrollBehavior = prevBehavior || '';
+    }
+}
+
+function updateMessageContent(msgId, newContent) {
+    const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (!wrapper) return;
+
+    const msgText = wrapper.querySelector('.message-text');
+    if (!msgText) return;
+
+    const msg = state.messages[state.currentChannel.name]?.find(m => m.id === msgId);
+    if (!msg) return;
+
+    const embedLinks = [];
+    msgText.innerHTML = parseMsg(msg, embedLinks);
+
+    if (embedLinks.length === 1 &&
+        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+$/) &&
+        msg.content.trim() === embedLinks[0]) {
+        msgText.style.display = 'none';
+    } else {
+        msgText.style.display = '';
+    }
+
+    msgText.querySelectorAll("pre code").forEach(block => {
+        hljs.highlightElement(block);
+    });
+    msgText.querySelectorAll("a.potential-image").forEach(link => {
+        const url = link.dataset.imageUrl;
+        isImageUrl(url).then(isImage => {
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'image';
+                img.className = 'message-image';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chat-image-wrapper';
+
+                if (window.createFavButton) {
+                    const favBtn = window.createFavButton(url, url);
+                    wrapper.appendChild(favBtn);
+                    if (window.lucide) {
+                        setTimeout(() => window.lucide.createIcons({ root: favBtn }), 0);
+                    }
+                }
+
+                wrapper.appendChild(img);
+
+                link.textContent = '';
+                link.appendChild(wrapper);
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    if (window.openImageModal) window.openImageModal(url);
+                };
+                link.classList.remove('potential-image');
+            }
+        }).catch(err => {
+            console.debug('Image check failed for URL:', url, err);
+        });
+    });
+
+    msgText.classList.remove('mentioned');
+    if (state.currentUser) {
+        const username = state.currentUser.username;
+        const matches = msg.content.match(pingRegex);
+        if (matches && matches.filter(m => m.trim().toLowerCase() === '@' + username).length > 0) {
+            msgText.classList.add('mentioned');
+        }
+    }
+
+    const groupContent = wrapper.querySelector('.message-group-content');
+    if (groupContent) {
+        const embeds = groupContent.querySelectorAll('.embed-container');
+        embeds.forEach(embed => embed.remove());
+        for (const url of embedLinks) {
+            if (state._embedCache[url]) {
+                const cachedEl = state._embedCache[url];
+                if (cachedEl) {
+                    groupContent.appendChild(cachedEl.cloneNode(true));
+                }
+            } else {
+                createEmbed(url).then(embedEl => {
+                    if (embedEl) {
+                        state._embedCache[url] = embedEl.cloneNode(true);
+                        groupContent.appendChild(embedEl);
+                    } else {
+                        state._embedCache[url] = null;
+                    }
+                });
+            }
+        }
+    }
+}
+
+function removeMessage(msgId) {
+    const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (!wrapper) return;
+
+    const wasGroupHead = wrapper.classList.contains('message-group');
+    const nextSibling = wrapper.nextElementSibling;
+
+    wrapper.remove();
+
+    if (wasGroupHead && nextSibling && nextSibling.classList.contains('message-single')) {
+        const nextMsgId = nextSibling.dataset.msgId;
+        const nextMsg = state.messages[state.currentChannel.name]?.find(m => m.id === nextMsgId);
+
+        if (nextMsg) {
+            const newElement = makeMessageElement(nextMsg, false);
+            nextSibling.replaceWith(newElement);
+        }
+    }
+}
+
+function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
     const user = state.users[msg.user] || { username: msg.user };
     const timestamp = formatTimestamp(msg.timestamp);
     const isReply = "reply_to" in msg
     const isHead = !isSameUserRecent || isReply;
+
+    const isBlocked = Array.isArray(state.currentUser?.sys?.blocked) && state.currentUser.sys.blocked.includes(msg.user);
 
     const wrapper = document.createElement('div');
     wrapper.className = isHead ? 'message-group' : 'message-single';
@@ -695,6 +1028,43 @@ function makeMessageElement(msg, isSameUserRecent) {
     const groupContent = document.createElement('div');
     groupContent.className = 'message-group-content';
     wrapper.appendChild(groupContent);
+
+    let actionsBar = wrapper.querySelector('.message-actions-bar');
+    if (!actionsBar) {
+        actionsBar = document.createElement('div');
+        actionsBar.className = 'message-actions-bar';
+        wrapper.appendChild(actionsBar);
+    }
+
+    const reactBtn = document.createElement('button');
+    reactBtn.className = 'action-btn';
+    reactBtn.setAttribute('data-emoji-anchor', 'true');
+    reactBtn.innerHTML = '<i data-lucide="smile"></i>';
+    reactBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openReactionPicker(msg.id, reactBtn);
+    });
+
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'action-btn';
+    replyBtn.innerHTML = '<i data-lucide="reply"></i>';
+    replyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        replyToMessage(msg);
+    });
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn';
+    deleteBtn.innerHTML = '<i data-lucide="trash"></i>';
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteMessage(msg);
+    });
+
+    actionsBar.appendChild(reactBtn);
+    actionsBar.appendChild(replyBtn);
+    actionsBar.appendChild(deleteBtn);
+    if (window.lucide) window.lucide.createIcons({ root: actionsBar });
 
     if (isHead) {
         const header = document.createElement('div');
@@ -734,12 +1104,111 @@ function makeMessageElement(msg, isSameUserRecent) {
         }
     }
 
+    if (isBlocked) {
+        const notice = document.createElement('div');
+        notice.className = 'blocked-notice';
+        const btn = document.createElement('button');
+        btn.className = 'blocked-show-btn';
+        btn.textContent = 'Show';
+        notice.textContent = 'Message from blocked user – ';
+        notice.appendChild(btn);
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            revealBlockedMessage(wrapper, msg);
+        });
+        groupContent.appendChild(notice);
+        setupMessageSwipe(wrapper, msg);
+        return wrapper;
+    }
+
     const msgText = document.createElement('div');
     msgText.className = 'message-text';
-    msgText.innerHTML = parseMsg(msg);
+    const embedLinks = [];
+    msgText.innerHTML = parseMsg(msg, embedLinks);
+
+    if (embedLinks.length === 1 &&
+        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+$/) &&
+        msg.content.trim() === embedLinks[0]) {
+        msgText.style.display = 'none';
+    } else {
+        msgText.style.display = '';
+    }
 
     msgText.querySelectorAll("pre code").forEach(block => {
         hljs.highlightElement(block);
+    });
+
+    msgText.querySelectorAll("a.potential-image").forEach(link => {
+        const url = link.dataset.imageUrl;
+        if (loadPromises) {
+            loadPromises.push(new Promise((resolve) => {
+                isImageUrl(url).then(isImage => {
+                    if (isImage) {
+                        const img = document.createElement('img');
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                        img.src = url;
+                        img.alt = 'image';
+                        img.className = 'message-image';
+
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'chat-image-wrapper';
+
+                        if (window.createFavButton) {
+                            const favBtn = window.createFavButton(url, url);
+                            wrapper.appendChild(favBtn);
+                            if (window.lucide) {
+                                setTimeout(() => window.lucide.createIcons({ root: favBtn }), 0);
+                            }
+                        }
+
+                        wrapper.appendChild(img);
+
+                        link.textContent = '';
+                        link.appendChild(wrapper);
+                        link.onclick = (e) => {
+                            e.preventDefault();
+                            if (window.openImageModal) window.openImageModal(url);
+                        };
+                        link.classList.remove('potential-image');
+                    } else {
+                        resolve();
+                    }
+                }).catch(() => resolve());
+            }));
+        } else {
+            isImageUrl(url).then(isImage => {
+                if (isImage) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'image';
+                    img.className = 'message-image';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'chat-image-wrapper';
+
+                    if (window.createFavButton) {
+                        const favBtn = window.createFavButton(url, url);
+                        wrapper.appendChild(favBtn);
+                        if (window.lucide) {
+                            setTimeout(() => window.lucide.createIcons({ root: favBtn }), 0);
+                        }
+                    }
+
+                    wrapper.appendChild(img);
+
+                    link.textContent = '';
+                    link.appendChild(wrapper);
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        if (window.openImageModal) window.openImageModal(url);
+                    };
+                    link.classList.remove('potential-image');
+                }
+            }).catch(err => {
+                console.debug('Image check failed for URL:', url, err);
+            });
+        }
     });
 
     if (state.currentUser) {
@@ -757,87 +1226,140 @@ function makeMessageElement(msg, isSameUserRecent) {
 
     groupContent.appendChild(msgText);
 
+    for (const url of embedLinks) {
+        if (state._embedCache[url]) {
+            const cachedEl = state._embedCache[url];
+            if (cachedEl) {
+                groupContent.appendChild(cachedEl.cloneNode(true));
+                const thumbnail = groupContent.querySelector('.youtube-thumbnail:last-child');
+                if (thumbnail) {
+                    const container = thumbnail.closest('.youtube-embed');
+                    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)?.[1];
+                    if (container && videoId) {
+                        thumbnail.addEventListener('click', () => {
+                            container.innerHTML = '';
+                            const iframe = document.createElement('iframe');
+                            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                            iframe.allowFullscreen = true;
+                            iframe.className = 'youtube-iframe';
+                            container.appendChild(iframe);
+                        });
+                    }
+                }
+            }
+        } else {
+            createEmbed(url).then(embedEl => {
+                if (embedEl) {
+                    state._embedCache[url] = embedEl.cloneNode(true);
+                    groupContent.appendChild(embedEl);
+
+                    const img = embedEl.querySelector('img');
+                    if (img && loadPromises) {
+                        loadPromises.push(new Promise(resolve => {
+                            if (img.complete) resolve();
+                            else {
+                                img.onload = resolve;
+                                img.onerror = resolve;
+                            }
+                        }));
+                    }
+                } else {
+                    state._embedCache[url] = null;
+                }
+            });
+        }
+    }
+
+    renderReactions(msg, groupContent);
+
+    setupMessageSwipe(wrapper, msg);
+
     return wrapper;
 }
 
-function parseMarkdown(text) {
-    const codeBlocks = [];
+function revealBlockedMessage(wrapper, msg) {
+    const groupContent = wrapper.querySelector('.message-group-content');
+    if (!groupContent) return;
+    groupContent.innerHTML = '';
 
-    text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-        lang = lang || "plaintext";
-        code = code.replace(/&/g, "&amp;")
-                   .replace(/</g, "&lt;")
-                   .replace(/>/g, "&gt;");
-        
-        const placeholder = `§CODEBLOCK_${codeBlocks.length}§${Math.random().toString(36).substr(2, 9)}§`;
-        codeBlocks.push({
-            placeholder,
-            html: `<pre><code class="language-${lang}">${code}</code></pre>`
-        });
-        return placeholder;
-    });
+    const user = state.users[msg.user] || { username: msg.user };
+    const timestamp = formatTimestamp(msg.timestamp);
+    const isReply = "reply_to" in msg;
 
-    text = text.replace(/`([^`]+)`/g, (match, code) => {
-        code = code.replace(/&/g, "&amp;")
-                   .replace(/</g, "&lt;")
-                   .replace(/>/g, "&gt;");
-        return `<code>${code}</code>`;
-    });
+    const header = document.createElement('div');
+    header.className = 'message-header';
+    const usernameEl = document.createElement('span');
+    usernameEl.className = 'username';
+    usernameEl.textContent = msg.user;
+    usernameEl.style.color = user.color || '#fff';
+    const ts = document.createElement('span');
+    ts.className = 'timestamp';
+    ts.textContent = timestamp;
+    header.appendChild(usernameEl);
+    header.appendChild(ts);
+    groupContent.appendChild(header);
 
-    text = text.replace(/^#{6} (.*)$/gm, "<h6>$1</h6>");
-    text = text.replace(/^#{5} (.*)$/gm, "<h5>$1</h5>");
-    text = text.replace(/^#{4} (.*)$/gm, "<h4>$1</h4>");
-    text = text.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-    text = text.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-    text = text.replace(/^# (.*)$/gm, "<h1>$1</h1>");
-
-    text = text.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
-    text = text.replace(/___(.+?)___/g, "<strong><em>$1</em></strong>");
-    
-    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    text = text.replace(/__(.+?)__/g, "<strong>$1</strong>");
-    
-    text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
-    text = text.replace(/_(.+?)_/g, "<em>$1</em>");
-
-    text = text.replace(/@([a-zA-Z0-9_]+)/g, (match, user) => {
-        return `<span class="mention" data-user="${user}">@${user}</span>`;
-    });
-
-    text = text.replace(/\n(?!<\/?(h[1-6]|pre))/g, "<br>");
-
-    for (const block of codeBlocks) {
-        text = text.replace(block.placeholder, block.html);
+    if (isReply) {
+        const replyTo = state.messages[state.currentChannel.name].find(m => m.id === msg.reply_to.id);
+        if (replyTo) {
+            const replyUser = state.users[replyTo.user] || { username: replyTo.user };
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'message-reply';
+            const replyText = document.createElement('div');
+            replyText.className = 'username';
+            replyText.textContent = replyUser.username + ": " + replyTo.content;
+            replyDiv.appendChild(getAvatar(replyUser.username));
+            replyDiv.appendChild(replyText);
+            groupContent.appendChild(replyDiv);
+        }
     }
 
-    return text;
-}
+    const msgText = document.createElement('div');
+    msgText.className = 'message-text';
+    const embedLinks = [];
+    msgText.innerHTML = parseMsg(msg, embedLinks);
+    groupContent.appendChild(msgText);
 
-function parseMsg(msg) {
-    let text = replaceShortcodes(msg.content);
-
-    text = parseMarkdown(text);
-
-    text = DOMPurify.sanitize(text);
-
-    return text;
-}
-
-function totalEmojis(msg) {
-    let i=0;
-    twemoji.replace(msg.content, function(rawText) {
-        i++;
-        return rawText;
+    msgText.querySelectorAll("pre code").forEach(block => {
+        hljs.highlightElement(block);
     });
-    return i
-}
 
-function editMessage(msg) {
-    console.log("EDIT:", msg);
+    msgText.querySelectorAll("a.potential-image").forEach(link => {
+        const url = link.dataset.imageUrl;
+        isImageUrl(url).then(isImage => {
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'image';
+                img.className = 'message-image';
+                const wrap = document.createElement('div');
+                wrap.className = 'chat-image-wrapper';
+                if (window.createFavButton) {
+                    const favBtn = window.createFavButton(url, url);
+                    wrap.appendChild(favBtn);
+                    if (window.lucide) {
+                        setTimeout(() => window.lucide.createIcons({ root: favBtn }), 0);
+                    }
+                }
+                wrap.appendChild(img);
+                link.textContent = '';
+                link.appendChild(wrap);
+                link.onclick = (e) => { e.preventDefault(); if (window.openImageModal) window.openImageModal(url); };
+                link.classList.remove('potential-image');
+            }
+        }).catch(() => {});
+    });
+
+    renderReactions(msg, groupContent);
 }
 
 function deleteMessage(msg) {
-    wsSend({ cmd: 'message_delete', id: msg.id });
+    wsSend({
+        cmd: 'message_delete',
+        id: msg.id,
+        channel: state.currentChannel.name
+    });
 }
 
 
@@ -853,25 +1375,33 @@ function openMessageContextMenu(event, msg) {
         const el = document.createElement("div");
         el.className = "context-menu-item";
         el.textContent = label;
-        el.onclick = () => {
+        el.onclick = (e) => {
+            e.stopPropagation();
             closeContextMenu();
             callback(msg);
         };
         contextMenu.appendChild(el);
     };
 
-    addItem("Edit message", editMessage);
+    addItem("Edit message", startEditMessage);
     addItem("Reply to message", replyToMessage);
+    addItem("Add reaction", (msg) => {
+        const dummyAnchor = document.createElement('div');
+        dummyAnchor.style.position = 'absolute';
+        dummyAnchor.style.left = `${event.clientX}px`;
+        dummyAnchor.style.top = `${event.clientY}px`;
+        document.body.appendChild(dummyAnchor);
+        openReactionPicker(msg.id, dummyAnchor);
+        setTimeout(() => dummyAnchor.remove(), 100);
+    });
     addItem("Delete message", deleteMessage);
 
-    // Position the menu
     const menuWidth = 180;
     const menuHeight = 120;
 
     let x = event.clientX;
     let y = event.clientY;
 
-    // Prevent clipping out of window bounds
     if (x + menuWidth > window.innerWidth)
         x = window.innerWidth - menuWidth - 6;
     if (y + menuHeight > window.innerHeight)
@@ -884,7 +1414,6 @@ function openMessageContextMenu(event, msg) {
     contextMenuOpen = true;
 }
 
-// Close menu when clicking anywhere else
 document.addEventListener("click", () => {
     if (contextMenuOpen) closeContextMenu();
 });
@@ -904,12 +1433,37 @@ function renderMembers(channel) {
     const container = document.getElementById('members-list');
 
     const users = Object.values(state.users).filter(u => checkPermission(u.roles, viewPermissions));
-    const online = users.filter(u => u.status === 'online');
-    const offline = users.filter(u => u.status !== 'online');
 
-    // Reuse DOM sections instead of clearing everything
+    let headerSec = container.querySelector('.members-header');
+    if (!headerSec) {
+        headerSec = document.createElement('div');
+        headerSec.className = 'members-header';
+        headerSec.innerHTML = `
+            <h3>Members</h3>
+            <span class="close-members" onclick="toggleMembersList()">
+                <i data-lucide="x"></i>
+            </span>
+        `;
+        container.insertBefore(headerSec, container.firstChild);
+    }
+
+    let ownerSec = container.querySelector('.section-owner');
     let onlineSec = container.querySelector('.section-online');
     let offlineSec = container.querySelector('.section-offline');
+
+    const owners = users.filter(u => u.roles && u.roles.includes('owner'));
+    const nonOwners = users.filter(u => !u.roles || !u.roles.includes('owner'));
+    const online = nonOwners.filter(u => u.status === 'online');
+    const offline = nonOwners.filter(u => u.status !== 'online');
+
+    if (owners.length > 0 && !ownerSec) {
+        ownerSec = document.createElement('div');
+        ownerSec.className = 'section section-owner';
+        const header = document.createElement('h2');
+        header.textContent = 'Owner';
+        ownerSec.appendChild(header);
+        container.insertBefore(ownerSec, container.firstChild);
+    }
 
     if (!onlineSec) {
         onlineSec = document.createElement('div');
@@ -929,8 +1483,16 @@ function renderMembers(channel) {
         container.appendChild(offlineSec);
     }
 
+    if (ownerSec) updateSection(ownerSec, owners);
     updateSection(onlineSec, online);
     updateSection(offlineSec, offline);
+
+    if (headerSec) container.appendChild(headerSec);
+    if (ownerSec) container.appendChild(ownerSec);
+    container.appendChild(onlineSec);
+    container.appendChild(offlineSec);
+
+    if (window.lucide) window.lucide.createIcons();
 
     function updateSection(section, users) {
         const membersMap = new Map([...section.querySelectorAll('.member')].map(el => [el.dataset.username, el]));
@@ -951,7 +1513,6 @@ function renderMembers(channel) {
                 section.appendChild(el);
             }
 
-            // update existing info
             const name = el.querySelector('.name');
             name.textContent = u.username;
             name.style.color = u.color || '#fff';
@@ -959,7 +1520,6 @@ function renderMembers(channel) {
             membersMap.delete(u.username);
         }
 
-        // remove users no longer in list
         membersMap.forEach(el => el.remove());
     }
 }
@@ -970,6 +1530,20 @@ function sendMessage() {
     const content = input.value.trim();
 
     if (!content || !state.currentChannel) return;
+
+    if (editingMessage) {
+        wsSend({
+            cmd: 'message_edit',
+            id: editingMessage.id,
+            channel: state.currentChannel.name,
+            content
+        });
+        editingMessage = null;
+        document.getElementById('reply-bar').classList.remove('active');
+        input.value = '';
+        input.style.height = 'auto';
+        return;
+    }
 
     const msg = {
         cmd: 'message_new',
@@ -1006,11 +1580,31 @@ function setupTypingListener() {
 
 function watchForStopTyping() {
     const interval = setInterval(() => {
-        if (Date.now() - lastTyped > 1200) { 
+        if (Date.now() - lastTyped > 1200) {
             typing = false;
             clearInterval(interval);
         }
     }, 300);
+}
+
+function setupInfiniteScroll() {
+    const container = document.getElementById('messages');
+    if (!container) return;
+    container.addEventListener('scroll', () => {
+        if (state._olderLoading) return;
+        if (!state.currentChannel) return;
+        if (container.scrollTop <= 10) {
+            const ch = state.currentChannel.name;
+            const limit = 100;
+            const start = (state.messages[ch] || []).length || 0;
+            const lastSent = state._olderCooldown[ch] || 0;
+            if (Date.now() - lastSent < 750) return;
+            state._olderLoading = true;
+            state._loadingOlder[ch] = { start, limit };
+            state._olderCooldown[ch] = Date.now();
+            wsSend({ cmd: 'messages_get', channel: ch, start, limit });
+        }
+    });
 }
 
 function sendTyping() {
@@ -1026,12 +1620,6 @@ function replyToMessage(msg) {
 function cancelReply() {
     state.replyTo = null;
     document.getElementById('reply-bar').classList.remove('active');
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function updateUserSection() {
