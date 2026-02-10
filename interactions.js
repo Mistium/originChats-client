@@ -2,8 +2,9 @@ const QUICK_REACTIONS = ['😭', '😔', '💀', '👍', '👎', '❤️', '😂
 
 let reactionPicker = null;
 let reactionPickerMsgId = null;
-let recentEmojis = JSON.parse(localStorage.getItem('originChats_recentEmojis') || '[]');
+let recentEmojis = JSON.parse(localStorage.getItem('originchats_recentEmojis') || '[]');
 let pickerResizeObserver = null;
+let pendingReactions = new Set();
 
 function createReactionPicker() {
     if (reactionPicker) return reactionPicker;
@@ -445,21 +446,45 @@ function selectEmoji(emoji) {
 }
 
 function addReaction(msgId, emoji) {
-    wsSend({
+    const key = `${msgId}:${emoji}:add`;
+    if (pendingReactions.has(key)) return;
+    
+    pendingReactions.add(key);
+    
+    const sent = wsSend({
         cmd: 'message_react_add',
         id: msgId,
         emoji: emoji,
         channel: state.currentChannel.name
     }, state.serverUrl);
+    
+    if (!sent) {
+        pendingReactions.delete(key);
+        showError('Failed to add reaction - connection lost');
+    } else {
+        setTimeout(() => pendingReactions.delete(key), 1000);
+    }
 }
 
 function removeReaction(msgId, emoji) {
-    wsSend({
+    const key = `${msgId}:${emoji}:remove`;
+    if (pendingReactions.has(key)) return;
+    
+    pendingReactions.add(key);
+    
+    const sent = wsSend({
         cmd: 'message_react_remove',
         id: msgId,
         emoji: emoji,
         channel: state.currentChannel.name
     }, state.serverUrl);
+    
+    if (!sent) {
+        pendingReactions.delete(key);
+        showError('Failed to remove reaction - connection lost');
+    } else {
+        setTimeout(() => pendingReactions.delete(key), 1000);
+    }
 }
 
 function toggleReaction(msgId, emoji) {
@@ -635,6 +660,15 @@ function resetSwipe() {
 let editingMessage = null;
 let originalInputValue = '';
 
+Object.defineProperty(window, 'editingMessage', {
+    get() {
+        return editingMessage;
+    },
+    set(val) {
+        editingMessage = val;
+    }
+});
+
 function startEditMessage(msg) {
     editingMessage = msg;
     const input = document.getElementById('message-input');
@@ -642,17 +676,22 @@ function startEditMessage(msg) {
     input.value = msg.content;
     input.focus();
 
-    document.getElementById('reply-text').textContent = `Editing message`;
-    document.getElementById('reply-bar').classList.add('active');
+    const user = getUserByUsernameCaseInsensitive(msg.user) || { username: msg.user };
+    document.getElementById('reply-text').textContent = `Editing @${user.username}`;
+    document.getElementById('reply-bar').classList.add('active', 'editing-mode');
 }
 
 function cancelEdit() {
     editingMessage = null;
+    originalInputValue = '';
     const input = document.getElementById('message-input');
-    input.value = originalInputValue;
+    input.value = '';
     input.dispatchEvent(new Event('input'));
-    document.getElementById('reply-bar').classList.remove('active');
+    document.getElementById('reply-bar').classList.remove('active', 'editing-mode');
 }
+
+window.startEditMessage = startEditMessage;
+window.cancelEdit = cancelEdit;
 
 let gifPickerOpen = false;
 let gifSearchTimer = null;
@@ -689,6 +728,9 @@ function createGifPicker() {
                 <button class="gif-tab active" data-tab="search" onclick="switchGifTab('search')">Search</button>
                 <button class="gif-tab" data-tab="favorites" onclick="switchGifTab('favorites')">Favorites</button>
             </div>
+            <button class="gif-picker-close" onclick="closeGifPicker()" title="Close">
+                <i data-lucide="x"></i>
+            </button>
         </div>
         <div class="gif-search-bar" id="gif-search-bar">
             <input type="text" id="gif-search" placeholder="Search Tenor GIFs..." autocomplete="off">

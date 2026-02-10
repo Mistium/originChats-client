@@ -74,12 +74,18 @@
                 </div>
             </div>
             <div class="messages-container">
+                <div id="error-banner" class="error-banner">
+                    <span id="error-text"></span>
+                    <button class="error-close" onclick="hideErrorBanner()">
+                        <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </div>
                 <div id="messages" class="messages"></div>
                 <div id="typing" class="typing"></div>
                 <div class="input-area">
                     <div id="reply-bar" class="reply-bar">
                         <span id="reply-text">Replying to user</span>
-                        <span class="close-reply" onclick="if(window.editingMessage) cancelEdit(); else cancelReply();">
+                        <span class="close-reply" onclick="if(window.editingMessage) window.cancelEdit(); else cancelReply();">
                             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
                         </span>
                     </div>

@@ -4,7 +4,8 @@ function detectEmbedType(url) {
         return { type: 'youtube', videoId: ytMatch[1] };
     }
 
-    const tenorMatch = url.match(/tenor\.com\/view\/[\w-]+-(\d+)$/);
+    // Updated regex to handle various Tenor URL formats
+    const tenorMatch = url.match(/tenor\.com\/view\/[\w-]+-(\d+)(?:\?.*)?$/i);
     if (tenorMatch) {
         return { type: 'tenor', id: tenorMatch[1], url };
     }
@@ -96,18 +97,30 @@ function createYouTubeEmbed(videoId, originalUrl) {
 
 async function createTenorEmbed(tenorId, originalUrl) {
     try {
+        console.log(`Fetching Tenor GIF with ID: ${tenorId}`);
         const response = await fetch(`https://apps.mistium.com/tenor/get?id=${tenorId}`);
-        if (!response.ok) throw new Error('Tenor API failed');
+        if (!response.ok) {
+            console.error(`Tenor API failed with status: ${response.status}`);
+            throw new Error('Tenor API failed');
+        }
 
         const data = await response.json();
+        console.log('Tenor API response:', data);
+        
         if (!data || !data[0] || !data[0].media || !data[0].media[0]) {
+            console.error('Invalid Tenor response structure:', data);
             throw new Error('Invalid Tenor response');
         }
 
         const media = data[0].media[0];
-        const gifUrl = media.mediumgif?.url || media.gif?.url;
+        const gifUrl = media.mediumgif?.url || media.gif?.url || media.tinygif?.url;
 
-        if (!gifUrl) throw new Error('No GIF URL found');
+        if (!gifUrl) {
+            console.error('No GIF URL found in media:', media);
+            throw new Error('No GIF URL found');
+        }
+        
+        console.log(`Found GIF URL: ${gifUrl}`);
 
         const container = document.createElement('div');
         container.className = 'embed-container tenor-embed';
@@ -115,7 +128,7 @@ async function createTenorEmbed(tenorId, originalUrl) {
         const link = document.createElement('a');
         link.href = originalUrl;
         link.target = '_blank';
-        link.rel = 'noopener';
+        link.rel = 'noopener noreferrer';
 
         const img = document.createElement('img');
         img.src = gifUrl;
@@ -161,7 +174,7 @@ function createVideoEmbed(url) {
     video.className = 'video-player';
 
     video.onerror = () => {
-        container.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Video failed to load - click to open</a>`;
+        container.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">Video failed to load - click to open</a>`;
     };
 
     container.appendChild(video);
@@ -175,7 +188,7 @@ function createImageEmbed(url) {
     const link = document.createElement('a');
     link.href = url;
     link.target = '_blank';
-    link.rel = 'noopener';
+    link.rel = 'noopener noreferrer';
 
     const img = document.createElement('img');
     img.src = url;

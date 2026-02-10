@@ -56,18 +56,23 @@ function parseMarkdown(text, embedLinks) {
         embedLinks.push(url);
 
         if (YOUTUBE_REGEX.test(url)) {
-            return `<a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        }
+
+        // Check for Tenor GIFs - updated to handle various formats
+        if (url.match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i)) {
+            return `<a href="${url}" class="tenor-embed" target="_blank" rel="noopener noreferrer">${url}</a>`;
         }
 
         if (hasExtension(url, VIDEO_EXTENSIONS)) {
-            return `<a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
         }
 
         if (hasExtension(url, IMAGE_EXTENSIONS)) {
-            return `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="image" class="message-image" data-image-url="${url}"></a>`;
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="image" class="message-image" data-image-url="${url}"></a>`;
         }
 
-        return `<a href="${url}" class="potential-image" target="_blank" rel="noopener" data-image-url="${url}">${url}</a>`;
+        return `<a href="${url}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${url}">${url}</a>`;
     });
 
     text = text.replace(/\n(?!<\/?(h[1-6]|pre))/g, "<br>");

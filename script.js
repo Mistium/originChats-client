@@ -20,12 +20,14 @@ let state = {
     memberListDrawn: false,
     unreadPings: {},
     unreadCountsByServer: {},
+    unreadByChannel: {},
     _avatarCache: {},
     _avatarLoading: {},
-    typingUsers: {},
-    typingTimeouts: {},
+    typingUsersByServer: {},
+    typingTimeoutsByServer: {},
     _embedCache: {},
-    lastChannelByServer: {}
+    lastChannelByServer: {},
+    dmServers: []
 };
 
 Object.defineProperty(state, 'channels', {
@@ -73,6 +75,30 @@ Object.defineProperty(state, 'currentUser', {
     },
     set(value) {
         state.currentUserByServer[state.serverUrl] = value;
+    }
+});
+
+Object.defineProperty(state, 'typingUsers', {
+    get() {
+        if (!state.typingUsersByServer[state.serverUrl]) {
+            state.typingUsersByServer[state.serverUrl] = {};
+        }
+        return state.typingUsersByServer[state.serverUrl];
+    },
+    set(value) {
+        state.typingUsersByServer[state.serverUrl] = value;
+    }
+});
+
+Object.defineProperty(state, 'typingTimeouts', {
+    get() {
+        if (!state.typingTimeoutsByServer[state.serverUrl]) {
+            state.typingTimeoutsByServer[state.serverUrl] = {};
+        }
+        return state.typingTimeoutsByServer[state.serverUrl];
+    },
+    set(value) {
+        state.typingTimeoutsByServer[state.serverUrl] = value;
     }
 });
 
@@ -127,6 +153,11 @@ window.onload = function () {
         state.lastChannelByServer = JSON.parse(savedLastChannels);
     }
     
+    const savedDMServers = localStorage.getItem('originchats_dm_servers');
+    if (savedDMServers) {
+        state.dmServers = JSON.parse(savedDMServers);
+    }
+    
     
     state.servers.forEach(server => {
         if (!state.unreadCountsByServer[server.url]) {
@@ -175,6 +206,20 @@ window.onload = function () {
             e.preventDefault();
             sendMessage();
         }
+
+        if (e.key === 'ArrowUp' && !this.value.trim() && !window.editingMessage) {
+            e.preventDefault();
+            const channel = state.currentChannel?.name;
+            if (!channel) return;
+            const messages = state.messages[channel] || [];
+            const myMessages = messages.filter(m => m.user === state.currentUser?.username);
+            if (myMessages.length > 0) {
+                const lastMessage = myMessages[myMessages.length - 1];
+                if (window.startEditMessage) {
+                    window.startEditMessage(lastMessage);
+                }
+            }
+        }
     });
 
     
@@ -217,7 +262,7 @@ window.onload = function () {
             closeMenu();
             closeServerDropdown();
             if (window.editingMessage) {
-                cancelEdit();
+                window.cancelEdit();
             } else if (state.replyTo) {
                 cancelReply();
             }
@@ -612,7 +657,7 @@ function renderGuildSidebar() {
         const existingWarning = homeGuild.querySelector('.guild-warning');
         
         if (dmConn && dmConn.status === 'error') {
-            homeGuild.classList.add('error');
+            homeGuild.classList.add('server-error');
             if (!existingWarning) {
                 const warningIcon = document.createElement('div');
                 warningIcon.className = 'guild-warning';
@@ -632,7 +677,7 @@ function renderGuildSidebar() {
                 homeIcon.appendChild(warningIcon);
             }
         } else {
-            homeGuild.classList.remove('error');
+            homeGuild.classList.remove('server-error');
             if (existingWarning) {
                 existingWarning.remove();
             }
@@ -663,6 +708,84 @@ function renderGuildSidebar() {
         }
 
         guildList.appendChild(homeGuild);
+    }
+    
+    if (state.dmServers && state.dmServers.length > 0) {
+        state.dmServers.forEach(dmServer => {
+            const item = document.createElement('div');
+            item.className = 'guild-item dm-server';
+            item.dataset.channel = dmServer.channel;
+            item.title = dmServer.name;
+            
+            if (state.serverUrl === 'dms.mistium.com' && state.currentChannel?.name === dmServer.channel) {
+                item.classList.add('active');
+            }
+            
+            const icon = document.createElement('div');
+            icon.className = 'guild-icon';
+            
+            const img = document.createElement('img');
+            img.src = `https://avatars.rotur.dev/${dmServer.username}`;
+            img.alt = dmServer.name;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            icon.appendChild(img);
+            
+            const pill = document.createElement('div');
+            pill.className = 'guild-pill';
+            
+            const channelKey = `dms.mistium.com:${dmServer.channel}`;
+            if (state.unreadByChannel[channelKey] > 0) {
+                pill.classList.add('unread');
+            }
+            
+            item.appendChild(icon);
+            item.appendChild(pill);
+            
+            item.onclick = () => {
+                if (state.serverUrl !== 'dms.mistium.com') {
+                    switchServer('dms.mistium.com');
+                }
+                
+                setTimeout(() => {
+                    const channels = state.channelsByServer['dms.mistium.com'] || [];
+                    const channel = channels.find(c => c.name === dmServer.channel);
+                    if (channel) {
+                        selectChannel(channel);
+                    } else {
+                        wsSend({ cmd: 'messages_get', channel: dmServer.channel }, 'dms.mistium.com');
+                        const tempChannel = {
+                            name: dmServer.channel,
+                            display_name: dmServer.name,
+                            type: 'text',
+                            icon: `https://avatars.rotur.dev/${dmServer.username}`
+                        };
+                        if (!state.channelsByServer['dms.mistium.com']) {
+                            state.channelsByServer['dms.mistium.com'] = [];
+                        }
+                        const exists = state.channelsByServer['dms.mistium.com'].find(c => c.name === dmServer.channel);
+                        if (!exists) {
+                            state.channelsByServer['dms.mistium.com'].push(tempChannel);
+                        }
+                        selectChannel(tempChannel);
+                    }
+                }, 100);
+            };
+            
+            item.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showDMContextMenu(e, dmServer);
+            });
+            
+            guildList.appendChild(item);
+        });
+        
+        const dmDivider = document.createElement('div');
+        dmDivider.className = 'guild-divider';
+        dmDivider.style.margin = '4px 0';
+        dmDivider.style.height = '1px';
+        guildList.appendChild(dmDivider);
     }
     
     if (divider) guildList.appendChild(divider);
@@ -802,10 +925,14 @@ function renderGuildSidebar() {
     if (window.lucide) window.lucide.createIcons({ root: guildList });
 }
 
+function isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches || 'ontouchstart' in window;
+}
+
 function showGuildContextMenu(event, server) {
     const menu = document.getElementById('context-menu');
     menu.innerHTML = '';
-    
+
     const leaveItem = document.createElement('div');
     leaveItem.className = 'context-menu-item danger';
     leaveItem.textContent = 'Leave Server';
@@ -813,18 +940,20 @@ function showGuildContextMenu(event, server) {
         leaveServer(server.url);
         menu.style.display = 'none';
     };
-    
+
     menu.appendChild(leaveItem);
-    
-    const menuWidth = 150;
-    let x = event.clientX;
-    let y = event.clientY;
-    
-    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 6;
-    if (y + 100 > window.innerHeight) y = window.innerHeight - 100;
-    
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
+
+    if (!isMobile()) {
+        const menuWidth = 150;
+        let x = event.clientX;
+        let y = event.clientY;
+
+        if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 6;
+        if (y + 100 > window.innerHeight) y = window.innerHeight - 100;
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+    }
     menu.style.display = 'block';
 }
 
@@ -1115,6 +1244,12 @@ function saveServer(server) {
 function connectToServer(serverUrl) {
     const url = serverUrl || state.serverUrl;
     
+    if (reconnectTimeouts[url]) {
+        clearTimeout(reconnectTimeouts[url]);
+        reconnectTimeouts[url] = null;
+    }
+    reconnectAttempts[url] = 0;
+    
     const isFirstConnection = !Object.values(wsConnections).some(conn => conn && conn.status === 'connected');
     const authScreen = document.getElementById('auth-screen');
     const isAuthScreenVisible = authScreen && authScreen.classList.contains('active');
@@ -1149,6 +1284,10 @@ function connectToServer(serverUrl) {
         wsConnections[url].status = 'connected';
         wsStatus[url] = 'connected';
         renderGuildSidebar();
+        
+        if (reconnectAttempts[url]) {
+            reconnectAttempts[url] = 0;
+        }
     };
 
     ws.onmessage = function (event) {
@@ -1171,6 +1310,11 @@ function connectToServer(serverUrl) {
         wsConnections[url].status = 'error';
         wsStatus[url] = 'error';
         renderGuildSidebar();
+        
+        if (url === state.serverUrl) {
+            console.log(`Auto-reconnecting to ${url}...`);
+            scheduleReconnect(url);
+        }
     };
 }
 
@@ -1191,6 +1335,45 @@ function connectToAllServers() {
     if (state.serverUrl && !wsConnections[state.serverUrl]) {
         connectToServer(state.serverUrl);
     }
+}
+
+const reconnectAttempts = {};
+const reconnectTimeouts = {};
+const MAX_RECONNECT_ATTEMPTS = 5;
+const INITIAL_RECONNECT_DELAY = 1000;
+
+function scheduleReconnect(serverUrl) {
+    if (reconnectTimeouts[serverUrl]) {
+        clearTimeout(reconnectTimeouts[serverUrl]);
+    }
+    
+    if (!reconnectAttempts[serverUrl]) {
+        reconnectAttempts[serverUrl] = 0;
+    }
+    
+    reconnectAttempts[serverUrl]++;
+    
+    if (reconnectAttempts[serverUrl] > MAX_RECONNECT_ATTEMPTS) {
+        console.error(`Max reconnection attempts reached for ${serverUrl}`);
+        showError(`Failed to reconnect to ${serverUrl}. Click the server to retry.`);
+        reconnectAttempts[serverUrl] = 0;
+        return;
+    }
+    
+    const delay = Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts[serverUrl] - 1), 30000);
+    
+    console.log(`Scheduling reconnect to ${serverUrl} in ${delay}ms (attempt ${reconnectAttempts[serverUrl]}/${MAX_RECONNECT_ATTEMPTS})`);
+    
+    reconnectTimeouts[serverUrl] = setTimeout(() => {
+        reconnectTimeouts[serverUrl] = null;
+        
+        if (serverUrl === state.serverUrl && 
+            (!wsConnections[serverUrl] || wsConnections[serverUrl].status !== 'connected')) {
+            connectToServer(serverUrl);
+        } else {
+            reconnectAttempts[serverUrl] = 0;
+        }
+    }, delay);
 }
 
 async function generateValidator(validatorKey) {
@@ -1260,6 +1443,7 @@ async function retryAuthentication(serverUrl) {
     
     if (authRetries[serverUrl] >= maxRetries) {
         console.error(`Max authentication retries reached for ${serverUrl}`);
+        
         if (wsConnections[serverUrl]) {
             wsConnections[serverUrl].status = 'error';
             wsStatus[serverUrl] = 'error';
@@ -1267,7 +1451,14 @@ async function retryAuthentication(serverUrl) {
         renderGuildSidebar();
         
         if (state.serverUrl === serverUrl) {
-            showError('Authentication failed. Please try clicking on the server to reconnect.');
+            showError('Authentication failed. Reconnecting...');
+            if (wsConnections[serverUrl]) {
+                const socket = wsConnections[serverUrl].socket;
+                if (socket.readyState !== WebSocket.CLOSED) {
+                    socket.close();
+                }
+            }
+            scheduleReconnect(serverUrl);
         }
         return;
     }
@@ -1479,27 +1670,48 @@ async function handleMessage(msg, serverUrl) {
             state.messagesByServer[serverUrl][msg.channel].push(msg.message);
 
             
-            if (state.currentUser && msg.message.user !== state.currentUser.username) {
-                if (state.serverUrl !== serverUrl || msg.channel !== state.currentChannel?.name) {
-                    if (!state.unreadCountsByServer[serverUrl]) {
-                        state.unreadCountsByServer[serverUrl] = 0;
-                    }
-                    state.unreadCountsByServer[serverUrl]++;
-                    renderGuildSidebar();
+            if (state.serverUrl !== serverUrl || msg.channel !== state.currentChannel?.name) {
+                if (!state.unreadCountsByServer[serverUrl]) {
+                    state.unreadCountsByServer[serverUrl] = 0;
                 }
+                state.unreadCountsByServer[serverUrl]++;
+                
+                const channelKey = `${serverUrl}:${msg.channel}`;
+                if (!state.unreadByChannel[channelKey]) {
+                    state.unreadByChannel[channelKey] = 0;
+                }
+                state.unreadByChannel[channelKey]++;
+                
+                console.log(`New unread message: ${channelKey}, count: ${state.unreadByChannel[channelKey]}`);
+                
+                if (serverUrl === 'dms.mistium.com' && msg.message.user !== state.currentUser?.username) {
+                    addDMServer(msg.message.user, msg.channel);
+                }
+                
+                // Always re-render channels if it's the current server
+                if (state.serverUrl === serverUrl) {
+                    requestAnimationFrame(() => renderChannels());
+                }
+                renderGuildSidebar();
             }
 
-            const typing = state.typingUsers[msg.channel];
-            if (typing) {
+            const typingServer = state.typingUsersByServer[serverUrl];
+            if (typingServer && typingServer[msg.channel]) {
+                const typing = typingServer[msg.channel];
                 if (typing.has(msg.message.user)) {
                     typing.delete(msg.message.user);
-                    const timeouts = state.typingTimeouts[msg.channel];
-                    if (timeouts && timeouts.has(msg.message.user)) {
-                        clearTimeout(timeouts.get(msg.message.user));
-                        timeouts.delete(msg.message.user);
+                    const timeoutsServer = state.typingTimeoutsByServer[serverUrl];
+                    if (timeoutsServer && timeoutsServer[msg.channel]) {
+                        const timeouts = timeoutsServer[msg.channel];
+                        if (timeouts.has(msg.message.user)) {
+                            clearTimeout(timeouts.get(msg.message.user));
+                            timeouts.delete(msg.message.user);
+                        }
                     }
                     updateChannelListTyping(msg.channel);
-                    updateTypingIndicator();
+                    if (serverUrl === state.serverUrl && msg.channel === state.currentChannel?.name) {
+                        updateTypingIndicator();
+                    }
                 }
             }
 
@@ -1552,6 +1764,8 @@ async function handleMessage(msg, serverUrl) {
             const id = msg.id;
             const message = state.messagesByServer[serverUrl][msg.channel].find(m => m.id === id);
             message.content = msg.content;
+            message.edited = true;
+            message.editedAt = Date.now();
             if (state.serverUrl === serverUrl && msg.channel === state.currentChannel?.name) {
                 updateMessageContent(msg.id, msg.content);
             }
@@ -1573,16 +1787,23 @@ async function handleMessage(msg, serverUrl) {
             const user = msg.user;
             if (user === state.currentUser?.username) break;
 
-            if (!state.typingUsers[channel]) {
-                state.typingUsers[channel] = new Map();
+            if (!state.typingUsersByServer[serverUrl]) {
+                state.typingUsersByServer[serverUrl] = {};
+            }
+            if (!state.typingTimeoutsByServer[serverUrl]) {
+                state.typingTimeoutsByServer[serverUrl] = {};
             }
 
-            if (!state.typingTimeouts[channel]) {
-                state.typingTimeouts[channel] = new Map();
+            if (!state.typingUsersByServer[serverUrl][channel]) {
+                state.typingUsersByServer[serverUrl][channel] = new Map();
             }
 
-            const typingMap = state.typingUsers[channel];
-            const timeoutMap = state.typingTimeouts[channel];
+            if (!state.typingTimeoutsByServer[serverUrl][channel]) {
+                state.typingTimeoutsByServer[serverUrl][channel] = new Map();
+            }
+
+            const typingMap = state.typingUsersByServer[serverUrl][channel];
+            const timeoutMap = state.typingTimeoutsByServer[serverUrl][channel];
             const expireAt = Date.now() + 10000;
             typingMap.set(user, expireAt);
 
@@ -1707,7 +1928,11 @@ function wsSend(data, serverUrl) {
     const connection = wsConnections[url];
     if (connection && connection.socket && connection.socket.readyState === WebSocket.OPEN) {
         connection.socket.send(JSON.stringify(data));
+    } else {
+        console.warn(`WebSocket not open for ${url}, message not sent:`, data);
+        return false;
     }
+    return true;
 }
 
 function updateChannelListTyping(channelName) {
@@ -1741,6 +1966,9 @@ function updateChannelListTyping(channelName) {
 
 function renderChannels() {
     const container = document.getElementById('channels-list');
+    if (!container) return;
+    
+    console.log('renderChannels called, unreadByChannel:', state.unreadByChannel);
     container.innerHTML = '';
 
     for (let i = 0; i < state.channels.length; i++) {
@@ -1766,12 +1994,30 @@ function renderChannels() {
             const name = document.createElement('span');
             name.textContent = getChannelDisplayName(channel);
             name.dataset.channelName = channel.name;
+            
+            const channelKey = `${state.serverUrl}:${channel.name}`;
+            const hasUnread = state.unreadByChannel[channelKey] > 0;
+            const hasPings = state.unreadPings[channel.name] > 0;
+            
+            if (hasUnread || hasPings) {
+                if (hasUnread) {
+                    console.log(`Channel ${channel.name} has ${state.unreadByChannel[channelKey]} unread messages`);
+                }
+                name.style.fontWeight = '600';
+                name.style.color = 'var(--text)';
+            }
+            
             div.appendChild(name);
-            if (state.unreadPings[channel.name] > 0) {
+            
+            if (hasPings) {
                 const badge = document.createElement('span');
                 badge.className = 'ping-badge';
                 badge.textContent = state.unreadPings[channel.name];
                 div.appendChild(badge);
+            } else if (hasUnread) {
+                const unreadIndicator = document.createElement('span');
+                unreadIndicator.className = 'unread-indicator';
+                div.appendChild(unreadIndicator);
             }
 
             const typingMap = state.typingUsers[channel.name];
@@ -1830,8 +2076,19 @@ function selectChannel(channel) {
     channelNameEl.appendChild(name);
     if (state.unreadPings[channel.name]) {
         delete state.unreadPings[channel.name];
-        renderChannels();
     }
+    
+    // Clear unread count for this channel
+    const channelKey = `${state.serverUrl}:${channel.name}`;
+    if (state.unreadByChannel[channelKey]) {
+        state.unreadCountsByServer[state.serverUrl] = Math.max(0, 
+            (state.unreadCountsByServer[state.serverUrl] || 0) - state.unreadByChannel[channelKey]
+        );
+        delete state.unreadByChannel[channelKey];
+        renderGuildSidebar();
+    }
+    
+    renderChannels();
 
     document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
     const channelItems = Array.from(document.querySelectorAll('.channel-item'));
@@ -2034,17 +2291,23 @@ function appendMessage(msg) {
         msg.timestamp - prevMsg.timestamp < 300000;
 
     const element = makeMessageElement(msg, isSameUserRecent);
-    const nearBottom = () => (container.scrollHeight - (container.scrollTop + container.clientHeight)) < 80;
+    const nearBottom = (beforeAppend = true) => {
+        const height = beforeAppend ? container.scrollHeight : container.scrollHeight;
+        return (height - (container.scrollTop + container.clientHeight)) < 80;
+    };
+    const wasNearBottom = nearBottom(true);
     container.appendChild(element);
 
     lastUser = msg.user;
     lastTime = msg.timestamp;
 
-    if (nearBottom()) {
-        const prevBehavior = container.style.scrollBehavior;
-        container.style.scrollBehavior = 'auto';
-        container.scrollTop = container.scrollHeight;
-        container.style.scrollBehavior = prevBehavior || '';
+    if (wasNearBottom) {
+        requestAnimationFrame(() => {
+            const prevBehavior = container.style.scrollBehavior;
+            container.style.scrollBehavior = 'auto';
+            container.scrollTop = container.scrollHeight;
+            container.style.scrollBehavior = prevBehavior || '';
+        });
     }
 }
 
@@ -2062,7 +2325,7 @@ function updateMessageContent(msgId, newContent) {
     msgText.innerHTML = parseMsg(msg, embedLinks);
 
     if (embedLinks.length === 1 &&
-        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+$/) &&
+        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i) &&
         msg.content.trim() === embedLinks[0]) {
         msgText.style.display = 'none';
     } else {
@@ -2143,6 +2406,21 @@ function updateMessageContent(msgId, newContent) {
                     }
                 });
             }
+        }
+    }
+
+    const header = wrapper.querySelector('.message-header');
+    if (header) {
+        let editedIndicator = header.querySelector('.edited-indicator');
+        if (msg.edited || msg.editedAt) {
+            if (!editedIndicator) {
+                editedIndicator = document.createElement('span');
+                editedIndicator.className = 'edited-indicator';
+                editedIndicator.textContent = '(edited)';
+                header.appendChild(editedIndicator);
+            }
+        } else if (editedIndicator) {
+            editedIndicator.remove();
         }
     }
 }
@@ -2244,6 +2522,13 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
         header.appendChild(usernameEl);
         header.appendChild(ts);
 
+        if (msg.edited || msg.editedAt) {
+            const editedSpan = document.createElement('span');
+            editedSpan.className = 'edited-indicator';
+            editedSpan.textContent = '(edited)';
+            header.appendChild(editedSpan);
+        }
+
         groupContent.appendChild(header);
     }
 
@@ -2257,8 +2542,19 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
 
             const replyDiv = document.createElement('div');
             replyDiv.className = 'message-reply';
-            
-            
+            replyDiv.style.cursor = 'pointer';
+            replyDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const originalMessageEl = document.querySelector(`[data-msg-id="${replyTo.id}"]`);
+                if (originalMessageEl) {
+                    originalMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    originalMessageEl.classList.add('highlight-message');
+                    setTimeout(() => {
+                        originalMessageEl.classList.remove('highlight-message');
+                    }, 2000);
+                }
+            });
+
             const usernameSpan = document.createElement('span');
             usernameSpan.className = 'username';
             usernameSpan.textContent = replyUser.username;
@@ -2268,16 +2564,15 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
                 openAccountModal(replyUser.username);
             });
 
-            
             const contentSpan = document.createElement('span');
             contentSpan.textContent = ": " + (replyTo.content.length > 50 ? replyTo.content.substring(0, 50) + '...' : replyTo.content);
 
             replyDiv.appendChild(getAvatar(replyUser.username));
-            
+
             const replyText = document.createElement('div');
             replyText.appendChild(usernameSpan);
             replyText.appendChild(contentSpan);
-            
+
             replyDiv.appendChild(replyText);
             groupContent.appendChild(replyDiv);
         }
@@ -2306,7 +2601,7 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
     msgText.innerHTML = parseMsg(msg, embedLinks);
 
     if (embedLinks.length === 1 &&
-        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+$/) &&
+        embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i) &&
         msg.content.trim() === embedLinks[0]) {
         msgText.style.display = 'none';
     } else {
@@ -2324,6 +2619,13 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
         hoverTs.className = 'hover-timestamp';
         hoverTs.textContent = formatTimestamp(msg.timestamp);
         groupContent.appendChild(hoverTs);
+
+        if (msg.edited || msg.editedAt) {
+            const editedSpan = document.createElement('span');
+            editedSpan.className = 'edited-indicator';
+            editedSpan.textContent = '(edited)';
+            hoverTs.appendChild(editedSpan);
+        }
     }
 
     msgText.querySelectorAll("pre code").forEach(block => {
@@ -2583,7 +2885,9 @@ function openMessageContextMenu(event, msg) {
         contextMenu.appendChild(el);
     };
 
-    addItem("Edit message", startEditMessage);
+    if (msg.user === state.currentUser?.username) {
+        addItem("Edit message", startEditMessage);
+    }
     addItem("Reply to message", replyToMessage);
     addItem("Add reaction", (msg) => {
         const dummyAnchor = document.createElement('div');
@@ -2596,19 +2900,21 @@ function openMessageContextMenu(event, msg) {
     });
     addItem("Delete message", deleteMessage);
 
-    const menuWidth = 180;
-    const menuHeight = 120;
+    if (!isMobile()) {
+        const menuWidth = 180;
+        const menuHeight = 120;
 
-    let x = event.clientX;
-    let y = event.clientY;
+        let x = event.clientX;
+        let y = event.clientY;
 
-    if (x + menuWidth > window.innerWidth)
-        x = window.innerWidth - menuWidth - 6;
-    if (y + menuHeight > window.innerHeight)
-        y = window.innerHeight - menuHeight - 6;
+        if (x + menuWidth > window.innerWidth)
+            x = window.innerWidth - menuWidth - 6;
+        if (y + menuHeight > window.innerHeight)
+            y = window.innerHeight - menuHeight - 6;
 
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
+        contextMenu.style.left = x + "px";
+        contextMenu.style.top = y + "px";
+    }
     contextMenu.style.display = "block";
 
     contextMenuOpen = true;
@@ -2662,7 +2968,14 @@ function renderMembers(channel) {
         a.username.localeCompare(b.username, undefined, { sensitivity: 'base' })
     );
 
-    if (owners.length > 0 && !ownerSec) {
+    const isDM = state.serverUrl === 'dms.mistium.com';
+
+    if (isDM && ownerSec) {
+        ownerSec.remove();
+        ownerSec = null;
+    }
+
+    if (!isDM && owners.length > 0 && !ownerSec) {
         ownerSec = document.createElement('div');
         ownerSec.className = 'section section-owner';
         const header = document.createElement('h2');
@@ -2689,12 +3002,12 @@ function renderMembers(channel) {
         container.appendChild(offlineSec);
     }
 
-    if (ownerSec) updateSection(ownerSec, owners);
+    if (!isDM && ownerSec) updateSection(ownerSec, owners);
     updateSection(onlineSec, online);
     updateSection(offlineSec, offline);
 
     if (headerSec) container.appendChild(headerSec);
-    if (ownerSec) container.appendChild(ownerSec);
+    if (!isDM && ownerSec) container.appendChild(ownerSec);
     container.appendChild(onlineSec);
     container.appendChild(offlineSec);
 
@@ -2734,25 +3047,55 @@ function renderMembers(channel) {
     }
 }
 
+function replaceShortcodesWithEmojis(text) {
+    if (!window.shortcodeMap) return text;
+    return text.replace(/:\w+:/g, (match) => {
+        return window.shortcodeMap[match] || match;
+    });
+}
 
 function sendMessage() {
     closeMentionPopup();
     
     const input = document.getElementById('message-input');
-    const content = input.value.trim();
+    let content = input.value.trim();
+    content = replaceShortcodesWithEmojis(content);
 
     if (!content || !state.currentChannel) return;
 
-    if (editingMessage) {
+    if (window.editingMessage) {
+        const msgId = window.editingMessage.id;
         wsSend({
             cmd: 'message_edit',
-            id: editingMessage.id,
+            id: msgId,
             channel: state.currentChannel.name,
             content
         }, state.serverUrl);
-        editingMessage = null;
+
+        const msg = state.messages[state.currentChannel.name]?.find(m => m.id === msgId);
+        if (msg) {
+            msg.edited = true;
+            msg.editedAt = Date.now();
+            msg.content = content;
+
+            const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
+            if (wrapper) {
+                const header = wrapper.querySelector('.message-header');
+                if (header) {
+                    let editedIndicator = header.querySelector('.edited-indicator');
+                    if (!editedIndicator) {
+                        editedIndicator = document.createElement('span');
+                        editedIndicator.className = 'edited-indicator';
+                        editedIndicator.textContent = '(edited)';
+                        header.appendChild(editedIndicator);
+                    }
+                }
+            }
+        }
+
+        window.editingMessage = null;
         originalInputValue = '';
-        document.getElementById('reply-bar').classList.remove('active');
+        document.getElementById('reply-bar').classList.remove('active', 'editing-mode');
         input.value = '';
         input.style.height = 'auto';
         return;
@@ -3278,9 +3621,35 @@ function logout() {
     window.location.reload();
 }
 
+let errorBannerTimer = null;
+
 function showError(message) {
-    const container = document.getElementById('messages');
-    container.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+    const banner = document.getElementById('error-banner');
+    const text = document.getElementById('error-text');
+    if (banner && text) {
+        text.textContent = message;
+        banner.classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
+        
+        if (errorBannerTimer) {
+            clearTimeout(errorBannerTimer);
+        }
+        errorBannerTimer = setTimeout(() => {
+            hideErrorBanner();
+            errorBannerTimer = null;
+        }, 5000);
+    }
+}
+
+function hideErrorBanner() {
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+        banner.classList.remove('active');
+    }
+    if (errorBannerTimer) {
+        clearTimeout(errorBannerTimer);
+        errorBannerTimer = null;
+    }
 }
 
 let rateLimitTimer = null;
@@ -3316,4 +3685,62 @@ function showRateLimit(duration) {
             rateLimitText.textContent = `Rate limited for ${secs}s`;
         }
     }, 1000);
+}
+
+function addDMServer(username, channel) {
+    // Check if this DM server already exists
+    const existingIndex = state.dmServers.findIndex(dm => dm.channel === channel);
+    if (existingIndex >= 0) {
+        // Move to top if it already exists
+        const dm = state.dmServers.splice(existingIndex, 1)[0];
+        state.dmServers.unshift(dm);
+        return;
+    }
+    
+    // Add new DM server at the beginning
+    state.dmServers.unshift({
+        username: username,
+        channel: channel,
+        name: username
+    });
+    
+    // Limit to 10 DM servers in sidebar
+    if (state.dmServers.length > 10) {
+        state.dmServers = state.dmServers.slice(0, 10);
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+    
+    renderGuildSidebar();
+}
+
+function showDMContextMenu(event, dmServer) {
+    const menu = document.getElementById('context-menu');
+    menu.innerHTML = '';
+    
+    const removeItem = document.createElement('div');
+    removeItem.className = 'context-menu-item';
+    removeItem.textContent = 'Remove from sidebar';
+    removeItem.onclick = () => {
+        // Remove this DM server from the list
+        state.dmServers = state.dmServers.filter(dm => dm.channel !== dmServer.channel);
+        // Save to localStorage
+        localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+        renderGuildSidebar();
+        menu.style.display = 'none';
+    };
+    
+    menu.appendChild(removeItem);
+    
+    const menuWidth = 180;
+    let x = event.clientX;
+    let y = event.clientY;
+    
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 6;
+    if (y + 100 > window.innerHeight) y = window.innerHeight - 100;
+    
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'block';
 }
