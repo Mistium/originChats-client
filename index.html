@@ -8,36 +8,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>originChats</title>
-    <link rel="manifest"
-        href="data:application/json;base64,eyJuYW1lIjoib3JpZ2luQ2hhdHMiLCJzaG9ydF9uYW1lIjoib3JpZ2luQ2hhdHMiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMDkxMiIsInRoZW1lX2NvbG9yIjoiIzliODdmNSIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnJTNFJTNDcmVjdCBmaWxsPSclMjM5Yjg3ZjUnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJy8lM0UlM0NjaXJjbGUgY3g9JzUwJyBjeT0nNTAnIHI9JzMwJyBmaWxsPSclMjMwYTA5MTInLyUzRSUzQy9zdmclM0UiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 </head>
 
 <body>
-    <div id="auth-screen" class="active">
-        <h1>originChats</h1>
-        <p>Connect to your chat server</p>
-        <input type="text" id="server-url" class="server-input" placeholder="chats.mistium.com"
-            value="chats.mistium.com">
-        <button id="auth-button" class="btn">Connect</button>
-    </div>
-
-    <div id="chat-screen">
+    <div id="chat-screen" class="active">
         <div class="header">
             <div class="menu-btn" onclick="toggleMenu()">
                 <i data-lucide="menu"></i>
             </div>
-            <div class="server-info" onclick="toggleServerDropdown()">
-                <img id="server-icon" class="server-icon" src="" alt="">
+            <div class="server-info">
                 <div class="header-text">
                     <div id="server-name" class="server-name">
                         <span>Loading...</span>
-                        <i id="dropdown-arrow" data-lucide="chevron-down" class="dropdown-arrow"></i>
                     </div>
                     <div id="channel-name" class="channel-name">#general</div>
                 </div>
-                <div id="server-dropdown" class="server-dropdown"></div>
             </div>
             <div class="menu-btn members-toggle" onclick="toggleMembersList()">
                 <i data-lucide="users"></i>
@@ -45,19 +32,44 @@
         </div>
         <div class="overlay" onclick="closeMenu()"></div>
         <div class="content">
+            <div class="guild-sidebar">
+                <div class="guild-list" id="guild-list">
+                    <div class="guild-item home-guild" onclick="showHome()" title="Direct Messages" data-url="dms.mistium.com">
+                        <div class="guild-icon">
+                            <i data-lucide="message-circle"></i>
+                        </div>
+                        <div class="guild-pill"></div>
+                    </div>
+                    <div class="guild-divider"></div>
+                </div>
+                <div class="guild-actions">
+                    <div class="guild-item add-guild" onclick="addNewServer()" title="Add a Server">
+                        <div class="guild-icon">
+                            <i data-lucide="plus"></i>
+                        </div>
+                    </div>
+                    <div class="guild-item discover-guild" onclick="openDiscoveryModal()" title="Discover Servers">
+                        <div class="guild-icon">
+                            <i data-lucide="compass"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div id="channels" class="channels">
                 <div class="channels-list" id="channels-list"></div>
-                <div class="user-section" onclick="toggleUserMenu()">
+                <div class="user-section" onclick="openCurrentUserProfile()">
                     <img id="user-avatar" class="avatar" src="" alt="User">
                     <div class="user-info">
                         <div id="user-username" class="username">Loading...</div>
                         <div class="status">Online</div>
                     </div>
-                    <div id="user-menu" class="user-menu">
-                        <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">
-                            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
-                            <span>Logout</span>
-                        </div>
+                    <div class="user-section-actions">
+                        <button class="user-section-btn" style="display: none;" onclick="event.stopPropagation(); openSettings()" title="Settings">
+                            <i data-lucide="settings"></i>
+                        </button>
+                        <button class="user-section-btn" onclick="event.stopPropagation(); logout()" title="Logout">
+                            <i data-lucide="log-out"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -67,7 +79,7 @@
                 <div class="input-area">
                     <div id="reply-bar" class="reply-bar">
                         <span id="reply-text">Replying to user</span>
-                        <span class="close-reply" onclick="cancelReply()">
+                        <span class="close-reply" onclick="if(window.editingMessage) cancelEdit(); else cancelReply();">
                             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
                         </span>
                     </div>
@@ -83,6 +95,13 @@
                         <button class="send-btn" onclick="sendMessage()">
                             <i data-lucide="send"></i>
                         </button>
+                        <div id="mention-popup" class="mention-popup">
+                            <ul class="mention-list" id="mention-list"></ul>
+                        </div>
+                        <div id="rate-limit-indicator" class="rate-limit-indicator">
+                            <i data-lucide="clock"></i>
+                            <span id="rate-limit-text">Rate limited</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -91,20 +110,45 @@
     </div>
     <div id="context-menu" class="context-menu"></div>
 
-    <!-- Image Modal -->
-    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
-        <div class="image-modal-content" onclick="event.stopPropagation()">
-            <img id="modal-image" src="" alt="Full size">
-            <button class="modal-close-btn" onclick="closeImageModal()">
+    <div id="discovery-modal" class="discovery-modal">
+        <div class="discovery-overlay" onclick="closeDiscoveryModal()"></div>
+        <div class="discovery-container">
+            <button class="discovery-close" onclick="closeDiscoveryModal()">
                 <i data-lucide="x"></i>
             </button>
-            <button id="modal-fav-btn" class="modal-fav-btn" onclick="toggleModalFavorite()">
-                <i data-lucide="star"></i>
-            </button>
+            <div class="discovery-header">
+                <h2>Discover Servers</h2>
+                <p>Find communities to join</p>
+            </div>
+            <div class="discovery-content">
+                <div id="discovery-loading" class="discovery-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading servers...</p>
+                </div>
+                <div id="discovery-error" class="discovery-error">
+                    <i data-lucide="alert-circle"></i>
+                    <p>Failed to load servers</p>
+                </div>
+                <div id="discovery-list" class="discovery-list"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Dependencies must load first -->
+    <div id="account-modal" class="account-modal">
+        <div class="account-overlay" onclick="closeAccountModal()"></div>
+        <div class="account-card">
+            <button class="account-close-btn" onclick="closeAccountModal()">
+                <i data-lucide="x"></i>
+            </button>
+            <div id="account-content">
+                <div class="account-loading">
+                    <div class="account-loading-spinner"></div>
+                    <div class="account-loading-text">Loading profile...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.0/dist/purify.min.js"></script>
 

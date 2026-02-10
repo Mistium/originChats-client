@@ -1,8 +1,3 @@
-/**
- * Detect the type of embed for a given URL
- * @param {string} url
- * @returns {{type: string, videoId?: string, id?: string, url?: string}}
- */
 function detectEmbedType(url) {
     const ytMatch = url.match(YOUTUBE_REGEX);
     if (ytMatch) {
@@ -29,11 +24,6 @@ function detectEmbedType(url) {
     return { type: 'unknown', url };
 }
 
-/**
- * Create an embed element for a URL
- * @param {string} url
- * @returns {Promise<HTMLElement|null>}
- */
 async function createEmbed(url) {
     const embedInfo = detectEmbedType(url);
 
@@ -57,9 +47,6 @@ async function createEmbed(url) {
     }
 }
 
-/**
- * Create a YouTube embed with thumbnail preview
- */
 function createYouTubeEmbed(videoId, originalUrl) {
     const container = document.createElement('div');
     container.className = 'embed-container youtube-embed';
@@ -81,12 +68,14 @@ function createYouTubeEmbed(videoId, originalUrl) {
 
     thumbnail.addEventListener('click', () => {
         container.innerHTML = '';
+        const iframeWrapper = document.createElement('div');
+        iframeWrapper.className = 'youtube-iframe';
         const iframe = document.createElement('iframe');
         iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
         iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
         iframe.allowFullscreen = true;
-        iframe.className = 'youtube-iframe';
-        container.appendChild(iframe);
+        iframeWrapper.appendChild(iframe);
+        container.appendChild(iframeWrapper);
     });
 
     fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(originalUrl)}`)
@@ -105,9 +94,6 @@ function createYouTubeEmbed(videoId, originalUrl) {
     return container;
 }
 
-/**
- * Create a Tenor GIF embed
- */
 async function createTenorEmbed(tenorId, originalUrl) {
     try {
         const response = await fetch(`https://apps.mistium.com/tenor/get?id=${tenorId}`);
@@ -164,9 +150,6 @@ async function createTenorEmbed(tenorId, originalUrl) {
     }
 }
 
-/**
- * Create a video embed
- */
 function createVideoEmbed(url) {
     const container = document.createElement('div');
     container.className = 'embed-container video-embed';
@@ -185,9 +168,6 @@ function createVideoEmbed(url) {
     return container;
 }
 
-/**
- * Create an image embed
- */
 function createImageEmbed(url) {
     const container = document.createElement('div');
     container.className = 'embed-container image-embed';
@@ -252,9 +232,6 @@ function createFavButton(url, preview) {
 
 window.createFavButton = createFavButton;
 
-/**
- * Check if a URL points to an image (with fallback probing)
- */
 async function isImageUrl(url, timeout = 5000) {
     try {
         if (YOUTUBE_REGEX.test(url)) {
