@@ -744,6 +744,10 @@ function renderGuildSidebar() {
             item.appendChild(pill);
             
             item.onclick = () => {
+                state.dmServers = state.dmServers.filter(dm => dm.channel !== dmServer.channel);
+                localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+                renderGuildSidebar();
+                
                 if (state.serverUrl !== 'dms.mistium.com') {
                     switchServer('dms.mistium.com');
                 }
@@ -2423,6 +2427,19 @@ function updateMessageContent(msgId, newContent) {
             editedIndicator.remove();
         }
     }
+    
+    // Re-attach context menu listener
+    msgText.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        // Check if right-clicked on a link
+        const link = e.target.closest('a[href]');
+        if (link && link.href && !link.href.startsWith('javascript:')) {
+            openLinkContextMenu(e, link.href);
+        } else {
+            openMessageContextMenu(e, msg);
+        }
+    });
 }
 
 function removeMessage(msgId) {
@@ -2715,7 +2732,14 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
 
     msgText.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        openMessageContextMenu(e, msg);
+        
+        // Check if right-clicked on a link
+        const link = e.target.closest('a[href]');
+        if (link && link.href && !link.href.startsWith('javascript:')) {
+            openLinkContextMenu(e, link.href);
+        } else {
+            openMessageContextMenu(e, msg);
+        }
     });
 
     groupContent.appendChild(msgText);
@@ -2854,14 +2878,18 @@ function revealBlockedMessage(wrapper, msg) {
     });
 
     renderReactions(msg, groupContent);
-}
-
-function deleteMessage(msg) {
-    wsSend({
-        cmd: 'message_delete',
-        id: msg.id,
-        channel: state.currentChannel.name
-    }, state.serverUrl);
+    
+    // Add context menu listener for blocked message content
+    msgText.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        // Check if right-clicked on a link
+        const link = e.target.closest('a[href]');
+        if (link && link.href && !link.href.startsWith('javascript:')) {
+            openLinkContextMenu(e, link.href);
+        }
+        // No message context menu for blocked messages
+    });
 }
 
 
@@ -2898,7 +2926,13 @@ function openMessageContextMenu(event, msg) {
         openReactionPicker(msg.id, dummyAnchor);
         setTimeout(() => dummyAnchor.remove(), 100);
     });
-    addItem("Delete message", deleteMessage);
+    addItem("Delete message", (msg) => {
+        wsSend({
+            cmd: 'message_delete',
+            id: msg.id,
+            channel: state.currentChannel.name
+        }, state.serverUrl);
+    });
 
     if (!isMobile()) {
         const menuWidth = 180;
@@ -2917,6 +2951,68 @@ function openMessageContextMenu(event, msg) {
     }
     contextMenu.style.display = "block";
 
+    contextMenuOpen = true;
+}
+
+function openLinkContextMenu(event, url) {
+    closeContextMenu();
+    
+    contextMenu.innerHTML = "";
+    
+    const addItem = (label, callback) => {
+        const el = document.createElement("div");
+        el.className = "context-menu-item";
+        el.textContent = label;
+        el.onclick = (e) => {
+            e.stopPropagation();
+            closeContextMenu();
+            callback();
+        };
+        contextMenu.appendChild(el);
+    };
+    
+    addItem("Copy URL", () => {
+        navigator.clipboard.writeText(url).then(() => {
+            console.log('URL copied to clipboard:', url);
+        }).catch(err => {
+            console.error('Failed to copy URL:', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            document.body.removeChild(textArea);
+        });
+    });
+    
+    addItem("Open in new tab", () => {
+        window.open(url, '_blank', 'noopener,noreferrer');
+    });
+    
+    if (!isMobile()) {
+        const menuWidth = 180;
+        const menuHeight = 80;
+        
+        let x = event.clientX;
+        let y = event.clientY;
+        
+        if (x + menuWidth > window.innerWidth)
+            x = window.innerWidth - menuWidth - 6;
+        if (y + menuHeight > window.innerHeight)
+            y = window.innerHeight - menuHeight - 6;
+        
+        contextMenu.style.left = x + "px";
+        contextMenu.style.top = y + "px";
+    }
+    contextMenu.style.display = "block";
+    
     contextMenuOpen = true;
 }
 
