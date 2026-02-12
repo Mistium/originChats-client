@@ -231,6 +231,9 @@ async function uploadImage(file, server) {
     }
 
     let uploadUrl = server.uploadUrl;
+    if (server.id === 'roturphotos') {
+        uploadUrl += '?public=true';
+    }
     let data = null;
 
     data = await uploadImageWithXHR(file, uploadUrl, headers);

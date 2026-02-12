@@ -2456,10 +2456,10 @@ a {
 .gif-results {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 12px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    column-count: 2;
+    column-gap: 12px;
     align-content: start;
 }
 
@@ -2469,7 +2469,9 @@ a {
     border-radius: 8px;
     overflow: hidden;
     width: 100%;
-    aspect-ratio: auto;
+    break-inside: avoid;
+    margin-bottom: 12px;
+    background: var(--surface-light);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -4672,8 +4674,8 @@ body {
 
     .gif-results {
         padding: 16px 12px;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        column-count: 2;
+        column-gap: 12px;
     }
 
     .gif-item-wrapper {
