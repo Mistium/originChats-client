@@ -27,7 +27,13 @@ let state = {
     typingTimeoutsByServer: {},
     _embedCache: {},
     lastChannelByServer: {},
-    dmServers: []
+    dmServers: [],
+    loadingChannelsByServer: {},
+    pendingChannelSelectsByServer: {},
+    pendingMessageFetchesByChannel: {},
+    switchingServer: false,
+    renderInProgress: false,
+    authenticatingByServer: {}
 };
 
 Object.defineProperty(state, 'channels', {
@@ -798,6 +804,7 @@ function renderGuildSidebar() {
                     if (channel) {
                         selectChannel(channel);
                     } else {
+                        state.pendingMessageFetchesByChannel[`dms.mistium.com:${dmServer.channel}`] = true;
                         wsSend({ cmd: 'messages_get', channel: dmServer.channel }, 'dms.mistium.com');
                         const tempChannel = {
                             name: dmServer.channel,
@@ -1212,11 +1219,22 @@ async function joinDiscoveryServer(server) {
 }
 
 function switchServer(url) {
+    if (state.switchingServer) {
+        return;
+    }
+    state.switchingServer = true;
+    const originalUrl = state.serverUrl;
 
     if (state.currentChannel) {
-        state.lastChannelByServer[state.serverUrl] = state.currentChannel.name;
+        state.lastChannelByServer[originalUrl] = state.currentChannel.name;
         localStorage.setItem('originchats_last_channels', JSON.stringify(state.lastChannelByServer));
     }
+
+    Object.keys(state.pendingMessageFetchesByChannel).forEach(key => {
+        if (key.startsWith(`${originalUrl}:`)) {
+            delete state.pendingMessageFetchesByChannel[key];
+        }
+    });
 
     state.serverUrl = url;
     localStorage.setItem('serverUrl', url);
@@ -1250,9 +1268,13 @@ function switchServer(url) {
 
     const channels = state.channels;
     if (channels.length > 0) {
-        const lastChannelName = state.lastChannelByServer[url];
-        const lastChannel = lastChannelName ? channels.find(c => c.name === lastChannelName) : null;
-        selectChannel(lastChannel || channels[0]);
+        if (state.loadingChannelsByServer[url]) {
+            delete state.pendingChannelSelectsByServer[url];
+        } else {
+            const lastChannelName = state.lastChannelByServer[url];
+            const lastChannel = lastChannelName ? channels.find(c => c.name === lastChannelName) : null;
+            selectChannel(lastChannel || channels[0]);
+        }
     } else {
 
         document.getElementById('channel-name').textContent = '';
@@ -1261,6 +1283,8 @@ function switchServer(url) {
 
 
     renderMembers(state.currentChannel);
+
+    state.switchingServer = false;
 }
 
 function saveServer(server) {
@@ -1343,6 +1367,7 @@ function connectToServer(serverUrl) {
         console.error(`WebSocket error for ${url}:`, error);
         wsConnections[url].status = 'error';
         wsStatus[url] = 'error';
+        delete state.authenticatingByServer[url];
         renderGuildSidebar();
         if (state.serverUrl === url) {
             showError('Connection error');
@@ -1353,6 +1378,13 @@ function connectToServer(serverUrl) {
         console.log(`WebSocket closed for ${url}`);
         wsConnections[url].status = 'error';
         wsStatus[url] = 'error';
+        delete state.authenticatingByServer[url];
+        Object.keys(state.pendingMessageFetchesByChannel).forEach(key => {
+            if (key.startsWith(`${url}:`)) {
+                delete state.pendingMessageFetchesByChannel[key];
+            }
+        });
+        delete state.loadingChannelsByServer[url];
         renderGuildSidebar();
 
         if (url === state.serverUrl) {
@@ -1443,15 +1475,22 @@ async function generateValidator(validatorKey) {
 }
 
 async function authenticateServer(serverUrl) {
+    if (state.authenticatingByServer[serverUrl]) {
+        return;
+    }
+    state.authenticatingByServer[serverUrl] = true;
+
     const conn = wsConnections[serverUrl];
     if (!conn || conn.status !== 'connected') {
         console.warn(`Cannot authenticate ${serverUrl}: connection not ready`);
+        delete state.authenticatingByServer[serverUrl];
         return;
     }
 
     const validatorKey = serverValidatorKeys[serverUrl];
     if (!validatorKey) {
         console.error(`No validator key for ${serverUrl}`);
+        delete state.authenticatingByServer[serverUrl];
         return;
     }
 
@@ -1472,7 +1511,7 @@ async function authenticateServer(serverUrl) {
         }
     } catch (error) {
         console.error(`Authentication failed for ${serverUrl}:`, error);
-
+        delete state.authenticatingByServer[serverUrl];
     }
 }
 
@@ -1487,6 +1526,7 @@ async function retryAuthentication(serverUrl) {
 
     if (authRetries[serverUrl] >= maxRetries) {
         console.error(`Max authentication retries reached for ${serverUrl}`);
+        delete state.authenticatingByServer[serverUrl];
 
         if (wsConnections[serverUrl]) {
             wsConnections[serverUrl].status = 'error';
@@ -1579,6 +1619,8 @@ async function handleMessage(msg, serverUrl) {
             break
 
         case 'auth_success':
+            delete state.authenticatingByServer[serverUrl];
+            state.loadingChannelsByServer[serverUrl] = true;
             wsSend({ cmd: 'channels_get' }, serverUrl);
             wsSend({ cmd: 'users_list' }, serverUrl);
             wsSend({ cmd: 'users_online' }, serverUrl);
@@ -1586,12 +1628,21 @@ async function handleMessage(msg, serverUrl) {
 
         case 'channels_get':
             state.channelsByServer[serverUrl] = msg.val;
+            state.loadingChannelsByServer[serverUrl] = false;
             if (state.serverUrl === serverUrl) {
                 renderChannels();
-                if (state.channels.length > 0) {
+                if (!state.currentChannel && state.channels.length > 0) {
                     const lastChannelName = state.lastChannelByServer[serverUrl];
                     const lastChannel = lastChannelName ? state.channels.find(c => c.name === lastChannelName) : null;
                     selectChannel(lastChannel || state.channels[0]);
+                }
+                if (state.pendingChannelSelectsByServer[serverUrl]) {
+                    const pendingChannel = state.pendingChannelSelectsByServer[serverUrl];
+                    delete state.pendingChannelSelectsByServer[serverUrl];
+                    const actualChannel = state.channels.find(c => c.name === pendingChannel.name);
+                    if (actualChannel) {
+                        selectChannel(actualChannel);
+                    }
                 }
             }
             break;
@@ -1645,6 +1696,7 @@ async function handleMessage(msg, serverUrl) {
         case 'messages_get':
             {
                 const ch = msg.channel;
+                const channelKey = `${serverUrl}:${ch}`;
                 if (!state.messagesByServer[serverUrl]) {
                     state.messagesByServer[serverUrl] = {};
                 }
@@ -1700,6 +1752,9 @@ async function handleMessage(msg, serverUrl) {
                     state._olderLoading = false;
                 } else {
                     state.messagesByServer[serverUrl][ch] = msg.messages;
+                    if (state.pendingMessageFetchesByChannel[channelKey]) {
+                        delete state.pendingMessageFetchesByChannel[channelKey];
+                    }
                     if (state.serverUrl === serverUrl && ch === state.currentChannel?.name) {
                         renderMessages();
                     }
@@ -2093,6 +2148,11 @@ function renderChannels() {
 function selectChannel(channel) {
     if (!channel) return;
 
+    const channelKey = `${state.serverUrl}:${channel.name}`;
+    if (state.pendingMessageFetchesByChannel[channelKey]) {
+        return;
+    }
+
     state.currentChannel = channel;
     state._olderStart[channel.name] = 0;
     state._olderCooldown[channel.name] = 0;
@@ -2122,8 +2182,13 @@ function selectChannel(channel) {
         delete state.unreadPings[channel.name];
     }
 
+    Object.keys(state.pendingMessageFetchesByChannel).forEach(key => {
+        if (key !== channelKey && key.startsWith(`${state.serverUrl}:`)) {
+            delete state.pendingMessageFetchesByChannel[key];
+        }
+    });
+
     // Clear unread count for this channel
-    const channelKey = `${state.serverUrl}:${channel.name}`;
     if (state.unreadByChannel[channelKey]) {
         state.unreadCountsByServer[state.serverUrl] = Math.max(0,
             (state.unreadCountsByServer[state.serverUrl] || 0) - state.unreadByChannel[channelKey]
@@ -2142,6 +2207,7 @@ function selectChannel(channel) {
     }
 
     if (!state.messages[channel.name]) {
+        state.pendingMessageFetchesByChannel[channelKey] = true;
         wsSend({ cmd: 'messages_get', channel: channel.name }, state.serverUrl);
     } else {
         renderMessages();
@@ -2262,6 +2328,12 @@ state._olderStart = {};
 state._olderCooldown = {};
 
 async function renderMessages(scrollToBottom = true) {
+    if (state.renderInProgress) {
+        return;
+    }
+
+    state.renderInProgress = true;
+
     const container = document.getElementById("messages");
     const channel = state.currentChannel.name;
     const messages = state.messages[channel] || [];
@@ -2321,11 +2393,13 @@ async function renderMessages(scrollToBottom = true) {
         setTimeout(() => { if (observer) observer.disconnect(); }, 2000);
     }
     updateTypingIndicator();
+    state.renderInProgress = false;
 }
 
 
 
 function appendMessage(msg) {
+    if (!state.currentChannel || state.renderInProgress) return;
     const container = document.getElementById("messages");
     const messages = state.messages[state.currentChannel.name] || [];
 
@@ -3285,6 +3359,8 @@ function setupInfiniteScroll() {
     container.addEventListener('scroll', () => {
         if (state._olderLoading) return;
         if (!state.currentChannel) return;
+        const channelKey = `${state.serverUrl}:${state.currentChannel.name}`;
+        if (state.pendingMessageFetchesByChannel[channelKey]) return;
         if (container.scrollTop <= 10) {
             const ch = state.currentChannel.name;
             const limit = 100;
@@ -4298,3 +4374,30 @@ function showDMContextMenu(event, dmServer) {
     menu.style.top = y + 'px';
     menu.style.display = 'block';
 }
+
+window.addEventListener('focus', function () {
+    const allServerUrls = [...state.servers.map(s => s.url), 'dms.mistium.com'];
+
+    allServerUrls.forEach(url => {
+        const conn = wsConnections[url];
+        if (!conn || conn.status !== 'connected') {
+            connectToServer(url);
+        }
+    });
+
+    setTimeout(() => {
+        allServerUrls.forEach(url => {
+            const conn = wsConnections[url];
+            if (conn && conn.status === 'connected') {
+                const channels = state.channelsByServer[url] || [];
+                channels.forEach(channel => {
+                    const channelKey = `${url}:${channel.name}`;
+                    if (state.messagesByServer[url] && state.messagesByServer[url][channel.name] && !state.pendingMessageFetchesByChannel[channelKey]) {
+                        state.pendingMessageFetchesByChannel[channelKey] = true;
+                        wsSend({ cmd: 'messages_get', channel: channel.name }, url);
+                    }
+                });
+            }
+        });
+    }, 500);
+});
