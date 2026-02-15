@@ -1,5 +1,5 @@
 function replaceShortcodes(text) {
-    return text.replace(/:[a-z0-9_]+:|[:;xX]['()D]|xD|XD/g, match => {
+    return text.replace(/:[a-z0-9_]+:|/g, match => {
         return shortcodeMap[match] || match;
     });
 }

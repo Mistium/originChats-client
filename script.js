@@ -35,7 +35,10 @@ let state = {
     switchingServer: false,
     renderInProgress: false,
     authenticatingByServer: {},
-    pendingReplyFetches: {}
+    pendingReplyFetches: {},
+    friends: [],
+    friendRequests: [],
+    blockedUsers: []
 };
 
 const pendingReplyTimeouts = {};
@@ -381,15 +384,20 @@ function toggleMenu() {
     const channels = document.getElementById('channels');
     const guildSidebar = document.querySelector('.guild-sidebar');
     const overlay = document.querySelector('.overlay');
+    const chatScreen = document.getElementById('chat-screen');
     channels.classList.toggle('open');
     guildSidebar.classList.toggle('open');
     overlay.classList.toggle('active');
+    chatScreen.classList.toggle('overlay-active');
 }
 
 function toggleMembersList() {
     const membersList = document.getElementById('members-list');
+    const overlay = document.querySelector('.overlay');
+    const chatScreen = document.getElementById('chat-screen');
     membersList.classList.toggle('open');
-    document.querySelector('.overlay').classList.toggle('active');
+    overlay.classList.toggle('active');
+    chatScreen.classList.toggle('overlay-active');
 }
 
 function closeMenu() {
@@ -397,6 +405,7 @@ function closeMenu() {
     document.querySelector('.guild-sidebar').classList.remove('open');
     document.getElementById('members-list').classList.remove('open');
     document.querySelector('.overlay').classList.remove('active');
+    document.getElementById('chat-screen').classList.remove('overlay-active');
 }
 
 
@@ -523,6 +532,251 @@ async function fetchAccountProfile(username) {
         `;
     }
 }
+async function fetchMyAccountData() {
+    try {
+        const response = await fetch(`https://api.rotur.dev/me?auth=${encodeURIComponent(state.token)}`);
+
+        if (response.ok) {
+            const data = await response.json();
+            state.friends = data['sys.friends'] || [];
+            state.friendRequests = data['sys.requests'] || [];
+            state.blockedUsers = data['sys.blocked'] || [];
+            renderDMTabContent(currentDMTab);
+        }
+    } catch (error) {
+        console.error('Failed to fetch account data:', error);
+    }
+}
+
+let currentDMTab = 'friends';
+
+function switchDMTab(tab) {
+    currentDMTab = tab;
+    const tabs = document.querySelectorAll('.dm-tab');
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+
+    const dmFriendsContainer = document.getElementById('dm-friends-container');
+    const messagesEl = document.getElementById('messages');
+    if (dmFriendsContainer) dmFriendsContainer.style.display = 'block';
+    if (messagesEl) messagesEl.style.display = 'none';
+
+    renderDMTabContent(tab);
+}
+
+function renderDMTabContent(tab) {
+    const dmFriendsContainer = document.getElementById('dm-friends-container');
+    if (!dmFriendsContainer) return;
+
+    dmFriendsContainer.innerHTML = '';
+
+    const tabTitle = document.createElement('div');
+    tabTitle.className = 'dm-section-title';
+    tabTitle.style.cssText = 'font-weight: 600; color: var(--text-dim); font-size: 12px; padding: 16px 20px 8px 20px; text-transform: uppercase; letter-spacing: 0.5px;';
+
+    if (tab === 'friends') {
+        tabTitle.textContent = 'FRIENDS';
+        dmFriendsContainer.appendChild(tabTitle);
+
+        if (state.friends.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.style.cssText = 'padding: 16px 20px; color: var(--text-dim); font-size: 14px;';
+            emptyState.textContent = 'No friends yet';
+            dmFriendsContainer.appendChild(emptyState);
+            return;
+        }
+
+        state.friends.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const dmButton = document.createElement('button');
+            dmButton.className = 'dm-action-btn';
+            dmButton.title = 'Open DM';
+            dmButton.style.cssText = 'background: var(--surface-light); border: none; color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            dmButton.innerHTML = '<i data-lucide="message-square" style="width: 18px; height: 18px;"></i>';
+            dmButton.onclick = (e) => {
+                e.stopPropagation();
+                openDM(username);
+            };
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(dmButton);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            dmFriendsContainer.appendChild(item);
+        });
+    } else if (tab === 'requests') {
+        tabTitle.textContent = 'FRIEND REQUESTS';
+        dmFriendsContainer.appendChild(tabTitle);
+
+        if (state.friendRequests.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.style.cssText = 'padding: 16px 20px; color: var(--text-dim); font-size: 14px;';
+            emptyState.textContent = 'No pending requests';
+            dmFriendsContainer.appendChild(emptyState);
+            return;
+        }
+
+        state.friendRequests.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const actionButtons = document.createElement('div');
+            actionButtons.style.cssText = 'display: flex; gap: 8px;';
+
+            const acceptButton = document.createElement('button');
+            acceptButton.className = 'dm-action-btn accept-btn';
+            acceptButton.title = 'Accept';
+            acceptButton.style.cssText = 'background: var(--success); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            acceptButton.innerHTML = '<i data-lucide="check" style="width: 18px; height: 18px;"></i>';
+            acceptButton.onclick = (e) => {
+                e.stopPropagation();
+                acceptFriendRequest(username);
+            };
+
+            const rejectButton = document.createElement('button');
+            rejectButton.className = 'dm-action-btn reject-btn';
+            rejectButton.title = 'Reject';
+            rejectButton.style.cssText = 'background: var(--danger); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            rejectButton.innerHTML = '<i data-lucide="x" style="width: 18px; height: 18px;"></i>';
+            rejectButton.onclick = (e) => {
+                e.stopPropagation();
+                rejectFriendRequest(username);
+            };
+
+            actionButtons.appendChild(acceptButton);
+            actionButtons.appendChild(rejectButton);
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(actionButtons);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            dmFriendsContainer.appendChild(item);
+        });
+    } else if (tab === 'blocked') {
+        tabTitle.textContent = 'BLOCKED USERS';
+        dmFriendsContainer.appendChild(tabTitle);
+
+        if (state.blockedUsers.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.style.cssText = 'padding: 16px 20px; color: var(--text-dim); font-size: 14px;';
+            emptyState.textContent = 'No blocked users';
+            dmFriendsContainer.appendChild(emptyState);
+            return;
+        }
+
+        state.blockedUsers.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const unblockButton = document.createElement('button');
+            unblockButton.className = 'dm-action-btn unblock-btn';
+            unblockButton.title = 'Unblock';
+            unblockButton.style.cssText = 'background: var(--surface-light); border: none; color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            unblockButton.innerHTML = '<i data-lucide="unlock" style="width: 18px; height: 18px;"></i>';
+            unblockButton.onclick = (e) => {
+                e.stopPropagation();
+                unblockUser(username);
+            };
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(unblockButton);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            dmFriendsContainer.appendChild(item);
+        });
+    }
+
+    if (window.lucide) window.lucide.createIcons({ root: dmFriendsContainer });
+}
+
+function openDM(username) {
+    if (state.serverUrl !== 'dms.mistium.com') {
+        switchServer('dms.mistium.com');
+    }
+
+    setTimeout(() => {
+        const cmdsChannel = state.channels.find(c => c.name === 'cmds');
+        if (cmdsChannel) {
+            wsSend({ cmd: 'message_new', content: `dm add ${username}`, channel: 'cmds' }, 'dms.mistium.com');
+        }
+    }, 100);
+}
+
+async function acceptFriendRequest(username) {
+    try {
+        const response = await fetch(`https://api.rotur.dev/friends/accept/${encodeURIComponent(username)}?auth=${encodeURIComponent(state.token)}`);
+        if (response.ok) {
+            await fetchMyAccountData();
+            renderDMTabContent('requests');
+        }
+    } catch (error) {
+        console.error('Failed to accept friend request:', error);
+    }
+}
+
+async function rejectFriendRequest(username) {
+    try {
+        const response = await fetch(`https://api.rotur.dev/friends/reject/${encodeURIComponent(username)}?auth=${encodeURIComponent(state.token)}`);
+        if (response.ok) {
+            await fetchMyAccountData();
+            renderDMTabContent('requests');
+        }
+    } catch (error) {
+        console.error('Failed to reject friend request:', error);
+    }
+}
+
+async function unblockUser(username) {
+    try {
+        const response = await fetch(`https://api.rotur.dev/me/unblock/${encodeURIComponent(username)}?auth=${encodeURIComponent(state.token)}`);
+        if (response.ok) {
+            await fetchMyAccountData();
+            renderDMTabContent('blocked');
+        }
+    } catch (error) {
+        console.error('Failed to unblock user:', error);
+    }
+}
 
 function renderAccountProfile(data) {
     const content = document.getElementById('account-content');
@@ -542,7 +796,7 @@ function renderAccountProfile(data) {
     const avatarSrc = data.pfp;
     const isCurrentUser = state.currentUser && state.currentUser.username === data.username;
     const isDM = state.serverUrl === 'dms.mistium.com';
-    
+
     let userRoles = [];
     if (!isDM) {
         const serverUser = getUserByUsernameCaseInsensitive(data.username, state.serverUrl);
@@ -696,6 +950,11 @@ window.updateAccountProfileStatusIndicator = updateAccountProfileStatusIndicator
 window.openDiscoveryModal = openDiscoveryModal;
 window.closeDiscoveryModal = closeDiscoveryModal;
 window.loadDiscoveryServers = loadDiscoveryServers;
+window.switchDMTab = switchDMTab;
+window.openDM = openDM;
+window.acceptFriendRequest = acceptFriendRequest;
+window.rejectFriendRequest = rejectFriendRequest;
+window.unblockUser = unblockUser;
 
 function toggleServerDropdown() {
     const dropdown = document.getElementById('server-dropdown');
@@ -739,8 +998,13 @@ function renderGuildSidebar() {
 
 
     const homeGuild = guildList.querySelector('.home-guild');
-    const divider = guildList.querySelector('.guild-divider');
     guildList.innerHTML = '';
+
+    const addGuildSeperator = () => {
+        const addActionDivider = document.createElement('div');
+        addActionDivider.className = 'guild-divider';
+        guildList.appendChild(addActionDivider);
+    }
 
     if (homeGuild) {
 
@@ -769,7 +1033,7 @@ function renderGuildSidebar() {
                 warningIcon.style.justifyContent = 'center';
                 warningIcon.style.zIndex = '2';
                 homeIcon.style.position = 'relative';
-                homeIcon.appendChild(warningIcon);
+                homeGuild.appendChild(warningIcon);
             }
         } else {
             homeGuild.classList.remove('server-error');
@@ -888,8 +1152,7 @@ function renderGuildSidebar() {
         guildList.appendChild(dmDivider);
     }
 
-    if (divider) guildList.appendChild(divider);
-
+    addGuildSeperator();
 
     state.servers.forEach((server, index) => {
         const item = document.createElement('div');
@@ -985,7 +1248,7 @@ function renderGuildSidebar() {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             item.classList.add('drag-over');
-});
+        });
 
         item.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -1015,6 +1278,31 @@ function renderGuildSidebar() {
         guildList.appendChild(item);
     });
 
+
+    addGuildSeperator();
+
+
+    const addGuildButton = document.createElement('div');
+    addGuildButton.className = 'guild-item add-guild';
+    addGuildButton.onclick = addNewServer;
+    addGuildButton.title = 'Add a Server';
+    const addGuildIcon = document.createElement('div');
+    addGuildIcon.className = 'guild-icon';
+    addGuildIcon.innerHTML = '<i data-lucide="plus"></i>';
+    addGuildButton.appendChild(addGuildIcon);
+    guildList.appendChild(addGuildButton);
+
+
+    const discoverGuildButton = document.createElement('div');
+    discoverGuildButton.className = 'guild-item discover-guild';
+    discoverGuildButton.onclick = openDiscoveryModal;
+    discoverGuildButton.title = 'Discover Servers';
+    const discoverGuildIcon = document.createElement('div');
+    discoverGuildIcon.className = 'guild-icon';
+    discoverGuildIcon.innerHTML = '<i data-lucide="compass"></i>';
+    discoverGuildButton.appendChild(discoverGuildIcon);
+    guildList.appendChild(discoverGuildButton);
+
     if (window.lucide) window.lucide.createIcons({ root: guildList });
 }
 
@@ -1028,7 +1316,7 @@ function showGuildContextMenu(event, server) {
 
     const copyUrlItem = document.createElement('div');
     copyUrlItem.className = 'context-menu-item';
-    copyUrlItem.textContent = 'Copy URL';
+    copyUrlItem.innerHTML = '<i data-lucide="copy"></i><span>Copy URL</span>';
     copyUrlItem.onclick = () => {
         navigator.clipboard.writeText(server.url);
         closeContextMenu();
@@ -1036,7 +1324,7 @@ function showGuildContextMenu(event, server) {
 
     const leaveItem = document.createElement('div');
     leaveItem.className = 'context-menu-item danger';
-    leaveItem.textContent = 'Leave Server';
+    leaveItem.innerHTML = '<i data-lucide="log-out"></i><span>Leave Server</span>';
     leaveItem.onclick = () => {
         leaveServer(server.url);
         closeContextMenu();
@@ -1046,7 +1334,7 @@ function showGuildContextMenu(event, server) {
     menu.appendChild(leaveItem);
 
     if (!isMobile()) {
-        const menuWidth = 150;
+        const menuWidth = 200;
         let x = event.clientX;
         let y = event.clientY;
 
@@ -1057,6 +1345,10 @@ function showGuildContextMenu(event, server) {
         menu.style.top = y + 'px';
     }
     menu.style.display = 'block';
+
+    if (window.lucide) {
+        window.lucide.createIcons({ root: menu });
+    }
 
     if (typeof contextMenuOpen !== 'undefined') {
         contextMenuOpen = true;
@@ -1323,12 +1615,37 @@ function switchServer(url) {
     const serverName = server ? server.name : (url === 'dms.mistium.com' ? 'Direct Messages' : url);
     document.getElementById('server-name').innerHTML = `<span>${serverName}</span>`;
 
+    let channelHeaderName = document.getElementById('channel-header-name');
+    const serverChannelHeader = document.getElementById('server-channel-header');
+
+    if (url === 'dms.mistium.com') {
+        // Hide entire header on DMs server
+        if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+        fetchMyAccountData();
+        selectHomeChannel();
+        const dmFriendsContainer = document.getElementById('dm-friends-container');
+        const messagesEl = document.getElementById('messages');
+        if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+        if (messagesEl) messagesEl.style.display = 'none';
+    } else {
+        if (serverChannelHeader) serverChannelHeader.style.display = 'flex';
+        if (channelHeaderName) channelHeaderName.parentElement.style.display = 'flex';
+        const addBtn = document.getElementById('channel-add-btn');
+        if (addBtn) addBtn.style.display = 'none';
+        const dmFriendsContainer = document.getElementById('dm-friends-container');
+        const messagesEl = document.getElementById('messages');
+        if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+        if (messagesEl) messagesEl.style.display = 'flex';
+
+        if (channelHeaderName) channelHeaderName.textContent = serverName;
+    }
+
 
     renderChannels();
 
 
     const channels = state.channels;
-    if (channels.length > 0) {
+    if (channels.length > 0 && url !== 'dms.mistium.com') {
         if (state.loadingChannelsByServer[url]) {
             delete state.pendingChannelSelectsByServer[url];
         } else {
@@ -1338,7 +1655,7 @@ function switchServer(url) {
                 selectChannel(lastChannel || channels[0]);
             }
         }
-    } else {
+    } else if (url !== 'dms.mistium.com') {
 
         document.getElementById('channel-name').textContent = '';
         document.getElementById('messages').innerHTML = '';
@@ -1663,7 +1980,7 @@ async function retryAuthentication(serverUrl) {
 const pingRegex = /@[^ ,.\W]+([ \n]|$)/g
 
 async function handleMessage(msg, serverUrl) {
-    switch (msg.cmd) {
+    switch (msg.cmd || msg.type) {
         case 'handshake':
             if (!state.channelsByServer[serverUrl]) {
                 state.channelsByServer[serverUrl] = [];
@@ -1699,12 +2016,21 @@ async function handleMessage(msg, serverUrl) {
 
             saveServer(state.server);
 
+            const serverChannelHeader = document.getElementById('server-channel-header');
+            let channelHeaderName = document.getElementById('channel-header-name');
 
-            document.getElementById('server-name').innerHTML = `<span>${state.server.name}</span>`;
+            if (serverUrl === 'dms.mistium.com') {
+                if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+                fetchMyAccountData();
+            } else {
+                const dmFriendsContainer = document.getElementById('dm-friends-container');
+                const messagesEl = document.getElementById('messages');
+                if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+                if (messagesEl) messagesEl.style.display = 'flex';
+            }
 
 
             renderGuildSidebar();
-
 
             updateGuildActiveState();
 
@@ -1723,6 +2049,12 @@ async function handleMessage(msg, serverUrl) {
                 state.usersByServer[serverUrl][msg.user.username] = msg.user;
             }
             updateUserSection();
+
+            if (serverUrl === 'dms.mistium.com' && state.currentChannel?.name === 'relationships') {
+                fetchMyAccountData().then(() => {
+                    renderDMTabContent(currentDMTab);
+                });
+            }
 
             authRetries[serverUrl] = 0;
             if (authRetryTimeouts[serverUrl]) {
@@ -1749,12 +2081,17 @@ async function handleMessage(msg, serverUrl) {
             state.loadingChannelsByServer[serverUrl] = false;
             if (state.serverUrl === serverUrl) {
                 renderChannels();
-                if (!state.currentChannel && state.channels.length > 0) {
+                if (!state.currentChannel && state.channels.length > 0 && serverUrl !== 'dms.mistium.com') {
                     const lastChannelName = state.lastChannelByServer[serverUrl];
                     const lastChannel = lastChannelName ? state.channels.find(c => c.name === lastChannelName) : null;
                     selectChannel(lastChannel || state.channels[0]);
                 }
-                if (state.pendingChannelSelectsByServer[serverUrl]) {
+                if (serverUrl === 'dms.mistium.com' && !state.currentChannel) {
+                    if (isMobile()) {
+                        selectHomeChannel();
+                    }
+                }
+                if (state.pendingChannelSelectsByServer[serverUrl] && serverUrl !== 'dms.mistium.com') {
                     const pendingChannel = state.pendingChannelSelectsByServer[serverUrl];
                     delete state.pendingChannelSelectsByServer[serverUrl];
                     const actualChannel = state.channels.find(c => c.name === pendingChannel.name);
@@ -2005,7 +2342,7 @@ async function handleMessage(msg, serverUrl) {
                         existingEl.style.cursor = 'pointer';
                         existingEl.innerHTML = '';
 
-                        const avatar = getAvatar(replyUser.username);
+                        const avatar = getAvatar(replyUser.username, 'small');
                         existingEl.appendChild(avatar);
 
                         const replyText = document.createElement('div');
@@ -2128,7 +2465,7 @@ async function handleMessage(msg, serverUrl) {
             break;
 
         case 'error':
-            if (msg.src === 'message_get') break;o
+            if (msg.src === 'message_get') break; o
             showError(msg.val);
             break;
         case 'auth_error':
@@ -2173,6 +2510,21 @@ async function handleMessage(msg, serverUrl) {
             }
             break;
         }
+        case 'voice_user_joined':
+            if (voiceManager) {
+                voiceManager.handleUserJoined(msg);
+            }
+            break;
+        case 'voice_user_left':
+            if (voiceManager) {
+                voiceManager.handleUserLeft(msg);
+            }
+            break;
+        case 'voice_user_updated':
+            if (voiceManager) {
+                voiceManager.handleUserUpdated(msg);
+            }
+            break;
     }
 }
 
@@ -2254,87 +2606,6 @@ function updateChannelListTyping(channelName) {
     }
 }
 
-function renderChannels() {
-    const container = document.getElementById('channels-list');
-    if (!container) return;
-
-    console.log('renderChannels called, unreadByChannel:', state.unreadByChannel);
-    container.innerHTML = '';
-
-    for (let i = 0; i < state.channels.length; i++) {
-        const channel = state.channels[i];
-        if (!checkPermission(channel.permissions?.view, state.currentUser.roles)) continue;
-        if (channel.type === 'text') {
-            const div = document.createElement('div');
-            div.className = 'channel-item';
-            const hash = document.createElement('span');
-            hash.textContent = '# ';
-            hash.style.color = 'var(--text-dim)';
-            div.appendChild(hash);
-            if (channel.icon) {
-                const icon = document.createElement('img');
-                icon.src = channel.icon;
-                icon.style.width = '25px';
-                icon.style.height = '25px';
-                icon.style.marginRight = '4px';
-                icon.style.borderRadius = '50%';
-                icon.style.objectFit = 'contain';
-                div.appendChild(icon);
-            }
-            const name = document.createElement('span');
-            name.textContent = getChannelDisplayName(channel);
-            name.dataset.channelName = channel.name;
-
-            const channelKey = `${state.serverUrl}:${channel.name}`;
-            const hasUnread = state.unreadByChannel[channelKey] > 0;
-            const hasPings = state.unreadPings[channel.name] > 0;
-
-            if (hasUnread || hasPings) {
-                if (hasUnread) {
-                    console.log(`Channel ${channel.name} has ${state.unreadByChannel[channelKey]} unread messages`);
-                }
-                name.style.fontWeight = '600';
-                name.style.color = 'var(--text)';
-            }
-
-            div.appendChild(name);
-
-            if (hasPings) {
-                const badge = document.createElement('span');
-                badge.className = 'ping-badge';
-                badge.textContent = state.unreadPings[channel.name];
-                div.appendChild(badge);
-            } else if (hasUnread) {
-                const unreadIndicator = document.createElement('span');
-                unreadIndicator.className = 'unread-indicator';
-                div.appendChild(unreadIndicator);
-            }
-
-            const typingMap = state.typingUsers[channel.name];
-            if (typingMap && typingMap.size > 0) {
-                const typingInd = document.createElement('div');
-                typingInd.className = 'channel-typing-indicator';
-                typingInd.innerHTML = `
-                    <div class="channel-typing-dot"></div>
-                    <div class="channel-typing-dot"></div>
-                    <div class="channel-typing-dot"></div>
-                `;
-                div.appendChild(typingInd);
-            }
-            div.onclick = () => {
-                selectChannel(channel);
-                closeMenu();
-            };
-            if (i === 0) div.classList.add('active');
-            container.appendChild(div);
-        } else if (channel.type === 'separator') {
-            const div = document.createElement('div');
-            div.className = 'channel-separator';
-            div.style.height = (channel.size || 20) + 'px';
-            container.appendChild(div);
-        }
-    };
-}
 
 function selectChannel(channel) {
     if (!channel) return;
@@ -2351,6 +2622,12 @@ function selectChannel(channel) {
         return;
     }
 
+    if (state.serverUrl === 'dms.mistium.com' && channel.name === 'cmds') {
+        console.log('Redirecting from cmds to Home channel');
+        selectHomeChannel();
+        return;
+    }
+
     state.currentChannel = channel;
     state._olderStart[channel.name] = 0;
     state._olderCooldown[channel.name] = 0;
@@ -2361,6 +2638,28 @@ function selectChannel(channel) {
 
     const messagesContainer = document.getElementById('messages');
     messagesContainer.innerHTML = '<div class="loading-throbber"></div>';
+    messagesContainer.style.display = 'flex';
+
+    const dmFriendsContainer = document.getElementById('dm-friends-container');
+    if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+
+    const inputArea = document.querySelector('.input-area');
+    if (inputArea) inputArea.style.display = 'flex';
+
+    const serverChannelHeader = document.getElementById('server-channel-header');
+    const membersList = document.getElementById('members-list');
+
+    const isExcludedChannel = channel.name === 'home' || channel.name === 'relationships';
+
+    // Hide server channel header on DMs server
+    if (state.serverUrl === 'dms.mistium.com') {
+        if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+    }
+
+    // Only hide members list for home/relationships, show for regular DM channels
+    if (membersList) {
+        membersList.style.display = isExcludedChannel ? 'none' : '';
+    }
 
     const channelNameEl = document.getElementById('channel-name');
     channelNameEl.innerHTML = '';
@@ -2423,6 +2722,484 @@ function selectChannel(channel) {
     textbox.value = "";
     textbox.placeholder = textboxFlavor;
     textbox.disabled = !window.canSendMessages;
+}
+
+function selectHomeChannel() {
+    state.currentChannel = { name: 'home', display_name: 'Home' };
+
+    const channelNameEl = document.getElementById('channel-name');
+    channelNameEl.innerHTML = '';
+    const hash = document.createTextNode('#');
+    channelNameEl.appendChild(hash);
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'home');
+    icon.style.width = '16px';
+    icon.style.height = '16px';
+    icon.style.margin = '0 4px';
+    icon.style.color = 'var(--text-dim)';
+    channelNameEl.appendChild(icon);
+    const name = document.createTextNode('Home');
+    channelNameEl.appendChild(name);
+
+    if (window.lucide) window.lucide.createIcons({ root: channelNameEl });
+
+    const serverChannelHeader = document.getElementById('server-channel-header');
+
+    // Hide entire header on DMs server
+    if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+
+    const messagesEl = document.getElementById('messages');
+    messagesEl.style.display = 'none';
+
+    const typingEl = document.getElementById('typing');
+    if (typingEl) typingEl.style.display = 'none';
+
+    const membersList = document.getElementById('members-list');
+    if (membersList) {
+        membersList.innerHTML = '';
+        membersList.classList.remove('open');
+        membersList.style.display = 'none';
+    }
+
+    const inputArea = document.querySelector('.input-area');
+    if (inputArea) inputArea.style.display = 'none';
+
+    const dmFriendsContainer = document.getElementById('dm-friends-container');
+    if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+
+    renderHomeContent();
+
+    renderChannels();
+
+    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+    const homeItem = Array.from(document.querySelectorAll('.channel-item')).find(el => {
+        const nameEl = el.querySelector('[data-channel-name]');
+        return nameEl && nameEl.dataset.channelName === 'home';
+    });
+    if (homeItem) homeItem.classList.add('active');
+}
+
+function renderHomeContent() {
+    const messagesEl = document.getElementById('messages');
+    messagesEl.style.display = 'block';
+    messagesEl.innerHTML = '';
+
+    const content = document.createElement('div');
+    content.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 40px 20px;';
+
+    const welcomeIcon = document.createElement('i');
+    welcomeIcon.setAttribute('data-lucide', 'home');
+    welcomeIcon.style.cssText = 'width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.5;';
+    content.appendChild(welcomeIcon);
+
+    const welcomeText = document.createElement('h2');
+    welcomeText.textContent = 'Welcome Home';
+    welcomeText.style.cssText = 'font-size: 28px; font-weight: 600; margin-bottom: 8px; color: var(--text);';
+    content.appendChild(welcomeText);
+
+    const subtitle = document.createElement('p');
+    subtitle.textContent = 'What would you like to do?';
+    subtitle.style.cssText = 'font-size: 14px; color: var(--text-dim); margin-bottom: 40px;';
+    content.appendChild(subtitle);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 600px;';
+
+    const options = [
+        {
+            icon: 'users',
+            title: 'Manage Relationships',
+            description: 'View and manage your friends',
+            action: () => selectRelationshipsChannel()
+        },
+        {
+            icon: 'user-plus',
+            title: 'Create DM',
+            description: 'Start a new conversation',
+            action: () => {
+                openDMCreateModal();
+                switchDMCreateTab('dm');
+            }
+        },
+        {
+            icon: 'users',
+            title: 'Create Group',
+            description: 'Start a group conversation',
+            action: () => {
+                openDMCreateModal();
+                switchDMCreateTab('group');
+            }
+        },
+        {
+            icon: 'plus-circle',
+            title: 'Join Server',
+            description: 'Connect to a new server',
+            action: () => {
+                const serverUrl = prompt('Enter server URL to join:');
+                if (serverUrl && serverUrl.trim()) {
+                    addServer(serverUrl.trim());
+                }
+            }
+        }
+    ];
+
+    options.forEach(option => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: #2f3136; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; border: 1px solid #40444b; display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 120px;';
+
+        card.onmouseenter = () => {
+            card.style.borderColor = 'var(--primary)';
+            card.style.transform = 'translateY(-2px)';
+        };
+        card.onmouseleave = () => {
+            card.style.borderColor = '#40444b';
+            card.style.transform = 'translateY(0)';
+        };
+        card.onclick = option.action;
+
+        const iconWrapper = document.createElement('div');
+        iconWrapper.style.cssText = 'width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;';
+
+        const icon = document.createElement('i');
+        icon.setAttribute('data-lucide', option.icon);
+        icon.style.cssText = 'width: 20px; height: 20px; color: var(--text);';
+        iconWrapper.appendChild(icon);
+
+        const title = document.createElement('h3');
+        title.textContent = option.title;
+        title.style.cssText = 'font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px;';
+
+        const description = document.createElement('p');
+        description.textContent = option.description;
+        description.style.cssText = 'font-size: 13px; color: var(--text-dim); margin: 0;';
+
+        card.appendChild(iconWrapper);
+        card.appendChild(title);
+        card.appendChild(description);
+        grid.appendChild(card);
+    });
+
+    content.appendChild(grid);
+    messagesEl.appendChild(content);
+
+    if (window.lucide) window.lucide.createIcons({ root: content });
+}
+
+function selectRelationshipsChannel() {
+    state.currentChannel = { name: 'relationships', display_name: 'Relationships' };
+
+    const channelNameEl = document.getElementById('channel-name');
+    channelNameEl.innerHTML = '';
+    const hash = document.createTextNode('#');
+    channelNameEl.appendChild(hash);
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'users');
+    icon.style.width = '16px';
+    icon.style.height = '16px';
+    icon.style.margin = '0 4px';
+    icon.style.color = 'var(--text-dim)';
+    channelNameEl.appendChild(icon);
+    const name = document.createTextNode('Relationships');
+    channelNameEl.appendChild(name);
+
+    if (window.lucide) window.lucide.createIcons({ root: channelNameEl });
+
+    const serverChannelHeader = document.getElementById('server-channel-header');
+
+    // Hide entire header on DMs server
+    if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+
+    const messagesEl = document.getElementById('messages');
+    messagesEl.style.display = 'none';
+
+    const typingEl = document.getElementById('typing');
+    if (typingEl) typingEl.style.display = 'none';
+
+    const membersList = document.getElementById('members-list');
+    if (membersList) {
+        membersList.innerHTML = '';
+        membersList.classList.remove('open');
+        membersList.style.display = 'none';
+    }
+
+    const inputArea = document.querySelector('.input-area');
+    if (inputArea) inputArea.style.display = 'none';
+
+    renderDMRelationshipsContent();
+
+    renderChannels();
+
+    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+    const relItem = Array.from(document.querySelectorAll('.channel-item')).find(el => {
+        const nameEl = el.querySelector('[data-channel-name]');
+        return nameEl && nameEl.dataset.channelName === 'relationships';
+    });
+    if (relItem) relItem.classList.add('active');
+}
+
+function renderDMRelationshipsContent() {
+    const dmFriendsContainer = document.getElementById('dm-friends-container');
+    if (!dmFriendsContainer) return;
+
+    dmFriendsContainer.innerHTML = '';
+    dmFriendsContainer.style.display = 'flex';
+    dmFriendsContainer.style.flexDirection = 'column';
+
+    const tabs = document.createElement('div');
+    tabs.className = 'dm-relationships-tabs';
+    tabs.style.cssText = 'display: flex; gap: 8px; padding: 16px 20px 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px;';
+
+    const friendsTab = document.createElement('button');
+    friendsTab.className = 'dm-tab ' + (currentDMTab === 'friends' ? 'active' : '');
+    friendsTab.textContent = 'Friends';
+    friendsTab.onclick = () => {
+        currentDMTab = 'friends';
+        updateTabsActive();
+        renderDMTabContent('friends');
+    };
+
+    const requestsTab = document.createElement('button');
+    requestsTab.className = 'dm-tab ' + (currentDMTab === 'requests' ? 'active' : '');
+    requestsTab.textContent = 'Requests';
+    requestsTab.onclick = () => {
+        currentDMTab = 'requests';
+        updateTabsActive();
+        renderDMTabContent('requests');
+    };
+
+    const blockedTab = document.createElement('button');
+    blockedTab.className = 'dm-tab ' + (currentDMTab === 'blocked' ? 'active' : '');
+    blockedTab.textContent = 'Blocked';
+    blockedTab.onclick = () => {
+        currentDMTab = 'blocked';
+        updateTabsActive();
+        renderDMTabContent('blocked');
+    };
+
+    tabs.appendChild(friendsTab);
+    tabs.appendChild(requestsTab);
+    tabs.appendChild(blockedTab);
+
+    const content = document.createElement('div');
+    content.className = 'dm-relationships-content';
+    content.style.cssText = 'flex: 1; overflow-y: auto; padding: 8px 0;';
+
+    dmFriendsContainer.appendChild(tabs);
+    dmFriendsContainer.appendChild(content);
+
+    renderDMTabContent(currentDMTab);
+}
+
+function updateTabsActive() {
+    const tabs = document.querySelectorAll('.dm-relationships-tabs .dm-tab');
+    tabs.forEach(tab => {
+        if (tab.textContent.toLowerCase().includes(currentDMTab)) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+}
+
+function renderDMTabContent(tab) {
+    const contentDiv = document.querySelector('.dm-relationships-content');
+    const oldContainer = document.getElementById('dm-friends-container');
+
+    if (contentDiv) {
+        renderNewRelationshipsContent(contentDiv, tab);
+    } else if (oldContainer) {
+        renderOldContainerContent(oldContainer, tab);
+    }
+}
+
+function renderNewRelationshipsContent(contentDiv, tab) {
+    contentDiv.innerHTML = '';
+
+    if (tab === 'friends') {
+        if (state.friends.length === 0) {
+            contentDiv.innerHTML = '<div style="padding: 20px; color: var(--text-dim); text-align: center;">No friends yet</div>';
+            return;
+        }
+
+        state.friends.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const dmButton = document.createElement('button');
+            dmButton.className = 'dm-action-btn';
+            dmButton.title = 'Open DM';
+            dmButton.style.cssText = 'background: var(--surface-light); border: none; color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            dmButton.innerHTML = '<i data-lucide="message-square" style="width: 18px; height: 18px;"></i>';
+            dmButton.onclick = (e) => {
+                e.stopPropagation();
+                openDM(username);
+            };
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(dmButton);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            contentDiv.appendChild(item);
+        });
+    } else if (tab === 'requests') {
+        if (state.friendRequests.length === 0) {
+            contentDiv.innerHTML = '<div style="padding: 20px; color: var(--text-dim); text-align: center;">No pending requests</div>';
+            return;
+        }
+
+        state.friendRequests.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const actionButtons = document.createElement('div');
+            actionButtons.style.cssText = 'display: flex; gap: 8px;';
+
+            const acceptButton = document.createElement('button');
+            acceptButton.className = 'dm-action-btn accept-btn';
+            acceptButton.title = 'Accept';
+            acceptButton.style.cssText = 'background: var(--success); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            acceptButton.innerHTML = '<i data-lucide="check" style="width: 18px; height: 18px;"></i>';
+            acceptButton.onclick = (e) => {
+                e.stopPropagation();
+                acceptFriendRequest(username);
+            };
+
+            const rejectButton = document.createElement('button');
+            rejectButton.className = 'dm-action-btn reject-btn';
+            rejectButton.title = 'Reject';
+            rejectButton.style.cssText = 'background: var(--danger); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            rejectButton.innerHTML = '<i data-lucide="x" style="width: 18px; height: 18px;"></i>';
+            rejectButton.onclick = (e) => {
+                e.stopPropagation();
+                rejectFriendRequest(username);
+            };
+
+            actionButtons.appendChild(acceptButton);
+            actionButtons.appendChild(rejectButton);
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(actionButtons);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            contentDiv.appendChild(item);
+        });
+    } else if (tab === 'blocked') {
+        if (state.blockedUsers.length === 0) {
+            contentDiv.innerHTML = '<div style="padding: 20px; color: var(--text-dim); text-align: center;">No blocked users</div>';
+            return;
+        }
+
+        state.blockedUsers.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const unblockButton = document.createElement('button');
+            unblockButton.className = 'dm-action-btn unblock-btn';
+            unblockButton.title = 'Unblock';
+            unblockButton.style.cssText = 'background: var(--surface-light); border: none; color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            unblockButton.innerHTML = '<i data-lucide="unlock" style="width: 18px; height: 18px;"></i>';
+            unblockButton.onclick = (e) => {
+                e.stopPropagation();
+                unblockUser(username);
+            };
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(unblockButton);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            contentDiv.appendChild(item);
+        });
+    }
+
+    if (window.lucide) window.lucide.createIcons({ root: contentDiv });
+}
+
+function renderOldContainerContent(oldContainer, tab) {
+    oldContainer.innerHTML = '';
+
+    const tabTitle = document.createElement('div');
+    tabTitle.className = 'dm-section-title';
+    tabTitle.style.cssText = 'font-weight: 600; color: var(--text-dim); font-size: 12px; padding: 16px 20px 8px 20px; text-transform: uppercase; letter-spacing: 0.5px;';
+
+    if (tab === 'friends') {
+        tabTitle.textContent = 'FRIENDS';
+        oldContainer.appendChild(tabTitle);
+
+        state.friends.forEach(username => {
+            const item = document.createElement('div');
+            item.className = 'dm-friend-item';
+            item.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s ease;';
+
+            const avatar = document.createElement('img');
+            avatar.src = `https://avatars.rotur.dev/${username}`;
+            avatar.alt = username;
+            avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.style.cssText = 'flex: 1; color: var(--text); font-size: 15px; font-weight: 500;';
+
+            const dmButton = document.createElement('button');
+            dmButton.className = 'dm-action-btn';
+            dmButton.title = 'Open DM';
+            dmButton.style.cssText = 'background: var(--surface-light); border: none; color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;';
+            dmButton.innerHTML = '<i data-lucide="message-square" style="width: 18px; height: 18px;"></i>';
+            dmButton.onclick = (e) => {
+                e.stopPropagation();
+                openDM(username);
+            };
+
+            item.appendChild(avatar);
+            item.appendChild(usernameSpan);
+            item.appendChild(dmButton);
+
+            item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-hover)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+
+            oldContainer.appendChild(item);
+        });
+    }
+
+    if (window.lucide) window.lucide.createIcons({ root: oldContainer });
 }
 
 function formatTimestamp(unix) {
@@ -2493,9 +3270,9 @@ function getFullTimestamp(unix) {
     return `${day}${suffix} ${month} ${year} at ${time}`;
 }
 
-function getAvatar(username) {
+function getAvatar(username, size = null) {
     const img = new Image();
-    img.className = "avatar";
+    img.className = "avatar" + (size ? ` avatar-${size}` : "");
     img.draggable = false;
 
     const defaultAvatar = 'https://avatars.rotur.dev/originChats';
@@ -2605,8 +3382,16 @@ async function renderMessages(scrollToBottom = true) {
 
     if (messages.length == 0) {
         state.renderInProgress = false;
-        container.innerHTML = `There's nothing here right now.`
-        return
+        const channelName = state.currentChannel.display_name || state.currentChannel.name;
+        container.innerHTML = `
+            <div class="empty-channel-message" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-dim);">
+                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">💬</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text);">Welcome to #${channelName}</div>
+                <div style="font-size: 14px;">This is the start of the <strong>#${channelName}</strong> channel.</div>
+                <div style="font-size: 14px; margin-top: 4px;">Be the first to send a message!</div>
+            </div>
+        `;
+        return;
     }
 
     const fragment = document.createDocumentFragment();
@@ -2688,6 +3473,13 @@ async function renderMessages(scrollToBottom = true) {
 function appendMessage(msg) {
     if (!state.currentChannel || state.renderInProgress) return;
     const container = document.getElementById("messages");
+    
+    // Remove empty channel message if present
+    const emptyMessage = container.querySelector('.empty-channel-message');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
     const messages = (state.messagesByServer[state.serverUrl]?.[state.currentChannel.name] || []);
 
     const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
@@ -2739,6 +3531,26 @@ function updateMessageContent(msgId, newContent) {
     const embedLinks = [];
     msgText.innerHTML = parseMsg(msg, embedLinks);
 
+    msgText.querySelectorAll('.message-image').forEach(img => {
+        img.onerror = () => {
+            const url = img.src || img.dataset.imageUrl;
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = url;
+            link.className = 'failed-image-link';
+            const wrapper = img.closest('.chat-image-wrapper');
+            if (wrapper) {
+                wrapper.replaceWith(link);
+            } else if (img.parentNode.tagName === 'A') {
+                img.parentNode.replaceChild(link, img);
+            } else {
+                img.parentNode.replaceChild(link, img);
+            }
+        };
+    });
+
     if (embedLinks.length === 1 &&
         embedLinks[0].match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i) &&
         msg.content.trim() === embedLinks[0]) {
@@ -2765,6 +3577,15 @@ function updateMessageContent(msgId, newContent) {
                 img.src = url;
                 img.alt = 'image';
                 img.className = 'message-image';
+                img.onerror = () => {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = url;
+                    link.className = 'failed-image-link';
+                    wrapper.replaceWith(link);
+                };
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chat-image-wrapper';
@@ -2809,7 +3630,26 @@ function updateMessageContent(msgId, newContent) {
             if (state._embedCache[url]) {
                 const cachedEl = state._embedCache[url];
                 if (cachedEl) {
-                    groupContent.appendChild(cachedEl.cloneNode(true));
+                    const clonedEmbed = cachedEl.cloneNode(true);
+                    const img = clonedEmbed.querySelector('img');
+                    if (img && !img.onerror) {
+                        img.onerror = () => {
+                            const fallbackLink = document.createElement('a');
+                            fallbackLink.href = url;
+                            fallbackLink.target = '_blank';
+                            fallbackLink.rel = 'noopener noreferrer';
+                            fallbackLink.textContent = url;
+                            fallbackLink.className = 'failed-image-link';
+                            const embedContainer = img.closest('.embed-container');
+                            if (embedContainer) {
+                                embedContainer.replaceWith(fallbackLink);
+                            } else {
+                                const wrapper = img.closest('.chat-image-wrapper');
+                                if (wrapper) wrapper.replaceWith(fallbackLink);
+                            }
+                        };
+                    }
+                    groupContent.appendChild(clonedEmbed);
                 }
             } else {
                 createEmbed(url).then(embedEl => {
@@ -2882,16 +3722,32 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
     const isBlocked = Array.isArray(state.currentUser?.sys?.blocked) && state.currentUser.sys.blocked.includes(msg.user);
 
     const wrapper = document.createElement('div');
-    wrapper.className = isHead ? 'message-group' : 'message-single';
+    wrapper.className = isHead ? 'message-group' + (isReply ? ' has-reply' : '') : 'message-single';
     wrapper.dataset.msgId = msg.id;
 
     if (isHead) {
-        wrapper.appendChild(getAvatar(msg.user));
+        if (isReply) {
+            const bodyContainer = document.createElement('div');
+            bodyContainer.className = 'message-group-body';
+            bodyContainer.appendChild(getAvatar(msg.user));
+            wrapper.appendChild(bodyContainer);
+        } else {
+            wrapper.appendChild(getAvatar(msg.user));
+        }
     }
 
     const groupContent = document.createElement('div');
     groupContent.className = 'message-group-content';
-    wrapper.appendChild(groupContent);
+    if (isHead && isReply) {
+        const bodyContainer = wrapper.querySelector('.message-group-body');
+        if (bodyContainer) {
+            bodyContainer.appendChild(groupContent);
+        } else {
+            wrapper.appendChild(groupContent);
+        }
+    } else {
+        wrapper.appendChild(groupContent);
+    }
 
     let actionsBar = wrapper.querySelector('.message-actions-bar');
     if (!actionsBar) {
@@ -2929,37 +3785,6 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
     actionsBar.appendChild(replyBtn);
     actionsBar.appendChild(deleteBtn);
     if (window.lucide) window.lucide.createIcons({ root: actionsBar });
-
-    if (isHead) {
-        const header = document.createElement('div');
-        header.className = 'message-header';
-        const usernameEl = document.createElement('span');
-        usernameEl.className = 'username';
-        usernameEl.textContent = msg.user;
-        usernameEl.style.color = user.color || '#fff';
-        usernameEl.style.cursor = 'pointer';
-        usernameEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openAccountModal(msg.user);
-        });
-
-        const ts = document.createElement('span');
-        ts.className = 'timestamp';
-        ts.textContent = timestamp;
-        ts.dataset.timestamp = msg.timestamp;
-        ts.title = getFullTimestamp(msg.timestamp);
-        header.appendChild(usernameEl);
-        header.appendChild(ts);
-
-        if (msg.edited || msg.editedAt) {
-            const editedSpan = document.createElement('span');
-            editedSpan.className = 'edited-indicator';
-            editedSpan.textContent = '(edited)';
-            header.appendChild(editedSpan);
-        }
-
-        groupContent.appendChild(header);
-    }
 
     if (isReply) {
         const replyTo = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(
@@ -3000,14 +3825,14 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
             contentSpan.className = 'reply-content';
             contentSpan.textContent = replyTo.content.length > 50 ? replyTo.content.substring(0, 50) + '...' : replyTo.content;
 
-            replyDiv.appendChild(getAvatar(replyUser.username));
+            replyDiv.appendChild(getAvatar(replyUser.username, 'small'));
 
             const replyText = document.createElement('div');
             replyText.appendChild(usernameSpan);
             replyText.appendChild(contentSpan);
 
             replyDiv.appendChild(replyText);
-            groupContent.appendChild(replyDiv);
+            wrapper.insertBefore(replyDiv, wrapper.firstChild);
         } else {
             const replyKey = `${state.serverUrl}:${msg.reply_to.id}`;
             if (!state.pendingReplyFetches[replyKey]) {
@@ -3076,12 +3901,43 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
                 id: msg.reply_to.id
             }, state.serverUrl);
 
-            groupContent.appendChild(notFoundDiv);
+            wrapper.insertBefore(notFoundDiv, wrapper.firstChild);
 
             if (window.lucide) {
                 window.lucide.createIcons({ root: notFoundIcon });
             }
         }
+    }
+
+    if (isHead) {
+        const header = document.createElement('div');
+        header.className = 'message-header';
+        const usernameEl = document.createElement('span');
+        usernameEl.className = 'username';
+        usernameEl.textContent = msg.user;
+        usernameEl.style.color = user.color || '#fff';
+        usernameEl.style.cursor = 'pointer';
+        usernameEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openAccountModal(msg.user);
+        });
+
+        const ts = document.createElement('span');
+        ts.className = 'timestamp';
+        ts.textContent = timestamp;
+        ts.dataset.timestamp = msg.timestamp;
+        ts.title = getFullTimestamp(msg.timestamp);
+        header.appendChild(usernameEl);
+        header.appendChild(ts);
+
+        if (msg.edited || msg.editedAt) {
+            const editedSpan = document.createElement('span');
+            editedSpan.className = 'edited-indicator';
+            editedSpan.textContent = '(edited)';
+            header.appendChild(editedSpan);
+        }
+
+        groupContent.appendChild(header);
     }
 
     if (isBlocked) {
@@ -3147,7 +4003,16 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
                     if (isImage) {
                         const img = document.createElement('img');
                         img.onload = resolve;
-                        img.onerror = resolve;
+                        img.onerror = () => {
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.textContent = url;
+                            link.className = 'failed-image-link';
+                            wrapper.replaceWith(link);
+                            resolve();
+                        };
                         img.src = url;
                         img.alt = 'image';
                         img.className = 'message-image';
@@ -3297,26 +4162,6 @@ function revealBlockedMessage(wrapper, msg) {
     const timestamp = formatTimestamp(msg.timestamp);
     const isReply = "reply_to" in msg;
 
-    const header = document.createElement('div');
-    header.className = 'message-header';
-    const usernameEl = document.createElement('span');
-    usernameEl.className = 'username';
-    usernameEl.textContent = msg.user;
-    usernameEl.style.color = user.color || '#fff';
-    usernameEl.style.cursor = 'pointer';
-    usernameEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openAccountModal(msg.user);
-    });
-    const ts = document.createElement('span');
-    ts.className = 'timestamp';
-    ts.textContent = timestamp;
-    ts.dataset.timestamp = msg.timestamp;
-    ts.title = getFullTimestamp(msg.timestamp);
-    header.appendChild(usernameEl);
-    header.appendChild(ts);
-    groupContent.appendChild(header);
-
     if (isReply) {
         const replyTo = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === msg.reply_to.id);
 
@@ -3339,7 +4184,7 @@ function revealBlockedMessage(wrapper, msg) {
             replyText.appendChild(usernameSpan);
             replyText.appendChild(contentSpan);
 
-            replyDiv.appendChild(getAvatar(replyUser.username));
+            replyDiv.appendChild(getAvatar(replyUser.username, 'small'));
             replyDiv.appendChild(replyText);
         } else {
             const notFoundIcon = document.createElement('div');
@@ -3357,14 +4202,54 @@ function revealBlockedMessage(wrapper, msg) {
             }
         }
 
-        groupContent.appendChild(replyDiv);
+        wrapper.insertBefore(replyDiv, wrapper.firstChild);
     }
+
+    const header = document.createElement('div');
+    header.className = 'message-header';
+    const usernameEl = document.createElement('span');
+    usernameEl.className = 'username';
+    usernameEl.textContent = msg.user;
+    usernameEl.style.color = user.color || '#fff';
+    usernameEl.style.cursor = 'pointer';
+    usernameEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openAccountModal(msg.user);
+    });
+    const ts = document.createElement('span');
+    ts.className = 'timestamp';
+    ts.textContent = timestamp;
+    ts.dataset.timestamp = msg.timestamp;
+    ts.title = getFullTimestamp(msg.timestamp);
+    header.appendChild(usernameEl);
+    header.appendChild(ts);
+    groupContent.appendChild(header);
 
     const msgText = document.createElement('div');
     msgText.className = 'message-text';
     const embedLinks = [];
     msgText.innerHTML = parseMsg(msg, embedLinks);
     groupContent.appendChild(msgText);
+
+    msgText.querySelectorAll('.message-image').forEach(img => {
+        img.onerror = () => {
+            const url = img.src || img.dataset.imageUrl;
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = url;
+            link.className = 'failed-image-link';
+            const wrapper = img.closest('.chat-image-wrapper');
+            if (wrapper) {
+                wrapper.replaceWith(link);
+            } else if (img.parentNode.tagName === 'A') {
+                img.parentNode.replaceChild(link, img);
+            } else {
+                img.parentNode.replaceChild(link, img);
+            }
+        };
+    });
 
     msgText.querySelectorAll("pre code").forEach(block => {
         hljs.highlightElement(block);
@@ -3378,6 +4263,15 @@ function revealBlockedMessage(wrapper, msg) {
                 img.src = url;
                 img.alt = 'image';
                 img.className = 'message-image';
+                img.onerror = () => {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = url;
+                    link.className = 'failed-image-link';
+                    wrap.replaceWith(link);
+                };
                 const wrap = document.createElement('div');
                 wrap.className = 'chat-image-wrapper';
                 if (window.createFavButton) {
@@ -3420,10 +4314,10 @@ function openMessageContextMenu(event, msg) {
 
     contextMenu.innerHTML = "";
 
-    const addItem = (label, callback) => {
+    const addItem = (label, callback, icon = 'more-horizontal') => {
         const el = document.createElement("div");
         el.className = "context-menu-item";
-        el.textContent = label;
+        el.innerHTML = `<i data-lucide="${icon}"></i><span>${label}</span>`;
         el.onclick = (e) => {
             e.stopPropagation();
             closeContextMenu();
@@ -3433,9 +4327,9 @@ function openMessageContextMenu(event, msg) {
     };
 
     if (msg.user === state.currentUser?.username) {
-        addItem("Edit message", startEditMessage);
+        addItem("Edit message", startEditMessage, 'edit-3');
     }
-    addItem("Reply to message", replyToMessage);
+    addItem("Reply to message", replyToMessage, 'message-circle');
     addItem("Add reaction", (msg) => {
         const dummyAnchor = document.createElement('div');
         dummyAnchor.style.position = 'absolute';
@@ -3444,17 +4338,17 @@ function openMessageContextMenu(event, msg) {
         document.body.appendChild(dummyAnchor);
         openReactionPicker(msg.id, dummyAnchor);
         setTimeout(() => dummyAnchor.remove(), 100);
-    });
+    }, 'smile');
     addItem("Delete message", (msg) => {
         wsSend({
             cmd: 'message_delete',
             id: msg.id,
             channel: state.currentChannel.name
         }, state.serverUrl);
-    });
+    }, 'trash-2');
 
     if (!isMobile()) {
-        const menuWidth = 180;
+        const menuWidth = 200;
         const menuHeight = 120;
 
         let x = event.clientX;
@@ -3470,6 +4364,10 @@ function openMessageContextMenu(event, msg) {
     }
     contextMenu.style.display = "block";
 
+    if (window.lucide) {
+        window.lucide.createIcons({ root: contextMenu });
+    }
+
     contextMenuOpen = true;
 }
 
@@ -3478,10 +4376,10 @@ function openLinkContextMenu(event, url) {
 
     contextMenu.innerHTML = "";
 
-    const addItem = (label, callback) => {
+    const addItem = (label, callback, icon = 'more-horizontal') => {
         const el = document.createElement("div");
         el.className = "context-menu-item";
-        el.textContent = label;
+        el.innerHTML = `<i data-lucide="${icon}"></i><span>${label}</span>`;
         el.onclick = (e) => {
             e.stopPropagation();
             closeContextMenu();
@@ -3509,14 +4407,14 @@ function openLinkContextMenu(event, url) {
             }
             document.body.removeChild(textArea);
         });
-    });
+    }, 'copy');
 
     addItem("Open in new tab", () => {
         window.open(url, '_blank', 'noopener,noreferrer');
-    });
+    }, 'external-link');
 
     if (!isMobile()) {
-        const menuWidth = 180;
+        const menuWidth = 200;
         const menuHeight = 80;
 
         let x = event.clientX;
@@ -3531,6 +4429,10 @@ function openLinkContextMenu(event, url) {
         contextMenu.style.top = y + "px";
     }
     contextMenu.style.display = "block";
+
+    if (window.lucide) {
+        window.lucide.createIcons({ root: contextMenu });
+    }
 
     contextMenuOpen = true;
 }
@@ -3556,6 +4458,19 @@ function renderMembers(channel) {
     const container = document.getElementById('members-list');
 
     const users = Object.values(state.users).filter(u => checkPermission(u.roles, viewPermissions));
+
+    const isExcludedChannel = state.currentChannel?.name === 'relationships' || state.currentChannel?.name === 'home';
+    const isDM = state.serverUrl === 'dms.mistium.com';
+    const serverChannelHeader = document.getElementById('server-channel-header');
+
+    if (isDM && isExcludedChannel) {
+        container.style.display = 'none';
+        if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+        return;
+    }
+
+    container.style.display = '';
+    if (serverChannelHeader && !isDM) serverChannelHeader.style.display = '';
 
     let headerSec = container.querySelector('.members-header');
     if (!headerSec) {
@@ -3584,8 +4499,6 @@ function renderMembers(channel) {
     const offline = nonOwners.filter(u => u.status !== 'online').sort((a, b) =>
         a.username.localeCompare(b.username, undefined, { sensitivity: 'base' })
     );
-
-    const isDM = state.serverUrl === 'dms.mistium.com';
 
     if (isDM && ownerSec) {
         ownerSec.remove();
@@ -3787,20 +4700,58 @@ function sendTyping() {
 }
 
 function replyToMessage(msg) {
-    state.replyTo = msg;
-    document.getElementById('reply-text').textContent = `Replying to ${msg.user}`;
-    document.getElementById('reply-bar').classList.add('active');
+  state.replyTo = msg;
+
+  const replyBar = document.getElementById('reply-bar');
+  const icon = document.getElementById('reply-bar-icon');
+  const label = document.getElementById('reply-bar-label');
+  const text = document.getElementById('reply-text');
+  const preview = document.getElementById('reply-preview');
+
+  // Set reply mode styling
+  icon.setAttribute('data-lucide', 'corner-up-left');
+  label.textContent = 'Replying to';
+  text.innerHTML = `<span class="username">${escapeHtml(msg.user)}</span>`;
+
+  // Show message preview if content exists
+  if (msg.content && msg.content.trim()) {
+    const cleanContent = msg.content.replace(/```[\s\S]*?```/g, '[code]').replace(/`[^`]*`/g, '[code]');
+    preview.textContent = cleanContent.length > 100 ? cleanContent.substring(0, 100) + '...' : cleanContent;
+    preview.style.display = 'block';
+  } else if (msg.attachments && msg.attachments.length > 0) {
+    preview.textContent = msg.attachments.length === 1 ? '[Attachment]' : `[${msg.attachments.length} Attachments]`;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+
+  replyBar.classList.add('active');
+  replyBar.classList.remove('editing-mode');
+  if (window.lucide) window.lucide.createIcons({ root: replyBar });
+
+  // Focus input after setting reply
+  const input = document.getElementById('message-input');
+  if (input) input.focus();
 }
 
 function cancelReply() {
-    state.replyTo = null;
-    document.getElementById('reply-bar').classList.remove('active');
+  state.replyTo = null;
+  const replyBar = document.getElementById('reply-bar');
+  const preview = document.getElementById('reply-preview');
+
+  preview.style.display = 'none';
+  replyBar.classList.remove('active', 'editing-mode');
 }
 
 function updateUserSection() {
     if (state.currentUser) {
-        document.getElementById('user-username').textContent = state.currentUser.username;
-        document.getElementById('user-avatar').src = `https://avatars.rotur.dev/${state.currentUser.username}?radius=128`;
+        const sidebarAvatar = document.getElementById('user-avatar-sidebar');
+        if (sidebarAvatar) {
+            const profileIcon = sidebarAvatar.querySelector('.user-profile-icon');
+            if (profileIcon) {
+                profileIcon.innerHTML = `<img src="https://avatars.rotur.dev/${state.currentUser.username}?radius=128" alt="${state.currentUser.username}">`;
+            }
+        }
     }
 }
 
@@ -3811,6 +4762,14 @@ let mentionState = {
     startIndex: 0,
     selectedIndex: 0,
     filteredUsers: []
+};
+
+let emojiState = {
+    active: false,
+    query: '',
+    startIndex: 0,
+    selectedIndex: 0,
+    filteredEmojis: []
 };
 
 function handleMentionInput() {
@@ -3824,6 +4783,7 @@ function handleMentionInput() {
 
     if (lastWord.startsWith('@')) {
         closeChannelPopup();
+        closeEmojiPopup();
         mentionState.active = true;
         mentionState.query = lastWord.substring(1).toLowerCase();
         mentionState.startIndex = cursorPos - lastWord.length;
@@ -3832,9 +4792,51 @@ function handleMentionInput() {
         filterUsers(mentionState.query);
     } else if (lastWord.startsWith('#')) {
         closeMentionPopup();
+        closeEmojiPopup();
+    } else if (lastWord.startsWith(':') && window.shortcodeMap) {
+        closeMentionPopup();
+        closeChannelPopup();
+        emojiState.active = true;
+        emojiState.query = lastWord.substring(1).toLowerCase();
+        emojiState.startIndex = cursorPos - lastWord.length;
+        emojiState.selectedIndex = 0;
+
+        filterEmojis(emojiState.query);
     } else {
         closeMentionPopup();
+        closeEmojiPopup();
     }
+}
+
+function filterEmojis(query) {
+    if (!window.shortcodes || !window.shortcodeMap) {
+        closeEmojiPopup();
+        return;
+    }
+
+    const emojiEntries = Object.entries(window.shortcodeMap);
+    
+    if (query === '') {
+        emojiState.filteredEmojis = emojiEntries
+            .map(([shortcode, emoji]) => ({ shortcode, emoji }))
+            .slice(0, 20);
+    } else {
+        emojiState.filteredEmojis = emojiEntries
+            .filter(([shortcode]) => {
+                const cleanShortcode = shortcode.replace(/^:/, '').replace(/:$/, '');
+                return cleanShortcode.toLowerCase().includes(query);
+            })
+            .map(([shortcode, emoji]) => ({ shortcode, emoji }))
+            .sort((a, b) => {
+                const aStarts = a.shortcode.replace(/^:/, '').replace(/:$/, '').toLowerCase().startsWith(query) ? 0 : 1;
+                const bStarts = b.shortcode.replace(/^:/, '').replace(/:$/, '').toLowerCase().startsWith(query) ? 0 : 1;
+                if (aStarts !== bStarts) return aStarts - bStarts;
+                return a.shortcode.localeCompare(b.shortcode);
+            })
+            .slice(0, 20);
+    }
+
+    renderEmojiPopup();
 }
 
 function filterUsers(query) {
@@ -3922,32 +4924,59 @@ function getAvatarSrc(username) {
 }
 
 function handleMentionNavigation(e) {
-    if (!mentionState.active) return false;
-
-    if (e.key === 'Escape') {
-        closeMentionPopup();
-        return true;
-    }
-
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        mentionState.selectedIndex = Math.min(mentionState.selectedIndex + 1, mentionState.filteredUsers.length - 1);
-        updateMentionSelection();
-        return true;
-    }
-
-    if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        mentionState.selectedIndex = Math.max(mentionState.selectedIndex - 1, 0);
-        updateMentionSelection();
-        return true;
-    }
-
-    if (e.key === 'Tab' || e.key === 'Enter') {
-        if (mentionState.filteredUsers.length > 0) {
-            e.preventDefault();
-            selectMention(mentionState.selectedIndex);
+    if (emojiState.active) {
+        if (e.key === 'Escape') {
+            closeEmojiPopup();
             return true;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            emojiState.selectedIndex = Math.min(emojiState.selectedIndex + 1, emojiState.filteredEmojis.length - 1);
+            updateEmojiSelection();
+            return true;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            emojiState.selectedIndex = Math.max(emojiState.selectedIndex - 1, 0);
+            updateEmojiSelection();
+            return true;
+        }
+
+        if (e.key === 'Tab' || e.key === 'Enter') {
+            if (emojiState.filteredEmojis.length > 0) {
+                e.preventDefault();
+                selectEmoji(emojiState.selectedIndex);
+                return true;
+            }
+        }
+    } else if (mentionState.active) {
+        if (e.key === 'Escape') {
+            closeMentionPopup();
+            return true;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            mentionState.selectedIndex = Math.min(mentionState.selectedIndex + 1, mentionState.filteredUsers.length - 1);
+            updateMentionSelection();
+            return true;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            mentionState.selectedIndex = Math.max(mentionState.selectedIndex - 1, 0);
+            updateMentionSelection();
+            return true;
+        }
+
+        if (e.key === 'Tab' || e.key === 'Enter') {
+            if (mentionState.filteredUsers.length > 0) {
+                e.preventDefault();
+                selectMention(mentionState.selectedIndex);
+                return true;
+            }
         }
     }
 
@@ -4004,6 +5033,167 @@ function closeMentionPopup() {
     if (list && list.querySelector('.mention-item')) {
         popup.classList.remove('active');
         list.innerHTML = '';
+    }
+}
+
+function closeEmojiPopup() {
+    emojiState.active = false;
+    emojiState.query = '';
+    emojiState.startIndex = 0;
+    emojiState.selectedIndex = 0;
+    emojiState.filteredEmojis = [];
+
+    const popup = document.getElementById('emoji-popup');
+    const list = document.getElementById('emoji-list');
+    if (popup && list) {
+        popup.classList.remove('active');
+        list.innerHTML = '';
+    }
+}
+
+function renderEmojiPopup() {
+    const popup = document.getElementById('emoji-popup');
+    const list = document.getElementById('emoji-list');
+    
+    if (!popup || !list) {
+        console.error('Emoji popup or list not found in DOM');
+        return;
+    }
+
+    if (emojiState.filteredEmojis.length === 0) {
+        closeEmojiPopup();
+        return;
+    }
+
+    list.innerHTML = '';
+
+    const emojis = emojiState.filteredEmojis.slice(0, 8);
+
+    emojis.forEach(({ shortcode, emoji }, index) => {
+        const li = document.createElement('li');
+        li.className = 'emoji-item' + (index === emojiState.selectedIndex ? ' selected' : '');
+        li.dataset.shortcode = shortcode;
+        li.dataset.index = index;
+
+        li.innerHTML = `
+            <span class="emoji-preview">${emoji}</span>
+            <div class="emoji-info">
+                <div class="emoji-shortcode">${escapeHtml(shortcode)}</div>
+            </div>
+        `;
+
+        li.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            selectEmoji(index);
+        });
+
+        li.addEventListener('mouseenter', () => {
+            emojiState.selectedIndex = index;
+            updateEmojiSelection();
+        });
+
+        list.appendChild(li);
+    });
+
+    popup.classList.add('active');
+}
+
+function selectEmoji(emojiOrIndex) {
+    if (typeof emojiOrIndex === 'number') {
+        const input = document.getElementById('message-input');
+        const { shortcode, emoji } = emojiState.filteredEmojis[emojiOrIndex];
+
+        const before = input.value.substring(0, emojiState.startIndex);
+        const after = input.value.substring(emojiState.startIndex + 1 + emojiState.query.length);
+
+        input.value = before + emoji + ' ' + after;
+
+        const newCursorPos = emojiState.startIndex + emoji.length + 1;
+        input.setSelectionRange(newCursorPos, newCursorPos);
+
+        closeEmojiPopup();
+        input.focus();
+        return;
+    }
+
+    const emoji = emojiOrIndex;
+
+    window.recentEmojis = [emoji, ...window.recentEmojis.filter(e => e !== emoji)].slice(0, 50);
+
+    const msgId = window.reactionPickerMsgId;
+    const unifiedPicker = document.getElementById('unified-picker');
+
+    if (msgId) {
+        const reactionPicker = document.getElementById('reaction-picker');
+        if (reactionPicker) reactionPicker.classList.remove('active');
+        if (unifiedPicker) unifiedPicker.classList.remove('active');
+        const overlay = document.querySelector('.unified-picker-overlay') || document.querySelector('.reaction-picker-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                if (!unifiedPicker || !unifiedPicker.classList.contains('active')) {
+                    overlay.style.display = 'none';
+                }
+            }, 200);
+        }
+        window.addReaction(msgId, emoji);
+    } else {
+        const input = document.getElementById('message-input');
+        if (!input) {
+            console.error('Message input not found');
+            return;
+        }
+
+        try {
+            input.focus();
+            const start = input.selectionStart ?? input.value.length;
+            const end = input.selectionEnd ?? input.value.length;
+            const newValue = input.value.slice(0, start) + emoji + input.value.slice(end);
+            input.value = newValue;
+
+            const pos = start + emoji.length;
+            input.selectionStart = pos;
+            input.selectionEnd = pos;
+
+            setTimeout(() => {
+                input.focus();
+                const reactionPicker = document.getElementById('reaction-picker');
+                if (reactionPicker) reactionPicker.classList.remove('active');
+                if (unifiedPicker) unifiedPicker.classList.remove('active');
+                const overlay = document.querySelector('.unified-picker-overlay') || document.querySelector('.reaction-picker-overlay');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        if (!unifiedPicker || !unifiedPicker.classList.contains('active')) {
+                            overlay.style.display = 'none';
+                        }
+                    }, 200);
+                }
+            }, 10);
+        } catch (e) {
+            console.error('Error inserting emoji:', e);
+        }
+    }
+}
+
+function updateEmojiSelection() {
+    const items = document.querySelectorAll('.emoji-item');
+    items.forEach((item, index) => {
+        item.classList.toggle('selected', index === emojiState.selectedIndex);
+    });
+
+    const selected = items[emojiState.selectedIndex];
+    if (selected) {
+        const popup = document.getElementById('emoji-popup');
+        const popupRect = popup.getBoundingClientRect();
+        const itemRect = selected.getBoundingClientRect();
+
+        if (itemRect.bottom > popupRect.bottom) {
+            popup.scrollTop += itemRect.bottom - popupRect.bottom + 10;
+        } else if (itemRect.top < popupRect.top) {
+            popup.scrollTop += itemRect.top - popupRect.top - 10;
+        }
     }
 }
 
@@ -4748,49 +5938,49 @@ function handleDrop(e) {
 }
 
 async function handleFileUpload(files) {
-const server = window.getEnabledMediaServer();
-if (!server) {
-showError('No media server configured. Please add a media server in settings.');
-openSettings();
-return;
-}
+    const server = window.getEnabledMediaServer();
+    if (!server) {
+        showError('No media server configured. Please add a media server in settings.');
+        openSettings();
+        return;
+    }
 
-const input = document.getElementById('message-input');
+    const input = document.getElementById('message-input');
 
-for (const file of files) {
-try {
-showUploadProgress(file.name);
-const imageUrl = await window.uploadImage(file, server);
-hideUploadProgress();
+    for (const file of files) {
+        try {
+            showUploadProgress(file.name);
+            const imageUrl = await window.uploadImage(file, server);
+            hideUploadProgress();
 
-// Insert the image URL into the input box
-if (input) {
-const cursorPosition = input.selectionStart || input.value.length;
-const beforeCursor = input.value.substring(0, cursorPosition);
-const afterCursor = input.value.substring(cursorPosition);
-// Add space before URL if needed
-const spaceBefore = beforeCursor.length > 0 && !beforeCursor.endsWith(' ') ? ' ' : '';
-// Add space after URL
-const spaceAfter = afterCursor.length > 0 && !afterCursor.startsWith(' ') ? ' ' : '';
-input.value = beforeCursor + spaceBefore + imageUrl + spaceAfter + afterCursor;
-// Move cursor after the inserted URL
-const newPosition = cursorPosition + spaceBefore.length + imageUrl.length + spaceAfter.length;
-input.setSelectionRange(newPosition, newPosition);
-input.focus();
-}
-} catch (error) {
-hideUploadProgress();
-showError(`Failed to upload ${file.name}: ${error.message}`);
-console.error('Upload error:', error);
-}
-}
+            // Insert the image URL into the input box
+            if (input) {
+                const cursorPosition = input.selectionStart || input.value.length;
+                const beforeCursor = input.value.substring(0, cursorPosition);
+                const afterCursor = input.value.substring(cursorPosition);
+                // Add space before URL if needed
+                const spaceBefore = beforeCursor.length > 0 && !beforeCursor.endsWith(' ') ? ' ' : '';
+                // Add space after URL
+                const spaceAfter = afterCursor.length > 0 && !afterCursor.startsWith(' ') ? ' ' : '';
+                input.value = beforeCursor + spaceBefore + imageUrl + spaceAfter + afterCursor;
+                // Move cursor after the inserted URL
+                const newPosition = cursorPosition + spaceBefore.length + imageUrl.length + spaceAfter.length;
+                input.setSelectionRange(newPosition, newPosition);
+                input.focus();
+            }
+        } catch (error) {
+            hideUploadProgress();
+            showError(`Failed to upload ${file.name}: ${error.message}`);
+            console.error('Upload error:', error);
+        }
+    }
 }
 
 let uploadProgressElement = null;
 
 function showUploadProgress(fileName) {
     hideUploadProgress();
-    input = document.getElementById('message-input');
+    const input = document.getElementById('message-input');
     input.value = `[Uploading ${fileName}...]`;
     input.disabled = true;
 }
@@ -4831,7 +6021,7 @@ function showDMContextMenu(event, dmServer) {
 
     const removeItem = document.createElement('div');
     removeItem.className = 'context-menu-item';
-    removeItem.textContent = 'Remove from sidebar';
+    removeItem.innerHTML = '<i data-lucide="x-circle"></i><span>Remove from sidebar</span>';
     removeItem.onclick = () => {
         // Remove this DM server from the list
         state.dmServers = state.dmServers.filter(dm => dm.channel !== dmServer.channel);
@@ -4843,7 +6033,7 @@ function showDMContextMenu(event, dmServer) {
 
     menu.appendChild(removeItem);
 
-    const menuWidth = 180;
+    const menuWidth = 200;
     let x = event.clientX;
     let y = event.clientY;
 
@@ -4854,8 +6044,100 @@ function showDMContextMenu(event, dmServer) {
     menu.style.top = y + 'px';
     menu.style.display = 'block';
 
+    if (window.lucide) {
+        window.lucide.createIcons({ root: menu });
+    }
+
     if (typeof contextMenuOpen !== 'undefined') {
         contextMenuOpen = true;
+    }
+}
+
+// DM Create Modal Functions
+function openDMCreateModal() {
+    const modal = document.getElementById('dm-create-modal');
+    if (modal) {
+        modal.classList.add('active');
+        if (window.lucide) {
+            window.lucide.createIcons({ root: modal });
+        }
+    }
+}
+
+function closeDMCreateModal() {
+    const modal = document.getElementById('dm-create-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    document.getElementById('dm-username').value = '';
+    document.getElementById('group-name').value = '';
+    document.getElementById('group-members').value = '';
+}
+
+function switchDMCreateTab(tab) {
+    const tabs = document.querySelectorAll('.dm-create-tab');
+    const panels = document.querySelectorAll('.dm-create-panel');
+    
+    tabs.forEach(t => t.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    
+    const selectedTab = document.querySelector(`.dm-create-tab[data-tab="${tab}"]`);
+    const selectedPanel = document.getElementById(`dm-create-${tab}-panel`);
+    
+    if (selectedTab) selectedTab.classList.add('active');
+    if (selectedPanel) selectedPanel.classList.add('active');
+}
+
+function createDirectMessage() {
+    const usernameInput = document.getElementById('dm-username');
+    const username = usernameInput.value.trim();
+    
+    if (!username) {
+        showErrorBanner('Please enter a username');
+        return;
+    }
+    
+    const cmdsChannel = state.channels.find(c => c.name === 'cmds');
+    if (cmdsChannel) {
+        wsSend({ cmd: 'message_new', content: `dm add ${username}`, channel: 'cmds' }, 'dms.mistium.com');
+        closeDMCreateModal();
+        showErrorBanner(`Creating DM with ${username}...`);
+    } else {
+        showErrorBanner('Unable to create DM at this time');
+    }
+}
+
+function createGroup() {
+    const nameInput = document.getElementById('group-name');
+    const membersInput = document.getElementById('group-members');
+    
+    const groupName = nameInput.value.trim().replace(/\s+/g, '-');
+    const membersStr = membersInput.value.trim();
+    
+    if (!groupName) {
+        showErrorBanner('Please enter a group name');
+        return;
+    }
+    
+    if (!membersStr) {
+        showErrorBanner('Please enter at least one member');
+        return;
+    }
+    
+    const members = membersStr.split(',').map(m => m.trim()).filter(m => m);
+    
+    if (members.length === 0) {
+        showErrorBanner('Please enter at least one member');
+        return;
+    }
+    
+    const cmdsChannel = state.channels.find(c => c.name === 'cmds');
+    if (cmdsChannel) {
+        wsSend({ cmd: 'message_new', content: `group create ${groupName} ${members.join(' ')}`, channel: 'cmds' }, 'dms.mistium.com');
+        closeDMCreateModal();
+        showErrorBanner(`Creating group "${groupName}"...`);
+    } else {
+        showErrorBanner('Unable to create group at this time');
     }
 }
 
@@ -4885,3 +6167,5 @@ window.addEventListener('focus', function () {
         });
     }, 500);
 });
+
+window.selectEmoji = selectEmoji;

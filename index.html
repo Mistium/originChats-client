@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="settings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 
 <body>
@@ -22,9 +23,9 @@
             <div class="server-info">
                 <div class="header-text">
                     <div id="server-name" class="server-name">
-                        <span>Loading...</span>
+                        <span>Direct Messages</span>
                     </div>
-                    <div id="channel-name" class="channel-name">#general</div>
+                    <div id="channel-name" class="channel-name">#home</div>
                 </div>
             </div>
             <div class="menu-btn members-toggle" onclick="toggleMembersList()">
@@ -42,39 +43,29 @@
                         </div>
                         <div class="guild-pill"></div>
                     </div>
-                    <div class="guild-divider"></div>
                 </div>
-                <div class="guild-actions">
-                    <div class="guild-item add-guild" onclick="addNewServer()" title="Add a Server">
+                <div class="user-sidebar">
+                    <div class="guild-item" onclick="openSettings()" title="Settings">
                         <div class="guild-icon">
-                            <i data-lucide="plus"></i>
+                            <i data-lucide="settings"></i>
                         </div>
                     </div>
-                    <div class="guild-item discover-guild" onclick="openDiscoveryModal()" title="Discover Servers">
-                        <div class="guild-icon">
-                            <i data-lucide="compass"></i>
+                    <div id="user-avatar-sidebar" class="guild-item" onclick="openCurrentUserProfile()" title="Profile">
+                        <div class="guild-icon user-profile-icon">
                         </div>
                     </div>
                 </div>
             </div>
             <div id="channels" class="channels">
-                <div class="channels-list" id="channels-list"></div>
-                <div class="user-section" onclick="openCurrentUserProfile()">
-                    <img id="user-avatar" class="avatar" src="" alt="User">
-                    <div class="user-info">
-                        <div id="user-username" class="username">Loading...</div>
-                        <div class="status">Online</div>
+                <div class="channel-header" id="server-channel-header">
+                    <div class="channel-header-info">
+                        <div class="channel-header-name" id="channel-header-name">Server Name</div>
                     </div>
-                    <div class="user-section-actions">
-                        <button class="user-section-btn" onclick="event.stopPropagation(); openSettings()"
-                            title="Settings">
-                            <i data-lucide="settings"></i>
-                        </button>
-                        <button class="user-section-btn" onclick="event.stopPropagation(); attemptLogout()" title="Logout">
-                            <i data-lucide="log-out"></i>
-                        </button>
-                    </div>
+                    <button class="channel-add-btn" id="channel-add-btn" style="display: none;" onclick="openDMCreateModal()">
+                        <i data-lucide="plus"></i>
+                    </button>
                 </div>
+                <div class="channels-list" id="channels-list"></div>
             </div>
             <div class="messages-container">
                 <div id="error-banner" class="error-banner">
@@ -83,28 +74,35 @@
                         <i data-lucide="x" style="width: 16px; height: 16px;"></i>
                     </button>
                 </div>
+                <div id="dm-friends-container" style="display: none;" class="dm-friends-container"></div>
                 <div id="messages" class="messages"></div>
                 <div id="typing" class="typing"></div>
                 <div class="input-area">
-                    <div id="reply-bar" class="reply-bar">
-                        <span id="reply-text">Replying to user</span>
-                        <span class="close-reply"
-                            onclick="if(window.editingMessage) window.cancelEdit(); else cancelReply();">
-                            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
-                        </span>
-                    </div>
+<div id="reply-bar" class="reply-bar">
+<div class="reply-bar-content">
+<i data-lucide="corner-up-left" class="reply-bar-icon" id="reply-bar-icon"></i>
+<div class="reply-bar-info">
+<span class="reply-bar-label" id="reply-bar-label">Replying to</span>
+<span class="reply-bar-text" id="reply-text">
+<span class="username">user</span>
+</span>
+<div class="reply-bar-preview" id="reply-preview"></div>
+</div>
+</div>
+<span class="close-reply" onclick="if(window.editingMessage) window.cancelEdit(); else cancelReply();"
+title="Cancel">
+<i data-lucide="x"></i>
+</span>
+</div>
 
 
 
                     <div class="input-wrapper">
-                        <button id="upload-btn" class="icon-btn" onclick="triggerImageUpload()" title="Upload image">
-                            <i data-lucide="upload"></i>
+                        <button id="upload-btn" class="icon-btn" onclick="triggerImageUpload()" title="Attach">
+                            <i data-lucide="plus"></i>
                         </button>
                         <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
                         <div class="input-toolbar-right">
-                            <button id="gif-btn" class="icon-btn" onclick="toggleGifPicker(event)">
-                                <i data-lucide="image"></i>
-                            </button>
                             <button id="emoji-btn" class="icon-btn" onclick="toggleEmojiPicker(event)">
                                 <i data-lucide="smile"></i>
                             </button>
@@ -114,6 +112,9 @@
                         </button>
                         <div id="mention-popup" class="mention-popup">
                             <ul class="mention-list" id="mention-list"></ul>
+                        </div>
+                        <div id="emoji-popup" class="emoji-popup">
+                            <ul class="emoji-list" id="emoji-list"></ul>
                         </div>
                         <div id="rate-limit-indicator" class="rate-limit-indicator">
                             <i data-lucide="clock"></i>
@@ -127,6 +128,29 @@
             <div id="members-list"></div>
         </div>
     </div>
+    
+    <div id="voice-panel" class="voice-panel">
+        <div class="voice-panel-header">
+            <div class="voice-panel-title">
+                <i data-lucide="volume-2"></i>
+                <span>Voice Connected</span>
+            </div>
+            <button class="voice-panel-close" onclick="voiceManager.leaveChannel()">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="voice-participants" id="voice-participants"></div>
+        <div class="voice-panel-controls">
+            <button class="voice-control-btn" id="voice-mute-btn" onclick="voiceManager.toggleMute()">
+                <i data-lucide="mic" id="voice-mute-icon"></i>
+            </button>
+            <button class="voice-control-btn voice-leave-btn" onclick="voiceManager.leaveChannel()">
+                <i data-lucide="phone-off"></i>
+                Leave Call
+            </button>
+        </div>
+    </div>
+    
     <div id="context-menu" class="context-menu"></div>
 
     <div id="discovery-modal" class="discovery-modal">
@@ -163,6 +187,49 @@
                 <div class="account-loading">
                     <div class="account-loading-spinner"></div>
                     <div class="account-loading-text">Loading profile...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dm-create-modal" class="dm-create-modal">
+        <div class="dm-create-overlay" onclick="closeDMCreateModal()"></div>
+        <div class="dm-create-container">
+            <button class="dm-create-close" onclick="closeDMCreateModal()">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="dm-create-header">
+                <h2>Start Conversation</h2>
+            </div>
+            <div class="dm-create-tabs">
+                <button class="dm-create-tab active" data-tab="dm" onclick="switchDMCreateTab('dm')">
+                    <i data-lucide="user"></i>
+                    Direct Message
+                </button>
+                <button class="dm-create-tab" data-tab="group" onclick="switchDMCreateTab('group')">
+                    <i data-lucide="users"></i>
+                    Group
+                </button>
+            </div>
+            <div class="dm-create-content">
+                <div id="dm-create-dm-panel" class="dm-create-panel active">
+                    <div class="form-group">
+                        <label for="dm-username">Username</label>
+                        <input type="text" id="dm-username" placeholder="Enter username..." autocomplete="off">
+                    </div>
+                    <button class="btn btn-primary" onclick="createDirectMessage()">Start DM</button>
+                </div>
+                <div id="dm-create-group-panel" class="dm-create-panel">
+                    <div class="form-group">
+                        <label for="group-name">Group Name</label>
+                        <input type="text" id="group-name" placeholder="Enter group name..." autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="group-members">Members (comma-separated)</label>
+                        <input type="text" id="group-members" placeholder="username1, username2, ..." autocomplete="off">
+                        <small>Enter usernames separated by commas</small>
+                    </div>
+                    <button class="btn btn-primary" onclick="createGroup()">Create Group</button>
                 </div>
             </div>
         </div>
@@ -335,11 +402,15 @@
     <script src="markdown.js"></script>
     <script src="interactions.js"></script>
     <script src="uploads.js"></script>
+    <script src="channels.js"></script>
+    <script src="voice.js"></script>
     <script src="script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 
 </html>

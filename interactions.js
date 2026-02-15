@@ -3,6 +3,22 @@ const QUICK_REACTIONS = ['😭', '😔', '💀', '👍', '👎', '❤️', '😂
 let reactionPicker = null;
 let reactionPickerMsgId = null;
 let recentEmojis = JSON.parse(localStorage.getItem('originchats_recentEmojis') || '[]');
+
+Object.defineProperty(window, 'reactionPickerMsgId', {
+    get: () => reactionPickerMsgId,
+    set: (value) => {
+        reactionPickerMsgId = value;
+    }
+});
+
+Object.defineProperty(window, 'recentEmojis', {
+    get: () => recentEmojis,
+    set: (value) => {
+        recentEmojis = value;
+        localStorage.setItem('originChats_recentEmojis', JSON.stringify(recentEmojis));
+    }
+});
+
 let pickerResizeObserver = null;
 let pendingReactions = new Set();
 
@@ -14,35 +30,173 @@ function createReactionPicker() {
     reactionPicker.id = 'reaction-picker';
     reactionPicker.innerHTML = `
         <div class="reaction-picker-search">
-            <input type="text" id="emoji-search" placeholder="Search emoji..." autocomplete="off" />
+            <input type="text" id="reaction-emoji-search" placeholder="Search emoji..." autocomplete="off" />
         </div>
-        <div id="emoji-container"></div>
+        <div id="reaction-emoji-container"></div>
     `;
 
     document.body.appendChild(reactionPicker);
 
-    const searchInput = reactionPicker.querySelector('#emoji-search');
-    searchInput.addEventListener('input', handleSearch);
+    const searchInput = reactionPicker.querySelector('#reaction-emoji-search');
+    searchInput.addEventListener('input', handleReactionSearch);
 
     const overlay = document.createElement('div');
-    overlay.className = 'reaction-picker-overlay';
+    overlay.className = 'reaction-picker-overlay reaction-picker-message-overlay';
     overlay.onclick = closeReactionPicker;
     document.body.appendChild(overlay);
 
     document.addEventListener('click', (e) => {
         if (reactionPicker && reactionPicker.classList.contains('active')) {
-            const isOverlay = e.target.classList.contains('reaction-picker-overlay');
+            const isOverlay = e.target.classList.contains('reaction-picker-message-overlay');
             const isPicker = e.target.closest('.reaction-picker');
             const isEmojiBtn = e.target.closest('#emoji-btn');
             const isReactionBtn = e.target.closest('[data-emoji-anchor]');
             
-            if (!isPicker && !isEmojiBtn && !isReactionBtn) {
+            if (!isOverlay && !isPicker && !isEmojiBtn && !isReactionBtn) {
                 closeReactionPicker();
             }
         }
     });
 
     return reactionPicker;
+}
+
+let unifiedPickerTab = 'emoji';
+
+function createUnifiedPicker() {
+    let picker = document.getElementById('unified-picker');
+    if (picker) return picker;
+
+    picker = document.createElement('div');
+    picker.className = 'reaction-picker';
+    picker.id = 'unified-picker';
+    picker.innerHTML = `
+        <div class="unified-picker-header">
+            <div class="unified-picker-tabs">
+                <button class="unified-tab ${unifiedPickerTab === 'emoji' ? 'active' : ''}" data-tab="emoji" onclick="switchUnifiedTab('emoji')">
+                    <i data-lucide="smile"></i> Emojis
+                </button>
+                <button class="unified-tab ${unifiedPickerTab === 'gif' ? 'active' : ''}" data-tab="gif" onclick="switchUnifiedTab('gif')">
+                    <i data-lucide="image"></i> GIFs
+                </button>
+            </div>
+            <button class="unified-picker-close" onclick="closeUnifiedPicker()" title="Close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="reaction-picker-search" id="emoji-search-container">
+            <input type="text" id="emoji-search" placeholder="Search emoji..." autocomplete="off" />
+        </div>
+        <div class="gif-search-bar" id="gif-search-bar" style="display: none">
+            <input type="text" id="gif-search" placeholder="Search Tenor GIFs..." autocomplete="off">
+        </div>
+        <div id="emoji-container" style="display: ${unifiedPickerTab === 'emoji' ? 'block' : 'none'}"></div>
+        <div id="gif-results" class="gif-results" style="display: ${unifiedPickerTab === 'gif' ? 'block' : 'none'}"></div>
+    `;
+
+    document.body.appendChild(picker);
+
+    const searchInput = picker.querySelector('#emoji-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', handleSearch);
+    }
+
+    const gifSearchInput = picker.querySelector('#gif-search');
+    if (gifSearchInput) {
+        gifSearchInput.addEventListener('input', (e) => {
+            clearTimeout(gifSearchTimer);
+            gifSearchTimer = setTimeout(() => {
+                searchGifs(e.target.value);
+            }, 500);
+        });
+    }
+
+    let overlay = document.querySelector('.unified-picker-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'reaction-picker-overlay unified-picker-overlay';
+        overlay.onclick = closeUnifiedPicker;
+        document.body.appendChild(overlay);
+    }
+
+    document.addEventListener('click', (e) => {
+        if (picker && picker.classList.contains('active')) {
+            const isOverlay = e.target.classList.contains('reaction-picker-overlay') || e.target.closest('.reaction-picker-overlay');
+            const isPicker = e.target.closest('.reaction-picker');
+            const isEmojiBtn = e.target.closest('#emoji-btn');
+            const isReactionBtn = e.target.closest('[data-emoji-anchor]');
+            const isEmojiClick = e.target.closest('.reaction-picker-emoji');
+            
+            if (!isOverlay && !isPicker && !isEmojiBtn && !isReactionBtn && !isEmojiClick) {
+                closeUnifiedPicker();
+            }
+        }
+    });
+
+    if (window.lucide) {
+        window.lucide.createIcons({ root: picker });
+    }
+
+    return picker;
+}
+
+function switchUnifiedTab(tab) {
+    unifiedPickerTab = tab;
+    const picker = document.getElementById('unified-picker');
+    if (!picker) return;
+
+    const tabs = picker.querySelectorAll('.unified-tab');
+    tabs.forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+
+    const emojiContainer = picker.querySelector('#emoji-container');
+    const gifResults = picker.querySelector('#gif-results');
+    const emojiSearchContainer = picker.querySelector('#emoji-search-container');
+    const gifSearchBar = picker.querySelector('#gif-search-bar');
+
+    if (tab === 'emoji') {
+        emojiContainer.style.display = 'block';
+        gifResults.style.display = 'none';
+        emojiSearchContainer.style.display = 'block';
+        gifSearchBar.style.display = 'none';
+        renderEmojis();
+    } else {
+        emojiContainer.style.display = 'none';
+        gifResults.style.display = 'block';
+        emojiSearchContainer.style.display = 'none';
+        gifSearchBar.style.display = 'block';
+        if (document.getElementById('gif-search').value.trim()) {
+            currentGifTab = 'search';
+            searchGifs(document.getElementById('gif-search').value);
+        } else {
+            currentGifTab = 'favorites';
+            renderGifs(favoriteGifs, true);
+        }
+    }
+}
+
+function closeUnifiedPicker() {
+    const picker = document.getElementById('unified-picker');
+    if (!picker) return;
+    
+    picker.classList.remove('active');
+    const overlay = document.querySelector('.unified-picker-overlay') || document.querySelector('.reaction-picker-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            if (!picker.classList.contains('active')) {
+                overlay.style.display = 'none';
+            }
+        }, 200);
+    }
+    
+    if (pickerResizeObserver) {
+        pickerResizeObserver.disconnect();
+        pickerResizeObserver = null;
+    }
+    
+    window.closeUnifiedPicker = closeUnifiedPicker;
 }
 
 function handleSearch(e) {
@@ -55,6 +209,17 @@ function handleSearch(e) {
     }
     
     renderSearchResults(query);
+}
+
+function handleReactionSearch(e) {
+    const query = e.target.value.trim();
+    
+    if (!query) {
+        renderReactionEmojis();
+        return;
+    }
+    
+    renderReactionSearchResults(query);
 }
 
 function renderEmojis() {
@@ -82,13 +247,16 @@ function renderQuickReactions(container) {
     grid.className = 'reaction-emoji-grid';
     
     for (const emoji of base.slice(0, 42)) {
-        const btn = document.createElement('span');
+        const btn = document.createElement('button');
         btn.className = 'reaction-picker-emoji';
         btn.textContent = emoji;
-        btn.addEventListener('click', (e) => {
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            selectEmoji(emoji);
-        });
+            console.log('Emoji clicked:', emoji);
+            window.selectEmoji(emoji);
+        };
         grid.appendChild(btn);
     }
     
@@ -107,11 +275,11 @@ function renderFullEmojiPicker(container) {
         '🎨 Symbols': [],
         '🏳️ Flags': []
     };
-    
+
     for (const e of window.shortcodes) {
         const emoji = e.emoji;
         if (!emoji) continue;
-        
+
         const cat = getEmojiCategory(emoji);
         if (categories[cat]) {
             categories[cat].push(emoji);
@@ -119,52 +287,58 @@ function renderFullEmojiPicker(container) {
             categories['🙂 Smileys & Emotion'].push(emoji);
         }
     }
-    
-    for (const [categoryName, emojis] of Object.entries(categories)) {
-        if (emojis.length === 0) continue;
-        
-        const categoryHeader = document.createElement('div');
-        categoryHeader.className = 'reaction-category';
-        categoryHeader.textContent = categoryName;
-        container.appendChild(categoryHeader);
-        
-        const grid = document.createElement('div');
-        grid.className = 'reaction-emoji-grid';
-        
-        for (const emoji of emojis) {
-            const btn = document.createElement('span');
-            btn.className = 'reaction-picker-emoji';
-            btn.textContent = emoji;
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                selectEmoji(emoji);
-            });
-            grid.appendChild(btn);
-        }
-        
-        container.appendChild(grid);
-    }
-    
+
     const quickHeader = document.createElement('div');
     quickHeader.className = 'reaction-category';
     quickHeader.textContent = 'Quick';
     container.appendChild(quickHeader);
-    
+
     const quickGrid = document.createElement('div');
     quickGrid.className = 'reaction-emoji-grid';
-    
+
     for (const emoji of QUICK_REACTIONS) {
-        const btn = document.createElement('span');
+        const btn = document.createElement('button');
         btn.className = 'reaction-picker-emoji';
         btn.textContent = emoji;
-        btn.addEventListener('click', (e) => {
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            selectEmoji(emoji);
-        });
+            console.log('Emoji clicked:', emoji);
+            window.selectEmoji(emoji);
+        };
         quickGrid.appendChild(btn);
     }
-    
+
     container.appendChild(quickGrid);
+
+    for (const [categoryName, emojis] of Object.entries(categories)) {
+        if (emojis.length === 0) continue;
+
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'reaction-category';
+        categoryHeader.textContent = categoryName;
+        container.appendChild(categoryHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'reaction-emoji-grid';
+
+    for (const emoji of emojis) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-picker-emoji';
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Emoji clicked:', emoji);
+            window.selectEmoji(emoji);
+        };
+        grid.appendChild(btn);
+    }
+
+        container.appendChild(grid);
+    }
 }
 
 function renderSearchResults(query) {
@@ -212,13 +386,192 @@ function renderSearchResults(query) {
     grid.className = 'reaction-emoji-grid';
     
     for (const e of results) {
-        const btn = document.createElement('span');
+        const btn = document.createElement('button');
         btn.className = 'reaction-picker-emoji';
         btn.textContent = e.emoji;
-        btn.addEventListener('click', (ev) => {
+        btn.type = 'button';
+        btn.onclick = (ev) => {
+            ev.preventDefault();
             ev.stopPropagation();
-            selectEmoji(e.emoji);
-        });
+            console.log('Emoji clicked:', e.emoji);
+            window.selectEmoji(e.emoji);
+        };
+        grid.appendChild(btn);
+    }
+    
+    container.appendChild(grid);
+}
+
+function renderReactionEmojis() {
+    const container = document.querySelector('#reaction-emoji-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (window.shortcodes && window.shortcodes.length > 0) {
+        renderReactionFullEmojiPicker(container);
+    } else {
+        renderReactionQuickReactions(container);
+    }
+}
+
+function renderReactionQuickReactions(container) {
+    const base = (window.recentEmojis && window.recentEmojis.length > 0) ? window.recentEmojis : QUICK_REACTIONS;
+    
+    const label = document.createElement('div');
+    label.className = 'reaction-category';
+    label.textContent = window.shortcodes ? 'Recent' : 'Quick Reactions';
+    container.appendChild(label);
+    
+    const grid = document.createElement('div');
+    grid.className = 'reaction-emoji-grid';
+    
+    for (const emoji of base.slice(0, 42)) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-picker-emoji';
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.selectEmoji(emoji);
+        };
+        grid.appendChild(btn);
+    }
+    
+    container.appendChild(grid);
+}
+
+function renderReactionFullEmojiPicker(container) {
+    const categories = {
+        '🙂 Smileys & Emotion': [],
+        '👋 People & Body': [],
+        '🐶 Animals & Nature': [],
+        '🍎 Food & Drink': [],
+        '🏀 Activities': [],
+        '🚗 Travel & Places': [],
+        '💡 Objects': [],
+        '🎨 Symbols': [],
+        '🏳️ Flags': []
+    };
+
+    for (const e of window.shortcodes) {
+        const emoji = e.emoji;
+        if (!emoji) continue;
+
+        const cat = getEmojiCategory(emoji);
+        if (categories[cat]) {
+            categories[cat].push(emoji);
+        } else {
+            categories['🙂 Smileys & Emotion'].push(emoji);
+        }
+    }
+
+    const quickHeader = document.createElement('div');
+    quickHeader.className = 'reaction-category';
+    quickHeader.textContent = 'Quick';
+    container.appendChild(quickHeader);
+
+    const quickGrid = document.createElement('div');
+    quickGrid.className = 'reaction-emoji-grid';
+
+    for (const emoji of QUICK_REACTIONS) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-picker-emoji';
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.selectEmoji(emoji);
+        };
+        quickGrid.appendChild(btn);
+    }
+
+    container.appendChild(quickGrid);
+
+    for (const [categoryName, emojis] of Object.entries(categories)) {
+        if (emojis.length === 0) continue;
+
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'reaction-category';
+        categoryHeader.textContent = categoryName;
+        container.appendChild(categoryHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'reaction-emoji-grid';
+
+    for (const emoji of emojis) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-picker-emoji';
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.selectEmoji(emoji);
+        };
+        grid.appendChild(btn);
+    }
+
+        container.appendChild(grid);
+    }
+}
+
+function renderReactionSearchResults(query) {
+    const container = document.querySelector('#reaction-emoji-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!window.shortcodes) {
+        const loading = document.createElement('div');
+        loading.className = 'reaction-loading';
+        loading.textContent = 'Loading...';
+        container.appendChild(loading);
+        return;
+    }
+    
+    const q = query.toLowerCase();
+    const results = [];
+    
+    for (const e of window.shortcodes) {
+        const label = (e.label || '').toLowerCase();
+        const em = e.emoticon;
+        let match = label.includes(q);
+        if (!match && em) {
+            if (Array.isArray(em)) {
+                match = em.some(x => (x || '').toLowerCase().includes(q));
+            } else {
+                match = (em || '').toLowerCase().includes(q);
+            }
+        }
+        if (match && results.length < 120) {
+            results.push(e);
+        }
+    }
+    
+    if (results.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'reaction-empty';
+        empty.textContent = 'No matches';
+        container.appendChild(empty);
+        return;
+    }
+    
+    const grid = document.createElement('div');
+    grid.className = 'reaction-emoji-grid';
+    
+    for (const e of results) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-picker-emoji';
+        btn.textContent = e.emoji;
+        btn.type = 'button';
+        btn.onclick = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            window.selectEmoji(e.emoji);
+        };
         grid.appendChild(btn);
     }
     
@@ -284,7 +637,7 @@ function openReactionPicker(msgId, anchorEl) {
     reactionPickerMsgId = msgId;
     
     const isMobile = window.innerWidth <= 768;
-    const overlay = document.querySelector('.reaction-picker-overlay');
+    const overlay = document.querySelector('.reaction-picker-message-overlay');
     
     if (isMobile) {
         picker.style.left = '0';
@@ -293,7 +646,10 @@ function openReactionPicker(msgId, anchorEl) {
         picker.style.bottom = '0';
         picker.style.width = '100vw';
         picker.style.position = 'fixed';
-        overlay.classList.add('active');
+        if (overlay) {
+            overlay.style.display = 'block';
+            overlay.classList.add('active');
+        }
     } else {
         picker.style.position = 'fixed';
         picker.style.left = 'auto';
@@ -311,13 +667,13 @@ function openReactionPicker(msgId, anchorEl) {
         pickerResizeObserver.observe(picker);
     }
     
-    const search = picker.querySelector('#emoji-search');
+    const search = picker.querySelector('#reaction-emoji-search');
     if (search) {
         search.value = '';
-        search.focus();
+        setTimeout(() => search.focus(), 50);
     }
     
-    renderEmojis();
+    renderReactionEmojis();
     
     picker.classList.add('active');
 }
@@ -331,26 +687,30 @@ function toggleEmojiPicker(e) {
     const btn = document.getElementById('emoji-btn');
     if (!btn) return;
     
-    const picker = createReactionPicker();
+    const picker = createUnifiedPicker();
     
     if (picker.classList.contains('active')) {
-        closeReactionPicker();
+        closeUnifiedPicker();
         return;
     }
     
     reactionPickerMsgId = null;
     
     const isMobile = window.innerWidth <= 768;
-    const overlay = document.querySelector('.reaction-picker-overlay');
+    const overlay = document.querySelector('.unified-picker-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+        overlay.classList.add('active');
+    }
     
     if (isMobile) {
         picker.style.left = '0';
         picker.style.right = '0';
         picker.style.top = 'auto';
         picker.style.bottom = '0';
+        picker.style.width = '100vw';
         picker.style.maxWidth = '100vw';
         picker.style.position = 'fixed';
-        overlay.classList.add('active');
     } else {
         picker.style.position = 'fixed';
         picker.style.left = 'auto';
@@ -371,7 +731,7 @@ function toggleEmojiPicker(e) {
     const search = picker.querySelector('#emoji-search');
     if (search) {
         search.value = '';
-        search.focus();
+        setTimeout(() => search.focus(), 50);
     }
     
     renderEmojis();
@@ -417,31 +777,14 @@ function closeReactionPicker() {
         pickerResizeObserver = null;
     }
     
-    const overlay = document.querySelector('.reaction-picker-overlay');
+    const overlay = document.querySelector('.reaction-picker-message-overlay');
     if (overlay) {
         overlay.classList.remove('active');
-    }
-}
-
-function selectEmoji(emoji) {
-    recentEmojis = [emoji, ...recentEmojis.filter(e => e !== emoji)].slice(0, 50);
-    localStorage.setItem('originChats_recentEmojis', JSON.stringify(recentEmojis));
-    
-    const msgId = reactionPickerMsgId;
-    closeReactionPicker();
-    
-    if (msgId) {
-        addReaction(msgId, emoji);
-    } else {
-        const input = document.getElementById('message-input');
-        if (!input) return;
-        const start = input.selectionStart ?? input.value.length;
-        const end = input.selectionEnd ?? input.value.length;
-        input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
-        const pos = start + emoji.length;
-        input.selectionStart = pos;
-        input.selectionEnd = pos;
-        input.focus();
+        setTimeout(() => {
+            if (!reactionPicker || !reactionPicker.classList.contains('active')) {
+                overlay.style.display = 'none';
+            }
+        }, 200);
     }
 }
 
@@ -670,24 +1013,54 @@ Object.defineProperty(window, 'editingMessage', {
 });
 
 function startEditMessage(msg) {
-    editingMessage = msg;
-    const input = document.getElementById('message-input');
-    originalInputValue = input.value;
-    input.value = msg.content;
-    input.focus();
+  editingMessage = msg;
+  const input = document.getElementById('message-input');
+  originalInputValue = input.value;
+  input.value = msg.content;
+  input.focus();
 
-    const user = getUserByUsernameCaseInsensitive(msg.user) || { username: msg.user };
-    document.getElementById('reply-text').textContent = `Editing @${user.username}`;
-    document.getElementById('reply-bar').classList.add('active', 'editing-mode');
+  const user = getUserByUsernameCaseInsensitive(msg.user) || { username: msg.user };
+  const replyBar = document.getElementById('reply-bar');
+  const icon = document.getElementById('reply-bar-icon');
+  const label = document.getElementById('reply-bar-label');
+  const text = document.getElementById('reply-text');
+  const preview = document.getElementById('reply-preview');
+
+  // Set edit mode styling
+  icon.setAttribute('data-lucide', 'edit-3');
+  label.textContent = 'Editing message';
+  text.innerHTML = `<span class="username">@${escapeHtml(user.username)}</span>`;
+  preview.textContent = msg.content.length > 100 ? msg.content.substring(0, 100) + '...' : msg.content;
+  preview.style.display = 'block';
+
+  replyBar.classList.add('active', 'editing-mode');
+  if (window.lucide) window.lucide.createIcons({ root: replyBar });
+
+  // Place cursor at end
+  setTimeout(() => {
+    input.selectionStart = input.selectionEnd = input.value.length;
+  }, 0);
 }
 
 function cancelEdit() {
-    editingMessage = null;
-    originalInputValue = '';
-    const input = document.getElementById('message-input');
-    input.value = '';
-    input.dispatchEvent(new Event('input'));
-    document.getElementById('reply-bar').classList.remove('active', 'editing-mode');
+  editingMessage = null;
+  originalInputValue = '';
+  const input = document.getElementById('message-input');
+  input.value = '';
+  input.dispatchEvent(new Event('input'));
+
+  const replyBar = document.getElementById('reply-bar');
+  const icon = document.getElementById('reply-bar-icon');
+  const label = document.getElementById('reply-bar-label');
+  const preview = document.getElementById('reply-preview');
+
+  // Reset to reply mode defaults
+  icon.setAttribute('data-lucide', 'corner-up-left');
+  label.textContent = 'Replying to';
+  preview.style.display = 'none';
+
+  replyBar.classList.remove('active', 'editing-mode');
+  if (window.lucide) window.lucide.createIcons({ root: replyBar });
 }
 
 window.startEditMessage = startEditMessage;
@@ -696,21 +1069,21 @@ window.cancelEdit = cancelEdit;
 let gifPickerOpen = false;
 let gifSearchTimer = null;
 let favoriteGifs = JSON.parse(localStorage.getItem('originChats_favGifs')) || [];
-let currentGifTab = 'search';
+let currentGifTab = 'favorites';
+let currentSearchResults = null;
 
 function toggleGifPicker(e) {
     if (e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    const picker = createGifPicker();
-    picker.classList.toggle('active');
-    gifPickerOpen = picker.classList.contains('active');
-    if (gifPickerOpen) {
-        if (currentGifTab === 'search') {
-            setTimeout(() => document.getElementById('gif-search').focus(), 50);
+    if (e && !e.closest('#emoji-btn')) {
+        const picker = createUnifiedPicker();
+        if (picker.classList.contains('active')) {
+            closeUnifiedPicker();
         } else {
-            switchGifTab('favorites');
+            switchUnifiedTab('gif');
+            picker.classList.add('active');
         }
     }
 }
@@ -764,10 +1137,12 @@ function switchGifTab(tab) {
     } else {
         searchBar.style.display = 'block';
         const query = document.getElementById('gif-search').value;
-        if (query) {
+        if (query && currentSearchResults) {
+            renderGifs(currentSearchResults, false);
+        } else if (query) {
             searchGifs(query);
         } else {
-            results.innerHTML = '';
+            renderGifs(favoriteGifs, true);
         }
     }
 }
@@ -786,7 +1161,13 @@ function debouncedSearch(query) {
 }
 
 async function searchGifs(query) {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+        currentGifTab = 'favorites';
+        renderGifs(favoriteGifs, true);
+        return;
+    }
+
+    currentGifTab = 'search';
 
     const resultsContainer = document.getElementById('gif-results');
     resultsContainer.innerHTML = '<div class="gif-loading">Loading...</div>';
@@ -794,7 +1175,8 @@ async function searchGifs(query) {
     try {
         const res = await fetch(`https://apps.mistium.com/tenor/search?query=${encodeURIComponent(query)}`);
         const data = await res.json();
-        renderGifs(data.results || data);
+        currentSearchResults = data.results || data;
+        renderGifs(currentSearchResults, false);
     } catch (e) {
         console.error(e);
         resultsContainer.innerHTML = '<div class="gif-error">Failed to load GIFs</div>';
@@ -830,6 +1212,7 @@ function renderGifs(results, isFavorites = false) {
 
         const starBtn = document.createElement('button');
         starBtn.className = 'gif-star-btn';
+        starBtn.dataset.url = itemUrl;
         const isFav = favoriteGifs.some(f => f.url === itemUrl);
         starBtn.innerHTML = isFav ?
             '<i data-lucide="star" fill="currentColor"></i>' :

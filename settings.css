@@ -1,23 +1,23 @@
 :root {
-    --bg-tertiary: #1e1f22;
-    --bg-secondary: #2b2d31;
-    --bg-primary: #313338;
-    --header-primary: #f2f3f5;
-    --header-secondary: #b5bac1;
-    --text-muted: #949ba4;
-    --text-normal: #dbdee1;
-    --text-link: #00a8fc;
-    --interactive-normal: #b5bac1;
-    --interactive-hover: #dbdee1;
-    --interactive-active: #ffffff;
-    --brand-experiment: #5865f2;
-    --brand-experiment-hover: #4752c4;
-    --status-green: #23a559;
-    --divider-light: #1e1f22;
-    --scrollbar-thin-thumb: #1e1f22;
-    --scrollbar-thin-track: #2b2d31;
-    --input-bg: #1e1f22;
-    --red: #ed4245;
+    --bg-tertiary: var(--surface, #0a0a0c);
+    --bg-secondary: var(--surface-light, #141419);
+    --bg-primary: var(--surface-hover, #1f1f26);
+    --header-primary: var(--text, #ededed);
+    --header-secondary: var(--text-dim, #a0a0a0);
+    --text-muted: var(--text-dim, #a0a0a0);
+    --text-normal: var(--text, #ededed);
+    --text-link: var(--primary-hover, #586068);
+    --interactive-normal: var(--text-dim, #a0a0a0);
+    --interactive-hover: var(--text, #ededed);
+    --interactive-active: #fff;
+    --brand-experiment: var(--primary, #4e5058);
+    --brand-experiment-hover: var(--primary-hover, #586068);
+    --status-green: #3ba55c;
+    --divider-light: var(--border, #2a2a33);
+    --scrollbar-thin-thumb: var(--surface-light, #141419);
+    --scrollbar-thin-track: var(--surface, #0a0a0c);
+    --input-bg: var(--surface, #0a0a0c);
+    --red: var(--danger, #ed4245)
 }
 
 .settings-panel {
@@ -27,11 +27,11 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 60000;
+    z-index: 60000
 }
 
 .settings-panel.active {
-    display: block;
+    display: block
 }
 
 .settings-overlay {
@@ -41,7 +41,8 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
-    z-index: 1;
+    backdrop-filter: blur(8px);
+    z-index: 1
 }
 
 .settings-container {
@@ -51,13 +52,10 @@
     right: 0;
     width: 100%;
     height: 100%;
-    max-width: 900px;
-    background: var(--bg-secondary, #2b2d31);
+    background: var(--surface, #0a0a0c);
     overflow: hidden;
-    z-index: 2;
+    z-index: 2
 }
-
-
 
 .settings-close {
     position: absolute;
@@ -65,40 +63,43 @@
     right: 16px;
     width: 32px;
     height: 32px;
-    background: var(--surface, #0a0a0c);
-    border: 1px solid var(--border, #2a2a33);
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-dim, #a0a0a0);
     z-index: 20;
+    transition: all 0.2s ease
 }
 
 .settings-close:hover {
-    background: var(--surface-hover, #1f1f26);
+    background: rgba(0, 0, 0, 0.5);
     color: var(--text, #ededed);
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.2)
 }
 
 .settings-close svg {
     width: 18px;
-    height: 18px;
+    height: 18px
 }
 
 .settings-sidebar {
     width: 278px;
     background: var(--surface, #0a0a0c);
-    border-left: 1px solid var(--border, #2a2a33);
+    border-right: 1px solid var(--border, #2a2a33);
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
+    flex-shrink: 0
 }
 
 .settings-nav {
     flex: 1;
     padding: 16px 12px;
-    overflow-y: auto;
+    overflow-y: auto
 }
 
 .nav-header {
@@ -121,19 +122,20 @@
     border: none;
     background: none;
     color: var(--text-dim, #a0a0a0);
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     text-align: left;
+    transition: all 0.2s ease
 }
 
 .nav-item:hover {
     background: var(--surface-hover, #1f1f26);
-    color: var(--text, #ededed);
+    color: var(--text, #ededed)
 }
 
 .nav-item.active {
     background: var(--surface-light, #141419);
-    color: #fff;
+    color: var(--text, #ededed)
 }
 
 .nav-item-icon {
@@ -143,6 +145,13 @@
 .nav-item-icon svg {
     width: 20px;
     height: 20px;
+    color: var(--text-dim);
+    transition: color 0.2s ease
+}
+
+.nav-item:hover .nav-item-icon svg,
+.nav-item.active .nav-item-icon svg {
+    color: var(--text)
 }
 
 .nav-item-label {
@@ -164,20 +173,27 @@
     border: none;
     background: transparent;
     color: var(--text-dim, #a0a0a0);
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 15px;
     font-weight: 600;
+    transition: all 0.2s ease
 }
 
 .logout-button:hover {
-    background: var(--surface-hover, #1f1f26);
-    color: var(--danger, #ed4245);
+    background: rgba(237, 66, 69, 0.15);
+    color: var(--danger, #ed4245)
 }
 
 .logout-button svg {
     width: 20px;
     height: 20px;
+    color: var(--text-dim);
+    transition: color 0.2s ease
+}
+
+.logout-button:hover svg {
+    color: var(--danger)
 }
 
 .settings-content {
@@ -229,55 +245,16 @@
 
 .card {
     background: var(--surface-light, #141419);
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 16px;
     margin-bottom: 16px;
+    border: 1px solid var(--border, #2a2a33)
 }
 
 .account-info-preview {
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-.account-avatar-preview {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.account-avatar-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.account-preview-details {
-    flex: 1;
-}
-
-.account-username-preview {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text, #ededed);
-    margin-bottom: 4px;
-}
-
-.account-id-preview {
-    font-size: 12px;
-    color: var(--text-dim, #a0a0a0);
-}
-
-.account-id-preview span {
-    font-weight: 600;
-}
-
-.account-info-preview {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    gap: 16px
 }
 
 .account-avatar-preview {
@@ -285,33 +262,33 @@
     height: 80px;
     border-radius: 50%;
     overflow: hidden;
-    flex-shrink: 0;
+    flex-shrink: 0
 }
 
 .account-avatar-preview img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover
 }
 
 .account-preview-details {
-    flex: 1;
+    flex: 1
 }
 
 .account-username-preview {
     font-size: 20px;
     font-weight: 600;
-    color: var(--header-primary, #f2f3f5);
-    margin-bottom: 4px;
+    color: var(--text, #ededed);
+    margin-bottom: 4px
 }
 
 .account-id-preview {
     font-size: 14px;
-    color: var(--header-secondary, #b5bac1);
+    color: var(--text-dim, #a0a0a0)
 }
 
 .account-id-preview span {
-    font-weight: 600;
+    font-weight: 600
 }
 
 .settings-grid {
@@ -322,9 +299,9 @@
 
 .setting-card {
     background: var(--surface-light, #141419);
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 18px;
-    border: 1px solid var(--border, #2a2a33);
+    border: 1px solid var(--border, #2a2a33)
 }
 
 .setting-card.full-width {
@@ -346,6 +323,7 @@
 .setting-card-header h3 svg {
     width: 16px;
     height: 16px;
+    color: var(--text-dim)
 }
 
 .setting-sublabel {
@@ -386,19 +364,22 @@
     padding: 8px 12px;
     background: var(--surface, #0a0a0c);
     border: 2px solid var(--border, #2a2a33);
-    border-radius: 4px;
+    border-radius: 8px;
     color: var(--text, #ededed);
     font-size: 15px;
     font-family: inherit;
+    transition: all 0.2s ease
 }
 
 .setting-input:focus {
     outline: none;
-    border-color: var(--primary, #7c6bc9);
+    border-color: var(--primary, #4e5058);
+    background: var(--surface, #0a0a0c);
+    box-shadow: 0 0 0 3px rgba(78, 80, 88, 0.2)
 }
 
 .setting-input::placeholder {
-    color: var(--text-dim, #a0a0a0);
+    color: var(--text-dim, #a0a0a0)
 }
 
 .setting-textarea {
@@ -416,31 +397,35 @@
 .setting-save-btn {
     padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
+    transition: all 0.2s ease
 }
 
 .setting-edit-btn {
     background: var(--surface, #0a0a0c);
-    color: #7c6bc9;
+    color: var(--primary, #4e5058);
+    border: 1px solid var(--border, #2a2a33)
 }
 
 .setting-edit-btn:hover {
-    background: var(--surface-hover, #1f1f26);
+    background: var(--surface-hover, #1f1f26)
 }
 
 .setting-save-btn {
-    background: #7c6bc9;
+    background: var(--primary, #4e5058);
     color: #fff;
+    border: 1px solid var(--primary, #4e5058)
 }
 
 .setting-save-btn:hover {
-    background: var(--primary-hover, #9b87f5);
+    background: var(--primary-hover, #586068);
+    border-color: var(--primary-hover, #586068)
 }
 
 .setting-save-btn:disabled {
@@ -456,6 +441,7 @@
     overflow: hidden;
     background: var(--surface-light, #141419);
     border: 1px solid var(--border, #2a2a33);
+    border-radius: 12px
 }
 
 .banner-section {
@@ -486,28 +472,30 @@
     justify-content: center;
     gap: 8px;
     padding: 10px 20px;
-    background: rgba(10, 10, 12, 0.85);
-    border: none;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text, #ededed);
     font-size: 14px;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     opacity: 0;
+    transition: all 0.2s ease
 }
 
 .banner-preview:hover .banner-upload,
 .banner-upload:hover {
-    opacity: 1;
+    opacity: 1
 }
 
 .banner-upload:hover {
-    background: rgba(10, 10, 12, 0.95);
+    background: rgba(0, 0, 0, 0.95);
+    border-color: rgba(255, 255, 255, 0.2)
 }
 
 .banner-upload svg {
     width: 20px;
-    height: 20px;
+    height: 20px
 }
 
 .avatar-section {
@@ -526,12 +514,13 @@
     height: 70px;
     border-radius: 50%;
     overflow: hidden;
-    border: 4px solid var(--surface-light, #141419);
+    border: 4px solid var(--surface, #0a0a0c);
     position: relative;
     background: var(--surface, #0a0a0c);
     margin-top: -30px;
     margin-left: 16px;
     flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)
 }
 
 .avatar-upload img {
@@ -546,17 +535,17 @@
     right: -4px;
     width: 24px;
     height: 24px;
-    background: #7c6bc9;
-    border: 3px solid var(--surface-light, #141419);
+    background: var(--primary, #4e5058);
+    border: 3px solid var(--surface, #0a0a0c);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    cursor: pointer
 }
 
 .avatar-edit:hover {
-    background: var(--primary-hover, #9b87f5);
+    background: var(--primary-hover, #586068)
 }
 
 .avatar-edit svg {
@@ -580,21 +569,28 @@
     padding: 10px;
     background: var(--surface, #0a0a0c);
     border: 1px solid var(--border, #2a2a33);
-    border-radius: 4px;
+    border-radius: 8px;
     color: var(--text-dim, #a0a0a0);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease
 }
 
 .avatar-option:hover {
     background: var(--surface-hover, #1f1f26);
-    color: var(--text, #ededed);
+    color: var(--text, #ededed)
 }
 
 .avatar-option svg {
     width: 18px;
     height: 18px;
+    color: var(--text-dim);
+    transition: color 0.2s ease
+}
+
+.avatar-option:hover svg {
+    color: var(--text)
 }
 
 .password-form {
@@ -622,19 +618,22 @@
     padding: 10px 12px;
     background: var(--surface, #0a0a0c);
     border: 2px solid var(--border, #2a2a33);
-    border-radius: 4px;
+    border-radius: 8px;
     color: var(--text, #ededed);
     font-size: 15px;
     font-family: inherit;
+    transition: all 0.2s ease
 }
 
 .password-form .form-input:focus {
     outline: none;
-    border-color: #7c6bc9;
+    border-color: var(--primary, #4e5058);
+    background: var(--surface, #0a0a0c);
+    box-shadow: 0 0 0 3px rgba(78, 80, 88, 0.2)
 }
 
 .password-form .form-input::placeholder {
-    color: var(--text-dim, #a0a0a0);
+    color: var(--text-dim, #a0a0a0)
 }
 
 .password-form .form-error {
@@ -653,91 +652,94 @@
     bottom: 24px;
     right: 24px;
     padding: 12px 20px;
-    background: var(--bg-primary, #313338);
+    background: var(--surface-hover, #1f1f26);
     color: var(--text, #ededed);
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
     opacity: 0;
     visibility: hidden;
     z-index: 65000;
+    border: 1px solid var(--border, #2a2a33);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(10px);
+    transition: all 0.3s ease
 }
 
 .settings-toast.active {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
+    transform: translateY(0)
 }
 
 .settings-toast.toast-success {
     background: var(--success, #3ba55c);
     color: #fff;
+    border-color: var(--success, #3ba55c)
 }
 
 .settings-toast.toast-error {
     background: var(--danger, #ed4245);
     color: #fff;
+    border-color: var(--danger, #ed4245)
 }
 
 .settings-toast.toast-info {
-    background: var(--primary, #5865f2);
+    background: var(--primary, #4e5058);
     color: #fff;
+    border-color: var(--primary, #4e5058)
 }
 
 @media (max-width: 768px) {
-    .settings-container {
-        max-width: 100%;
-    }
-    
     .settings-sidebar {
         position: fixed;
         left: -278px;
         top: 0;
         bottom: 0;
         z-index: 10;
+        transition: transform 0.3s ease
     }
-    
+
     .settings-sidebar.mobile-open {
-        transform: translateX(278px);
+        transform: translateX(278px)
     }
-    
+
     .settings-content {
-        padding-right: 0;
+        padding-right: 0
     }
-    
+
     .settings-section {
         padding: 32px 16px 80px;
-        max-width: 100%;
+        max-width: 100%
     }
-    
+
     .section-header h2 {
-        font-size: 18px;
+        font-size: 18px
     }
-    
+
     .settings-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr
     }
-    
+
     .card {
-        border-radius: 0;
-        margin-left: -16px;
-        margin-right: -16px;
+        border-radius: 12px;
+        margin: 0
     }
-    
+
     .avatar-section {
         flex-direction: column;
-        text-align: center;
+        text-align: center
     }
-    
+
     .avatar-upload {
-        margin: -40px auto 0;
+        margin: -40px auto 0
     }
-    
+
     .avatar-options {
-        width: 100%;
+        width: 100%
     }
-    
+
     .password-form .btn {
-        width: 100%;
+        width: 100%
     }
 }

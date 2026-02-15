@@ -141,6 +141,15 @@ async function createTenorEmbed(tenorId, originalUrl) {
         img.alt = data[0].content_description || 'Tenor GIF';
         img.className = 'tenor-gif';
         img.loading = 'lazy';
+        img.onerror = () => {
+            const fallbackLink = document.createElement('a');
+            fallbackLink.href = originalUrl;
+            fallbackLink.target = '_blank';
+            fallbackLink.rel = 'noopener noreferrer';
+            fallbackLink.textContent = originalUrl;
+            fallbackLink.className = 'failed-image-link';
+            container.replaceWith(fallbackLink);
+        };
 
         const wrapper = document.createElement('div');
         wrapper.className = 'chat-image-wrapper';
@@ -201,6 +210,15 @@ function createImageEmbed(url) {
     img.alt = 'Embedded image';
     img.className = 'message-image';
     img.loading = 'lazy';
+    img.onerror = () => {
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = url;
+        fallbackLink.target = '_blank';
+        fallbackLink.rel = 'noopener noreferrer';
+        fallbackLink.textContent = url;
+        fallbackLink.className = 'failed-image-link';
+        container.replaceWith(fallbackLink);
+    };
 
     const wrapper = document.createElement('div');
     wrapper.className = 'chat-image-wrapper';
@@ -292,6 +310,8 @@ async function isImageUrl(url, timeout = 5000) {
         });
 
         clearTimeout(timer);
+
+        if (!res.ok) return false;
 
         const type = res.headers.get("content-type");
         if (type && type.startsWith("image/")) return true;
