@@ -2415,7 +2415,7 @@ function selectChannel(channel) {
     renderMembers(channel);
     updateTypingIndicator();
 
-    window.canSendMessages = checkPermission(state.currentUser.roles, channel.permissions?.send || []);
+    window.canSendMessages = checkPermission(channel.permissions?.send || [], state.currentUser.roles);
     const textboxFlavor = window.canSendMessages
         ? `Type a message...`
         : `Cannot send messages here.`
