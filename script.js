@@ -305,18 +305,20 @@ window.onload = async function () {
             }
         }
 
-        const input = document.getElementById('message-input');
-        const active = document.activeElement;
-        const isInputFocused = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
-        if (input && active !== input && !isInputFocused && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-            e.preventDefault();
-            input.focus();
-            const startPos = input.selectionStart;
-            const endPos = input.selectionEnd;
-            const value = input.value;
-            input.value = value.slice(0, startPos) + e.key + value.slice(endPos);
-            input.selectionStart = input.selectionEnd = startPos + 1;
-            input.dispatchEvent(new Event('input'));
+        if (window.canSendMessages) {
+            const input = document.getElementById('message-input');
+            const active = document.activeElement;
+            const isInputFocused = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
+            if (input && active !== input && !isInputFocused && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                input.focus();
+                const startPos = input.selectionStart;
+                const endPos = input.selectionEnd;
+                const value = input.value;
+                input.value = value.slice(0, startPos) + e.key + value.slice(endPos);
+                input.selectionStart = input.selectionEnd = startPos + 1;
+                input.dispatchEvent(new Event('input'));
+            }
         }
     });
 
@@ -2412,6 +2414,15 @@ function selectChannel(channel) {
     }
     renderMembers(channel);
     updateTypingIndicator();
+
+    window.canSendMessages = checkPermission(channel.permissions?.send || [], state.currentUser.roles);
+    const textboxFlavor = window.canSendMessages
+        ? `Type a message...`
+        : `Cannot send messages here.`
+    const textbox = document.getElementById("message-input");
+    textbox.value = "";
+    textbox.placeholder = textboxFlavor;
+    textbox.disabled = !window.canSendMessages;
 }
 
 function formatTimestamp(unix) {
@@ -2582,7 +2593,7 @@ async function renderMessages(scrollToBottom = true) {
 
     if (!state.messagesByServer[state.serverUrl] || !state.messagesByServer[state.serverUrl][channel]) {
         console.log(`renderMessages: No messages for server=${state.serverUrl}, channel=${channel}`);
-        container.innerHTML = '';
+        container.innerHTML = "";
         state.renderInProgress = false;
         return;
     }
@@ -2590,6 +2601,13 @@ async function renderMessages(scrollToBottom = true) {
     console.log(`renderMessages: Rendering ${state.messagesByServer[state.serverUrl][channel].length} messages for server=${state.serverUrl}, channel=${channel}`);
 
     const messages = state.messagesByServer[state.serverUrl][channel].slice().sort((a, b) => a.timestamp - b.timestamp);
+
+
+    if (messages.length == 0) {
+        state.renderInProgress = false;
+        container.innerHTML = `There's nothing here right now.`
+        return
+    }
 
     const fragment = document.createDocumentFragment();
 
@@ -4204,6 +4222,12 @@ document.addEventListener('click', (e) => {
 function toggleUserMenu() {
     const menu = document.getElementById('user-menu');
     menu.classList.toggle('active');
+}
+
+async function attemptLogout() {
+    const message = `Are you sure you want to log out?`;
+    const condition = confirm(message);
+    if (condition) logout();
 }
 
 function logout() {
