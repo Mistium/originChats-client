@@ -139,8 +139,10 @@ function extractValueByPath(obj, path) {
 }
 
 function buildImageUrl(server, response, file) {
+	if (server.responseUrlPath === "$")
+		return response.path;
+	
     if (!server.urlTemplate) return extractValueByPath(response, server.responseUrlPath);
-
     if (server.responseUrlPath) {
         const extracted = extractValueByPath(response, server.responseUrlPath);
         if (extracted) {
@@ -162,7 +164,7 @@ function buildImageUrl(server, response, file) {
     return template;
 }
 
-function uploadImageWithXHR(file, url, headers) {
+function uploadImageWithXHR(file, url, headers, fileParamName, bodyParams) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
@@ -177,7 +179,7 @@ function uploadImageWithXHR(file, url, headers) {
                     const data = JSON.parse(xhr.responseText);
                     resolve(data);
                 } catch (e) {
-                    reject(new Error('Invalid response from server'));
+					resolve(xhr.responseText);
                 }
             } else {
                 let errorMessage = 'Upload failed';
@@ -195,7 +197,16 @@ function uploadImageWithXHR(file, url, headers) {
 
         const reader = new FileReader();
         reader.onload = () => {
-            xhr.send(reader.result);
+			if (fileParamName) {
+				const formData = new FormData();
+				bodyParams.forEach(param => formData.set(param.key, param.value))
+
+				formData.set(fileParamName, file);
+				xhr.send(formData);
+			} else {
+				xhr.send(reader.result);
+			}
+
         };
         reader.onerror = () => {
             reject(new Error('Failed to read file'));
@@ -236,7 +247,11 @@ async function uploadImage(file, server) {
     }
     let data = null;
 
-    data = await uploadImageWithXHR(file, uploadUrl, headers);
+    data = await uploadImageWithXHR(file, uploadUrl, headers, server.fileParamName, server.bodyParams);
+
+	if (typeof data === "string" && server.responseUrlPath === "$") {
+		data = { ok: true, path: data };
+	}
 
     if (!data.ok) {
         throw new Error(data.error || 'Upload failed');
