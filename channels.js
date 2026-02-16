@@ -251,31 +251,7 @@ function createVoiceChannelElement(channel, index) {
     usersList.className = 'voice-channel-user-list';
 
     connectedUsers.forEach(user => {
-      const userRow = document.createElement('div');
-      userRow.className = 'voice-channel-user';
-
-      const avatar = document.createElement('div');
-      avatar.className = 'voice-channel-user-avatar';
-
-      const img = document.createElement('img');
-      img.src = typeof getAvatarSrc === 'function' ? getAvatarSrc(user.username) : `https://avatars.rotur.dev/${user.username}`;
-      img.alt = user.username;
-      img.onerror = () => {
-        avatar.textContent = user.username.charAt(0).toUpperCase();
-        img.style.display = 'none';
-        avatar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        avatar.style.display = 'flex';
-        avatar.style.alignItems = 'center';
-        avatar.style.justifyContent = 'center';
-      };
-      avatar.appendChild(img);
-
-      const username = document.createElement('span');
-      username.className = 'voice-channel-username';
-      username.textContent = user.username;
-
-      userRow.appendChild(avatar);
-      userRow.appendChild(username);
+      const userRow = createVoiceUserElement(user, channel.name);
       usersList.appendChild(userRow);
     });
 
@@ -285,15 +261,12 @@ function createVoiceChannelElement(channel, index) {
   div.onclick = () => {
     console.log('Voice channel clicked:', channel.name);
     if (voiceManager.isInChannel()) {
+      return;
+    }
+    if (voiceManager.isInChannel()) {
       const currentChannel = voiceManager.currentChannel;
-      if (currentChannel === channel.name) {
-        if (confirm('Leave voice channel?')) {
-          voiceManager.leaveChannel();
-        }
-      } else {
-        if (confirm(`Switch from ${currentChannel} to ${channel.name}?`)) {
-          voiceManager.joinChannel(channel.name);
-        }
+      if (confirm(`Switch from ${currentChannel} to ${channel.name}?`)) {
+        voiceManager.joinChannel(channel.name);
       }
     } else {
       voiceManager.joinChannel(channel.name);
@@ -305,25 +278,117 @@ function createVoiceChannelElement(channel, index) {
   return wrapper;
 }
 
+function checkVoiceUserSpeaking(user, channelName) {
+  let isSpeaking = false;
+  if (voiceManager && voiceManager.currentChannel === channelName) {
+    if (state.currentUser && user.username.toLowerCase() === state.currentUser.username.toLowerCase()) {
+      isSpeaking = voiceManager.isSpeaking;
+    } else if (voiceManager.participants) {
+      const usernameLower = user.username.toLowerCase();
+      let foundParticipant = null;
+      for (const [key, value] of voiceManager.participants) {
+        if (value.username.toLowerCase() === usernameLower) {
+          foundParticipant = value;
+          break;
+        }
+      }
+      if (foundParticipant && foundParticipant.speaking) {
+        isSpeaking = true;
+      }
+    }
+  }
+  return { isSpeaking, shouldShowSpeaking: isSpeaking && !user.muted };
+}
+
+function createVoiceUserElement(user, channelName) {
+  const userRow = document.createElement('div');
+  userRow.className = 'voice-channel-user';
+  userRow.dataset.voiceUsername = user.username;
+  if (user.muted) userRow.classList.add('muted');
+
+  const { shouldShowSpeaking } = checkVoiceUserSpeaking(user, channelName);
+  if (shouldShowSpeaking) {
+    userRow.classList.add('speaking');
+    console.log('[Channels] Added speaking class to:', user.username);
+  }
+
+  const avatar = document.createElement('div');
+  avatar.className = 'voice-channel-user-avatar';
+
+  const img = document.createElement('img');
+  img.src = typeof getAvatarSrc === 'function' ? getAvatarSrc(user.username) : `https://avatars.rotur.dev/${user.username}`;
+  img.alt = user.username;
+  img.onerror = () => {
+    avatar.textContent = user.username.charAt(0).toUpperCase();
+    img.style.display = 'none';
+    avatar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    avatar.style.display = 'flex';
+    avatar.style.alignItems = 'center';
+    avatar.style.justifyContent = 'center';
+  };
+  avatar.appendChild(img);
+
+  if (user.muted) {
+    const mutedIcon = document.createElement('div');
+    mutedIcon.className = 'voice-muted-icon';
+    mutedIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path></svg>';
+    avatar.appendChild(mutedIcon);
+  }
+
+  userRow.appendChild(avatar);
+
+  const username = document.createElement('span');
+  username.className = 'voice-channel-username';
+  username.textContent = user.username;
+
+  userRow.appendChild(username);
+
+  return userRow;
+}
+
 // Helper function to get users in a voice channel
 function getVoiceChannelUsers(channelName) {
     const users = [];
+    const seenUsernames = new Set();
+
+    // Get the channel data which includes voice_state
+    const channel = state.channels.find(c => c.name === channelName);
+
+    // Add users from channel voice_state (server-provided)
+    if (channel && channel.voice_state) {
+        channel.voice_state.forEach(voiceUser => {
+            seenUsernames.add(voiceUser.username.toLowerCase());
+            users.push({
+                username: voiceUser.username,
+                pfp: typeof getAvatarSrc === 'function' ? getAvatarSrc(voiceUser.username) : `https://avatars.rotur.dev/${voiceUser.username}`,
+                muted: voiceUser.muted || false
+            });
+        });
+    }
 
     // Check if current user is in this channel
     if (voiceManager && voiceManager.currentChannel === channelName && state.currentUser && state.currentUser.username) {
-        users.push({
-            username: state.currentUser.username,
-            pfp: typeof getAvatarSrc === 'function' ? getAvatarSrc(state.currentUser.username) : `https://avatars.rotur.dev/${state.currentUser.username}`
-        });
+        const currentUsernameLower = state.currentUser.username.toLowerCase();
+        if (!seenUsernames.has(currentUsernameLower)) {
+            seenUsernames.add(currentUsernameLower);
+            users.push({
+                username: state.currentUser.username,
+                pfp: typeof getAvatarSrc === 'function' ? getAvatarSrc(state.currentUser.username) : `https://avatars.rotur.dev/${state.currentUser.username}`,
+                muted: voiceManager.isMuted
+            });
+        }
     }
 
     // Add other participants in this channel
     if (voiceManager && voiceManager.participants) {
         voiceManager.participants.forEach((participant) => {
-            if (participant.channel === channelName) {
+            const participantUsernameLower = participant.username.toLowerCase();
+            if (participant.channel === channelName && !seenUsernames.has(participantUsernameLower)) {
+                seenUsernames.add(participantUsernameLower);
                 users.push({
                     username: participant.username,
-                    pfp: typeof getAvatarSrc === 'function' ? getAvatarSrc(participant.username) : `https://avatars.rotur.dev/${participant.username}`
+                    pfp: typeof getAvatarSrc === 'function' ? getAvatarSrc(participant.username) : `https://avatars.rotur.dev/${participant.username}`,
+                    muted: participant.muted
                 });
             }
         });
@@ -406,31 +471,7 @@ function updateVoiceChannelElement(wrapper, channel, index) {
     usersList.className = 'voice-channel-user-list';
 
     connectedUsers.forEach(user => {
-      const userRow = document.createElement('div');
-      userRow.className = 'voice-channel-user';
-
-      const avatar = document.createElement('div');
-      avatar.className = 'voice-channel-user-avatar';
-
-      const img = document.createElement('img');
-      img.src = typeof getAvatarSrc === 'function' ? getAvatarSrc(user.username) : `https://avatars.rotur.dev/${user.username}`;
-      img.alt = user.username;
-      img.onerror = () => {
-        avatar.textContent = user.username.charAt(0).toUpperCase();
-        img.style.display = 'none';
-        avatar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        avatar.style.display = 'flex';
-        avatar.style.alignItems = 'center';
-        avatar.style.justifyContent = 'center';
-      };
-      avatar.appendChild(img);
-
-      const username = document.createElement('span');
-      username.className = 'voice-channel-username';
-      username.textContent = user.username;
-
-      userRow.appendChild(avatar);
-      userRow.appendChild(username);
+      const userRow = createVoiceUserElement(user, channel.name);
       usersList.appendChild(userRow);
     });
 

@@ -743,3 +743,92 @@
         width: 100%
     }
 }
+
+/* Mic threshold slider styling */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    background: var(--surface-light, #141419);
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border, #2a2a33);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -5px;
+    background-color: var(--primary, #4e5058);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--surface, #0a0a0c);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    background-color: var(--primary-hover, #586068);
+}
+
+input[type="range"]::-moz-range-track {
+    background: var(--surface-light, #141419);
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border, #2a2a33);
+}
+
+input[type="range"]::-moz-range-thumb {
+    background-color: var(--primary, #4e5058);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--surface, #0a0a0c);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    background-color: var(--primary-hover, #586068);
+}
+
+/* Theme Preview Options */
+.theme-preview-option {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.theme-preview-option:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.theme-preview-option[style*="border-color: var(--primary)"] {
+    border-color: var(--primary) !important;
+}
+
+/* Messages Container Wallpaper Support */
+.messages-container {
+    transition: background-image 0.3s ease;
+}
+
+.messages-container.has-wallpaper .messages::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: inherit;
+    filter: blur(10px);
+    opacity: 0.3;
+}

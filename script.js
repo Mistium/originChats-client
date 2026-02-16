@@ -434,6 +434,10 @@ function openSettings() {
     modal.classList.add('active');
     console.log('Settings modal opened');
     renderMediaServersSettings();
+    initVoiceSettings();
+    initPrivacySettings();
+    initChatSettings();
+    initAppearanceSettings();
 }
 
 function openAccountModal(username) {
@@ -3941,19 +3945,35 @@ function makeMessageElement(msg, isSameUserRecent, loadPromises = []) {
     }
 
     if (isBlocked) {
-        const notice = document.createElement('div');
-        notice.className = 'blocked-notice';
-        const btn = document.createElement('button');
-        btn.className = 'blocked-show-btn';
-        btn.textContent = 'Show';
-        notice.textContent = 'Message from blocked user – ';
-        notice.appendChild(btn);
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            revealBlockedMessage(wrapper, msg);
-        });
-        groupContent.appendChild(notice);
-        setupMessageSwipe(wrapper, msg);
+        const blockedMode = getBlockedMessagesMode();
+
+        if (shouldHideBlockedMessage(blockedMode)) {
+            wrapper.style.display = 'none';
+            return wrapper;
+        }
+
+        if (shouldDimBlockedMessage(blockedMode)) {
+            wrapper.classList.add('blocked-dimmed');
+            return wrapper;
+        }
+
+        if (shouldCollapseBlockedMessage(blockedMode)) {
+            const notice = document.createElement('div');
+            notice.className = 'blocked-notice';
+            const btn = document.createElement('button');
+            btn.className = 'blocked-show-btn';
+            btn.textContent = 'Show';
+            notice.textContent = 'Message from blocked user – ';
+            notice.appendChild(btn);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                revealBlockedMessage(wrapper, msg);
+            });
+            groupContent.appendChild(notice);
+            setupMessageSwipe(wrapper, msg);
+            return wrapper;
+        }
+
         return wrapper;
     }
 
@@ -6169,3 +6189,420 @@ window.addEventListener('focus', function () {
 });
 
 window.selectEmoji = selectEmoji;
+
+// Voice Settings
+function initVoiceSettings() {
+    const thresholdSlider = document.getElementById('mic-threshold-slider');
+    const thresholdValue = document.getElementById('mic-threshold-value');
+    if (!thresholdSlider || !thresholdValue) return;
+
+    const currentThreshold = voiceManager ? voiceManager.micThreshold : parseInt(localStorage.getItem('originchats_mic_threshold') || '30', 10);
+    thresholdSlider.value = currentThreshold;
+    thresholdValue.textContent = currentThreshold;
+
+    thresholdSlider.addEventListener('input', (e) => {
+        const value = e.target.value;
+        thresholdValue.textContent = value;
+        if (voiceManager) {
+            voiceManager.setMicThreshold(parseInt(value, 10));
+        }
+    });
+
+    thresholdSlider.addEventListener('change', (e) => {
+        if (voiceManager) {
+            voiceManager.setMicThreshold(parseInt(e.target.value, 10));
+        }
+    });
+}
+
+// Settings navigation
+document.addEventListener('DOMContentLoaded', () => {
+    const navItems = document.querySelectorAll('.settings-nav .nav-item');
+    const sections = document.querySelectorAll('.settings-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const sectionId = item.dataset.section;
+            if (!sectionId) return;
+
+            navItems.forEach(ni => ni.classList.remove('active'));
+            sections.forEach(s => s.classList.remove('active'));
+
+            item.classList.add('active');
+            const targetSection = document.getElementById(`section-${sectionId}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            if (sectionId === 'voice') {
+                initVoiceSettings();
+            }
+
+            if (sectionId === 'privacy') {
+                initPrivacySettings();
+            }
+
+            if (sectionId === 'chat') {
+                initChatSettings();
+            }
+
+            if (sectionId === 'appearance') {
+                initAppearanceSettings();
+            }
+        });
+    });
+});
+
+window.initVoiceSettings = initVoiceSettings;
+
+// Privacy Settings
+function initPrivacySettings() {
+    const modeSelect = document.getElementById('blocked-messages-mode');
+    const previewContent = document.getElementById('preview-content');
+    if (!modeSelect || !previewContent) return;
+
+    const currentMode = localStorage.getItem('originchats_blocked_mode') || 'collapse';
+    modeSelect.value = currentMode;
+    updateBlockedPreview(currentMode, previewContent);
+
+    modeSelect.addEventListener('change', (e) => {
+        const mode = e.target.value;
+        localStorage.setItem('originchats_blocked_mode', mode);
+        updateBlockedPreview(mode, previewContent);
+
+        // Re-render messages to apply new blocking mode
+        renderMessages();
+    });
+}
+
+function updateBlockedPreview(mode, container) {
+    const username = 'BlockedUser';
+    const content = 'This is a message from a blocked user';
+
+    switch (mode) {
+        case 'hide':
+            container.innerHTML = `<div style="color: var(--text-dim); font-style: italic;">Messages from blocked users will be completely hidden from view.</div>`;
+            break;
+        case 'dim':
+            container.innerHTML = `
+                <div style="opacity: 0.3; transition: opacity 0.2s ease;">
+                    <div style="font-weight: 600; font-size: 14px;">${username}</div>
+                    <div style="margin-top: 4px;">${content}</div>
+                </div>
+            `;
+            break;
+        case 'collapse':
+            container.innerHTML = `
+                <div class="blocked-notice" style="display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; background: rgba(237, 66, 69, 0.1); border-radius: 8px; color: var(--danger);">
+                    <span>Message from blocked user – </span>
+                    <button class="blocked-show-btn" style="background: none; border: none; color: var(--danger); font-weight: 600; cursor: pointer; padding: 0;">Show</button>
+                </div>
+            `;
+            break;
+    }
+}
+
+function getBlockedMessagesMode() {
+    return localStorage.getItem('originchats_blocked_mode') || 'collapse';
+}
+
+function shouldHideBlockedMessage(mode) {
+    return mode === 'hide';
+}
+
+function shouldDimBlockedMessage(mode) {
+    return mode === 'dim';
+}
+
+function shouldCollapseBlockedMessage(mode) {
+    return mode === 'collapse';
+}
+
+window.initPrivacySettings = initPrivacySettings;
+window.updateBlockedPreview = updateBlockedPreview;
+window.getBlockedMessagesMode = getBlockedMessagesMode;
+
+// Chat Settings
+function initChatSettings() {
+    const fontSizeSlider = document.getElementById('font-size-slider');
+    const fontSizeValue = document.getElementById('font-size-value');
+    const showEmbeds = document.getElementById('show-embeds');
+    const showTimestamps = document.getElementById('show-timestamps');
+
+    if (fontSizeSlider && fontSizeValue) {
+        const currentFontSize = localStorage.getItem('originchats_font_size') || '15';
+        fontSizeSlider.value = currentFontSize;
+        fontSizeValue.textContent = currentFontSize + 'px';
+        applyFontSize(currentFontSize);
+
+        fontSizeSlider.addEventListener('input', (e) => {
+            const size = e.target.value;
+            fontSizeValue.textContent = size + 'px';
+            applyFontSize(size);
+        });
+
+        fontSizeSlider.addEventListener('change', (e) => {
+            localStorage.setItem('originchats_font_size', e.target.value);
+        });
+    }
+
+    if (showEmbeds) {
+        const currentShowEmbeds = localStorage.getItem('originchats_show_embeds') !== 'false';
+        showEmbeds.checked = currentShowEmbeds;
+        window.shouldShowEmbeds = currentShowEmbeds;
+
+        showEmbeds.addEventListener('change', (e) => {
+            const show = e.target.checked;
+            localStorage.setItem('originchats_show_embeds', show);
+            window.shouldShowEmbeds = show;
+            renderMessages();
+        });
+    }
+
+    if (showTimestamps) {
+        const currentShowTimestamps = localStorage.getItem('originchats_show_timestamps') !== 'false';
+        showTimestamps.checked = currentShowTimestamps;
+        window.showTimestamps = currentShowTimestamps;
+
+        showTimestamps.addEventListener('change', (e) => {
+            const show = e.target.checked;
+            localStorage.setItem('originchats_show_timestamps', show);
+            window.showTimestamps = show;
+            renderMessages();
+        });
+    }
+}
+
+function applyFontSize(size) {
+    document.documentElement.style.setProperty('--message-font-size', size + 'px');
+}
+
+// Appearance Settings
+function initAppearanceSettings() {
+    const themeSelect = document.getElementById('color-theme-select');
+    const wallpaperUpload = document.getElementById('wallpaper-upload');
+    const wallpaperPreview = document.getElementById('wallpaper-preview');
+    const clearWallpaperBtn = document.getElementById('clear-wallpaper-btn');
+    const wallpaperOpacity = document.getElementById('wallpaper-opacity');
+    const themePreviews = document.querySelectorAll('.theme-preview-option');
+
+    // Theme handling
+    if (themeSelect) {
+        const currentTheme = localStorage.getItem('originchats_theme') || 'dark';
+        themeSelect.value = currentTheme;
+        applyTheme(currentTheme);
+
+        themeSelect.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            localStorage.setItem('originchats_theme', theme);
+            applyTheme(theme);
+            updateThemePreview(theme);
+        });
+    }
+
+    // Theme preview clicks
+    themePreviews.forEach(preview => {
+        preview.addEventListener('click', () => {
+            const theme = preview.dataset.theme;
+            if (themeSelect) {
+                themeSelect.value = theme;
+                localStorage.setItem('originchats_theme', theme);
+                applyTheme(theme);
+                updateThemePreview(theme);
+            }
+        });
+    });
+
+    updateThemePreview(localStorage.getItem('originchats_theme') || 'dark');
+
+    // Wallpaper handling
+    if (wallpaperUpload) {
+        const currentWallpaper = localStorage.getItem('originchats_wallpaper');
+        if (currentWallpaper) {
+            applyWallpaper(currentWallpaper);
+            updateWallpaperPreview(currentWallpaper);
+        }
+
+        wallpaperUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataUrl = event.target.result;
+                    localStorage.setItem('originchats_wallpaper', dataUrl);
+                    applyWallpaper(dataUrl);
+                    updateWallpaperPreview(dataUrl);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    if (clearWallpaperBtn) {
+        clearWallpaperBtn.addEventListener('click', () => {
+            localStorage.removeItem('originchats_wallpaper');
+            applyWallpaper('');
+            updateWallpaperPreview('');
+            wallpaperUpload.value = '';
+        });
+    }
+
+    if (wallpaperOpacity) {
+        const currentDimmed = localStorage.getItem('originchats_wallpaper_dimmed') === 'true';
+        wallpaperOpacity.checked = currentDimmed;
+        applyWallpaperDimming(currentDimmed);
+
+        wallpaperOpacity.addEventListener('change', (e) => {
+            const dimmed = e.target.checked;
+            localStorage.setItem('originchats_wallpaper_dimmed', dimmed);
+            applyWallpaperDimming(dimmed);
+        });
+    }
+}
+
+function updateThemePreview(theme) {
+    const themePreviews = document.querySelectorAll('.theme-preview-option');
+    themePreviews.forEach(preview => {
+        if (preview.dataset.theme === theme) {
+            preview.style.borderColor = 'var(--primary)';
+        } else {
+            preview.style.borderColor = 'transparent';
+        }
+    });
+}
+
+function updateWallpaperPreview(dataUrl) {
+    const wallpaperPreview = document.getElementById('wallpaper-preview');
+    if (!wallpaperPreview) return;
+
+    if (dataUrl) {
+        wallpaperPreview.style.display = 'block';
+        wallpaperPreview.style.backgroundImage = `url(${dataUrl})`;
+    } else {
+        wallpaperPreview.style.display = 'none';
+        wallpaperPreview.style.backgroundImage = 'none';
+    }
+}
+
+const themes = {
+    dark: {
+        '--bg': '#050505',
+        '--surface': '#0a0a0c',
+        '--surface-light': '#141419',
+        '--surface-hover': '#1f1f26',
+        '--border': '#2a2a33',
+        '--primary': '#4e5058'
+    },
+    midnight: {
+        '--bg': '#0d1117',
+        '--surface': '#161b22',
+        '--surface-light': '#21262d',
+        '--surface-hover': '#30363d',
+        '--border': '#30363d',
+        '--primary': '#58a6ff'
+    },
+    ocean: {
+        '--bg': '#0a1628',
+        '--surface': '#0f1f3a',
+        '--surface-light': '#1a3a5c',
+        '--surface-hover': '#2a5070',
+        '--border': '#1a4a6c',
+        '--primary': '#4a9eff'
+    },
+    forest: {
+        '--bg': '#0a1a10',
+        '--surface': '#0f2a18',
+        '--surface-light': '#1a4028',
+        '--surface-hover': '#2a5538',
+        '--border': '#1a4528',
+        '--primary': '#4ade80'
+    },
+    sunset: {
+        '--bg': '#1a0a14',
+        '--surface': '#2a1020',
+        '--surface-light': '#401830',
+        '--surface-hover': '#5a2840',
+        '--border': '#402030',
+        '--primary': '#fb7185'
+    },
+    purple: {
+        '--bg': '#1a0a28',
+        '--surface': '#281040',
+        '--surface-light': '#401860',
+        '--surface-hover': '#5a2878',
+        '--border': '#402055',
+        '--primary': '#c084fc'
+    }
+};
+
+function applyTheme(themeName) {
+    const theme = themes[themeName] || themes.dark;
+    const root = document.documentElement;
+
+    for (const [property, value] of Object.entries(theme)) {
+        root.style.setProperty(property, value);
+    }
+}
+
+function applyWallpaper(dataUrl) {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    if (dataUrl) {
+        messagesContainer.style.backgroundImage = `url(${dataUrl})`;
+        messagesContainer.style.backgroundSize = 'cover';
+        messagesContainer.style.backgroundPosition = 'center';
+        messagesContainer.style.backgroundRepeat = 'no-repeat';
+        messagesContainer.style.backgroundAttachment = 'scroll';
+        messagesContainer.classList.add('has-wallpaper');
+    } else {
+        messagesContainer.style.backgroundImage = 'none';
+        messagesContainer.classList.remove('has-wallpaper');
+        messagesContainer.style.boxShadow = 'none';
+    }
+}
+
+function applyWallpaperDimming(dimmed) {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    if (dimmed) {
+        messagesContainer.style.boxShadow = 'inset 0 0 100px rgba(0, 0, 0, 0.8)';
+    } else {
+        messagesContainer.style.boxShadow = 'none';
+    }
+}
+
+window.initChatSettings = initChatSettings;
+window.initAppearanceSettings = initAppearanceSettings;
+
+// Initialize App Settings on Load
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved font size
+    const savedFontSize = localStorage.getItem('originchats_font_size');
+    if (savedFontSize) {
+        applyFontSize(savedFontSize);
+    }
+
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('originchats_theme');
+    if (savedTheme) {
+        applyTheme(savedTheme);
+    }
+
+    // Apply saved wallpaper
+    const savedWallpaper = localStorage.getItem('originchats_wallpaper');
+    if (savedWallpaper) {
+        applyWallpaper(savedWallpaper);
+    }
+
+    // Apply saved wallpaper dimming
+    const savedDimmed = localStorage.getItem('originchats_wallpaper_dimmed') === 'true';
+    if (savedWallpaper || savedDimmed) {
+        applyWallpaperDimming(savedDimmed);
+    }
+
+    // Initialize settings variables
+    window.shouldShowEmbeds = localStorage.getItem('originchats_show_embeds') !== 'false';
+    window.showTimestamps = localStorage.getItem('originchats_show_timestamps') !== 'false';
+});

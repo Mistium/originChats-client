@@ -7,8 +7,11 @@ class VoiceManager {
         this.localStream = null;
         this.participants = new Map(); // user_id -> {username, peer_id, muted, pfp, speaking}
         this.isMuted = false;
+        this.isSpeaking = false;
         this.localAudioElement = null;
         this.speakingDetectors = new Map(); // user_id -> analyzer
+        this.localAnalyzer = null;
+        this.micThreshold = parseInt(localStorage.getItem('originchats_mic_threshold') || '30', 10);
 
         this.initPeerJS();
     }
@@ -41,10 +44,50 @@ class VoiceManager {
     async requestMicrophone() {
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            this.setupLocalSpeakingDetection();
             return true;
         } catch (error) {
             console.error('[Voice] Failed to get microphone access:', error);
             return false;
+        }
+    }
+
+    setupLocalSpeakingDetection() {
+        try {
+            const audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(this.localStream);
+            const analyzer = audioContext.createAnalyser();
+            analyzer.fftSize = 256;
+            source.connect(analyzer);
+
+            this.localAnalyzer = analyzer;
+
+            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+
+            const checkSpeaking = () => {
+                if (!this.localAnalyzer) return;
+
+                analyzer.getByteFrequencyData(dataArray);
+                const average = (dataArray.reduce((a, b) => a + b, 0) / dataArray.length) * (100 / 255);
+
+                const isSpeakingNow = average > this.micThreshold;
+
+                if (isSpeakingNow !== this.isSpeaking) {
+                    this.isSpeaking = isSpeakingNow;
+                    console.log('[Voice] Speaking state changed:', this.isSpeaking, '(average:', average.toFixed(2), ', threshold:', this.micThreshold + ')');
+
+                    // Update channel list to show speaking state
+                    if (typeof renderChannels === 'function') {
+                        renderChannels();
+                    }
+                }
+
+                requestAnimationFrame(checkSpeaking);
+            };
+
+            checkSpeaking();
+        } catch (error) {
+            console.error('[Voice] Failed to setup local speaking detection:', error);
         }
     }
 
@@ -54,8 +97,8 @@ class VoiceManager {
             return false;
         }
 
-        if (this.currentChannel === channelName) {
-            console.warn('[Voice] Already in this channel');
+        if (this.isUserInChannel(channelName)) {
+            console.warn('[Voice] Already in this channel (client or server)');
             return false;
         }
 
@@ -74,6 +117,20 @@ class VoiceManager {
 
         this.currentChannel = channelName;
 
+        // Get participants from channel voice_state
+        const channel = state.channels.find(c => c.name === channelName);
+        const participants = [];
+        if (channel && channel.voice_state) {
+            channel.voice_state.forEach(voiceUser => {
+                participants.push({
+                    id: crypto.randomUUID(),
+                    username: voiceUser.username,
+                    peer_id: null,
+                    muted: voiceUser.muted || false
+                });
+            });
+        }
+
         wsSend({
             cmd: 'voice_join',
             channel: channelName,
@@ -81,12 +138,21 @@ class VoiceManager {
         }, state.serverUrl);
 
         console.log('[Voice] Joining channel:', channelName);
-        
+
+        // Show voice panel
+        const voicePanel = document.getElementById('voice-panel');
+        if (voicePanel) {
+            voicePanel.classList.add('active');
+        }
+
+        // Update mute button state
+        this.updateMuteButton();
+
         // Update channel list to show you joined
         if (typeof renderChannels === 'function') {
             renderChannels();
         }
-        
+
         return true;
     }
 
@@ -107,6 +173,8 @@ class VoiceManager {
 
         // Clean up speaking detectors
         this.speakingDetectors.clear();
+        this.localAnalyzer = null;
+        this.isSpeaking = false;
 
         // Stop local stream
         if (this.localStream) {
@@ -125,7 +193,13 @@ class VoiceManager {
         }
 
         console.log('[Voice] Left voice channel');
-        
+
+        // Hide voice panel
+        const voicePanel = document.getElementById('voice-panel');
+        if (voicePanel) {
+            voicePanel.classList.remove('active');
+        }
+
         // Update channel list to remove your avatar
         if (typeof renderChannels === 'function') {
             renderChannels();
@@ -140,6 +214,8 @@ class VoiceManager {
             });
         }
 
+        this.updateMuteButton();
+
         wsSend({
             cmd: 'voice_mute'
         }, state.serverUrl);
@@ -153,6 +229,8 @@ class VoiceManager {
             });
         }
 
+        this.updateMuteButton();
+
         wsSend({
             cmd: 'voice_unmute'
         }, state.serverUrl);
@@ -165,6 +243,29 @@ class VoiceManager {
             this.mute();
         }
         return this.isMuted;
+    }
+
+    updateMuteButton() {
+        const muteBtn = document.getElementById('voice-mute-btn');
+        const muteIcon = document.getElementById('voice-mute-icon');
+        if (!muteBtn || !muteIcon) return;
+
+        if (this.isMuted) {
+            muteBtn.classList.add('muted');
+            muteIcon.setAttribute('data-lucide', 'mic-off');
+        } else {
+            muteBtn.classList.remove('muted');
+            muteIcon.setAttribute('data-lucide', 'mic');
+        }
+
+        if (window.lucide) {
+            window.lucide.createIcons({ root: muteBtn });
+        }
+    }
+
+    setMicThreshold(threshold) {
+        this.micThreshold = Math.max(0, Math.min(100, threshold));
+        localStorage.setItem('originchats_mic_threshold', this.micThreshold.toString());
     }
 
     handleUserJoined(data) {
@@ -196,10 +297,27 @@ class VoiceManager {
         const { username, channel } = data;
         console.log('[Voice] User left:', username, 'from channel:', channel);
 
-        const participant = this.participants.get(username);
-        const peerId = participant ? participant.peer_id : username;
+        const usernameLower = username.toLowerCase();
+        let participantKey = null;
+        let participant = null;
 
-        this.participants.delete(username);
+        for (const [key, value] of this.participants) {
+            if (value.username.toLowerCase() === usernameLower) {
+                participantKey = key;
+                participant = value;
+                break;
+            }
+        }
+
+        if (!participant) {
+            console.log('[Voice] Participant not found, using username as fallback');
+            participantKey = username;
+            participant = { peer_id: username };
+        }
+
+        const peerId = participant.peer_id || username;
+
+        this.participants.delete(participantKey);
 
         const analyzer = this.speakingDetectors.get(peerId);
         if (analyzer) {
@@ -219,8 +337,7 @@ class VoiceManager {
         }
 
         this.updateVoiceUI();
-        
-        // Update channel list to remove user avatar
+
         if (typeof renderChannels === 'function') {
             renderChannels();
         }
@@ -230,19 +347,39 @@ class VoiceManager {
         const { user, channel } = data;
         console.log('[Voice] User updated:', user.username, 'muted:', user.muted);
 
-        if (this.participants.has(user.username)) {
-            const participant = this.participants.get(user.username);
+        const usernameLower = user.username.toLowerCase();
+        let participantKey = null;
+        let participant = null;
+
+        for (const [key, value] of this.participants) {
+            if (value.username.toLowerCase() === usernameLower) {
+                participantKey = key;
+                participant = value;
+                break;
+            }
+        }
+
+        if (participant) {
             participant.muted = user.muted;
             if (user.pfp !== undefined) {
                 participant.pfp = user.pfp;
             }
-            this.participants.set(user.username, participant);
+            this.participants.set(participantKey, participant);
+        }
+
+        const channelData = state.channels.find(c => c.name === channel);
+        if (channelData && channelData.voice_state) {
+            const voiceUserIndex = channelData.voice_state.findIndex(v => 
+                v.username.toLowerCase() === usernameLower
+            );
+            if (voiceUserIndex !== -1) {
+                channelData.voice_state[voiceUserIndex].muted = user.muted;
+            }
         }
 
         this.updateVoiceUI();
-        
-        // Update channel list if profile picture changed
-        if (user.pfp !== undefined && typeof renderChannels === 'function') {
+
+        if (typeof renderChannels === 'function') {
             renderChannels();
         }
     }
@@ -321,22 +458,32 @@ class VoiceManager {
             source.connect(analyzer);
 
             const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-            const threshold = 30;
             let speakingTimeout = null;
 
             this.speakingDetectors.set(username, analyzer);
 
             const checkSpeaking = () => {
                 analyzer.getByteFrequencyData(dataArray);
-                const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                const average = (dataArray.reduce((a, b) => a + b, 0) / dataArray.length) * (100 / 255);
 
-                const participant = this.participants.get(username);
+                const usernameLower = username.toLowerCase();
+                let participantKey = null;
+                let participant = null;
+
+                for (const [key, value] of this.participants) {
+                    if (value.username.toLowerCase() === usernameLower) {
+                        participantKey = key;
+                        participant = value;
+                        break;
+                    }
+                }
+
                 if (participant) {
-                    const isSpeakingNow = average > threshold;
+                    const isSpeakingNow = average > this.micThreshold;
 
                     if (isSpeakingNow !== participant.speaking) {
                         participant.speaking = isSpeakingNow;
-                        this.participants.set(username, participant);
+                        this.participants.set(participantKey, participant);
                         this.updateVoiceUI();
 
                         if (typeof renderChannels === 'function') {
@@ -358,7 +505,17 @@ class VoiceManager {
         const div = document.createElement('div');
         div.className = 'voice-participant-card';
         if (isSelf) div.classList.add('voice-self');
-        if (userId && this.participants.get(userId)?.speaking) div.classList.add('speaking');
+        if (userId) {
+            const usernameLower = userId.toLowerCase();
+            let speaking = false;
+            for (const [key, value] of this.participants) {
+                if (value.username.toLowerCase() === usernameLower) {
+                    speaking = value.speaking;
+                    break;
+                }
+            }
+            if (speaking) div.classList.add('speaking');
+        }
 
         const avatarContainer = document.createElement('div');
         avatarContainer.className = 'voice-avatar-container';
@@ -382,7 +539,17 @@ class VoiceManager {
 
         const speakingIndicator = document.createElement('div');
         speakingIndicator.className = 'voice-speaking-indicator';
-        if (muted || (userId && !this.participants.get(userId)?.speaking)) {
+        let speaking = muted;
+        if (!muted && userId) {
+            const usernameLower = userId.toLowerCase();
+            for (const [key, value] of this.participants) {
+                if (value.username.toLowerCase() === usernameLower) {
+                    speaking = !value.speaking;
+                    break;
+                }
+            }
+        }
+        if (speaking) {
             speakingIndicator.style.display = 'none';
         }
 
@@ -412,104 +579,26 @@ class VoiceManager {
     }
 
     updateVoiceUI() {
-        this.renderVoiceParticipants();
+
     }
 
     renderVoiceParticipants() {
-        const container = document.getElementById('voice-participants');
-        if (!container) return;
 
-        container.innerHTML = '';
-        container.style.display = 'flex';
-        container.style.flexWrap = 'wrap';
-        container.style.gap = '16px';
-        container.style.padding = '12px';
-        container.style.justifyContent = 'center';
-
-        // Render self
-        if (this.currentChannel) {
-            const participantDiv = this.createParticipantElement(
-                state.currentUser.username,
-                state.currentUser.pfp,
-                this.isMuted,
-                true,
-                null
-            );
-            container.appendChild(participantDiv);
-        }
-
-        // Render other participants
-        this.participants.forEach((participant, userId) => {
-            const participantDiv = this.createParticipantElement(
-                participant.username,
-                participant.pfp,
-                participant.muted,
-                false,
-                userId
-            );
-            container.appendChild(participantDiv);
-        });
-
-        // Update lucide icons
-        if (window.lucide) {
-            window.lucide.createIcons({ root: container });
-        }
-    }
-
-    createParticipantElement(username, pfp, muted, isSelf, userId) {
-        const div = document.createElement('div');
-        div.className = 'voice-participant-card';
-        if (isSelf) div.classList.add('voice-self');
-        if (userId && this.participants.get(userId)?.speaking) div.classList.add('speaking');
-
-        const avatarContainer = document.createElement('div');
-        avatarContainer.className = 'voice-avatar-container';
-
-        const avatar = document.createElement('div');
-        avatar.className = 'voice-avatar';
-
-        // Use getAvatarSrc if available, otherwise fall back to rotur.dev URL
-        const avatarSrc = typeof getAvatarSrc === 'function' ? getAvatarSrc(username) : `https://avatars.rotur.dev/${username}`;
-        const img = document.createElement('img');
-        img.src = avatarSrc;
-        img.alt = username;
-        img.className = 'voice-avatar-img';
-        img.onerror = () => {
-            avatar.textContent = username.charAt(0).toUpperCase();
-            img.style.display = 'none';
-            avatar.style.display = 'flex';
-            avatar.style.alignItems = 'center';
-            avatar.style.justifyContent = 'center';
-        };
-        avatar.appendChild(img);
-
-        // Speaking indicator ring
-        const speakingIndicator = document.createElement('div');
-        speakingIndicator.className = 'voice-speaking-indicator';
-        if (muted || (userId && !this.participants.get(userId)?.speaking)) {
-            speakingIndicator.style.display = 'none';
-        }
-
-        avatarContainer.appendChild(avatar);
-        avatarContainer.appendChild(speakingIndicator);
-
-        const name = document.createElement('div');
-        name.className = 'voice-participant-name';
-        name.textContent = isSelf ? `${username} (You)` : username;
-
-        const status = document.createElement('div');
-        status.className = 'voice-participant-status';
-        status.innerHTML = muted ? '<i data-lucide="mic-off"></i>' : '';
-
-        div.appendChild(avatarContainer);
-        div.appendChild(name);
-        div.appendChild(status);
-
-        return div;
     }
 
     isInChannel() {
         return !!this.currentChannel;
+    }
+
+    isUserInChannel(channelName) {
+        if (this.currentChannel === channelName) {
+            return true;
+        }
+        const channel = state.channels.find(c => c.name === channelName);
+        if (channel && channel.voice_state && state.currentUser) {
+            return channel.voice_state.some(v => v.username.toLowerCase() === state.currentUser.username.toLowerCase());
+        }
+        return false;
     }
 }
 

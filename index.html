@@ -26,11 +26,8 @@
                         <span>Direct Messages</span>
                     </div>
                     <div id="channel-name" class="channel-name">#home</div>
+                    </div>
                 </div>
-            </div>
-            <div class="menu-btn members-toggle" onclick="toggleMembersList()">
-                <i data-lucide="users"></i>
-            </div>
         </div>
         <div class="overlay" onclick="closeMenu()"></div>
         <div class="content">
@@ -130,16 +127,6 @@ title="Cancel">
     </div>
     
     <div id="voice-panel" class="voice-panel">
-        <div class="voice-panel-header">
-            <div class="voice-panel-title">
-                <i data-lucide="volume-2"></i>
-                <span>Voice Connected</span>
-            </div>
-            <button class="voice-panel-close" onclick="voiceManager.leaveChannel()">
-                <i data-lucide="x"></i>
-            </button>
-        </div>
-        <div class="voice-participants" id="voice-participants"></div>
         <div class="voice-panel-controls">
             <button class="voice-control-btn" id="voice-mute-btn" onclick="voiceManager.toggleMute()">
                 <i data-lucide="mic" id="voice-mute-icon"></i>
@@ -249,6 +236,30 @@ title="Cancel">
                         </div>
                         <div class="nav-item-label">Media Servers</div>
                     </div>
+                    <div class="nav-item" data-section="voice">
+                        <div class="nav-item-icon">
+                            <i data-lucide="mic"></i>
+                        </div>
+                        <div class="nav-item-label">Voice</div>
+                    </div>
+                    <div class="nav-item" data-section="privacy">
+                        <div class="nav-item-icon">
+                            <i data-lucide="shield"></i>
+                        </div>
+                        <div class="nav-item-label">Privacy</div>
+                    </div>
+                    <div class="nav-item" data-section="chat">
+                        <div class="nav-item-icon">
+                            <i data-lucide="message-circle"></i>
+                        </div>
+                        <div class="nav-item-label">Chat</div>
+                    </div>
+                    <div class="nav-item" data-section="appearance">
+                        <div class="nav-item-icon">
+                            <i data-lucide="palette"></i>
+                        </div>
+                        <div class="nav-item-label">Appearance</div>
+                    </div>
                 </div>
             </div>
             <div class="settings-content">
@@ -264,6 +275,155 @@ title="Cancel">
                         </button>
                     </div>
                     <div id="media-servers-list"></div>
+                </div>
+                <div id="section-voice" class="settings-section">
+                    <div class="section-header">
+                        <h2>Voice Settings</h2>
+                        <p>Configure your voice and microphone settings.</p>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="mic"></i>Microphone Sensitivity</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Adjust when your microphone activates. Lower values make it more sensitive (activates on quieter sounds).</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <label style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px; display: block;">Activation Threshold: <span id="mic-threshold-value">30</span></label>
+                                <input type="range" id="mic-threshold-slider" min="0" max="100" value="30" style="width: 100%; accent-color: var(--primary);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="section-privacy" class="settings-section">
+                    <div class="section-header">
+                        <h2>Privacy</h2>
+                        <p>Configure your privacy and blocked user settings.</p>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="shield"></i>Blocked Messages</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Choose how messages from blocked users should appear in chat.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <select id="blocked-messages-mode" class="setting-input">
+                                    <option value="hide">Hide completely</option>
+                                    <option value="dim">Dim messages</option>
+                                    <option value="collapse">Collapse with reveal button</option>
+                                </select>
+                            </div>
+                            <div id="blocked-mode-preview" style="margin-top: 12px; padding: 12px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
+                                <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">Preview:</div>
+                                <div id="preview-content" style="font-size: 13px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="section-chat" class="settings-section">
+                    <div class="section-header">
+                        <h2>Chat</h2>
+                        <p>Customize your chat experience and behavior.</p>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="type"></i>Font Size</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Adjust the size of text in chat messages.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <label style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px; display: block;">Font Size: <span id="font-size-value">15px</span></label>
+                                <input type="range" id="font-size-slider" min="12" max="20" value="15" style="width: 100%; accent-color: var(--primary);">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="toggle-left"></i>Embeds</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Control how link embeds are displayed in chat.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="show-embeds" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                    <span style="font-size: 14px;">Show link embeds</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="clock"></i>Timestamps</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Configure timestamp display options.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="show-timestamps" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                    <span style="font-size: 14px;">Show timestamps</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="section-appearance" class="settings-section">
+                    <div class="section-header">
+                        <h2>Appearance</h2>
+                        <p>Customize the look and feel of the client.</p>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="palette"></i>Color Theme</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Choose a color theme for the interface.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <select id="color-theme-select" class="setting-input">
+                                    <option value="dark">Default Dark</option>
+                                    <option value="midnight">Midnight</option>
+                                    <option value="ocean">Ocean</option>
+                                    <option value="forest">Forest</option>
+                                    <option value="sunset">Sunset</option>
+                                    <option value="purple">Purple Haze</option>
+                                </select>
+                            </div>
+                            <div id="theme-preview" style="margin-top: 12px; display: flex; gap: 8px;">
+                                <div class="theme-preview-option" data-theme="dark" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #0a0a0c, #141419); border: 2px solid transparent; cursor: pointer;"></div>
+                                <div class="theme-preview-option" data-theme="midnight" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #0d1117, #161b22); border: 2px solid transparent; cursor: pointer;"></div>
+                                <div class="theme-preview-option" data-theme="ocean" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #0a1628, #122a45); border: 2px solid transparent; cursor: pointer;"></div>
+                                <div class="theme-preview-option" data-theme="forest" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #0a1a10, #143d1f); border: 2px solid transparent; cursor: pointer;"></div>
+                            </div>
+                            <div id="theme-preview-2" style="margin-top: 8px; display: flex; gap: 8px;">
+                                <div class="theme-preview-option" data-theme="sunset" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #1a0a14, #3d1420); border: 2px solid transparent; cursor: pointer;"></div>
+                                <div class="theme-preview-option" data-theme="purple" style="flex: 1; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #1a0a28, #3d1455); border: 2px solid transparent; cursor: pointer;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="setting-card-header">
+                            <h3><i data-lucide="image"></i>Chat Wallpaper</h3>
+                        </div>
+                        <div class="setting-card-body">
+                            <p class="setting-hint">Set a custom background image for the chat area.</p>
+                            <div style="width: 100%; margin-top: 12px;">
+                                <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
+                                <button class="btn btn-secondary" onclick="document.getElementById('wallpaper-upload').click()" style="width: 100%; margin-bottom: 8px;">
+                                    <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
+                                    Upload Wallpaper
+                                </button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-secondary" id="clear-wallpaper-btn" style="flex: 1;">
+                                        <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                                        Clear
+                                    </button>
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: var(--surface-light); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                                        <input type="checkbox" id="wallpaper-opacity" style="width: 16px; height: 16px; accent-color: var(--primary);">
+                                        <span style="font-size: 13px;">Dim wallpaper</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="wallpaper-preview" style="margin-top: 12px; height: 120px; border-radius: 8px; border: 2px solid var(--border); background-size: cover; background-position: center; display: none;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -412,8 +572,8 @@ title="Cancel">
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
         const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-        const isMobile = window.innerWidth <= 768;
-        if (isLocalhost || isMobile) {
+        const isMobileDevice = window.innerWidth <= 768;
+        if (isLocalhost || isMobileDevice) {
             eruda.init();
         }
     </script>

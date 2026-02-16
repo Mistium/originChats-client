@@ -19,6 +19,7 @@
     --success: #3ba55c;
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
     --font-main: 'gg sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --message-font-size: 15px;
 
     /* Opacity variants of primary */
     --primary-08: rgba(78, 80, 88, 0.08);
@@ -238,11 +239,11 @@ p {
 
 .channel-header {
     padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
+    /* border-bottom: 1px solid var(--border); */
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--surface);
+    /* background: var(--surface); */
     flex-shrink: 0;
 }
 
@@ -736,7 +737,7 @@ p {
 }
 
 .message-text {
-    font-size: 15px;
+    font-size: var(--message-font-size, 15px);
     line-height: 1.5;
     word-wrap: break-word;
     word-break: break-word;
@@ -2575,7 +2576,7 @@ a {
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    background-color: rgba(67, 181, 129, 0.5);
+    background-color: rgba(59, 165, 92, 0.5);
     z-index: -1;
     animation: speaking-ring 1.5s ease-in-out infinite;
 }
@@ -2596,91 +2597,131 @@ a {
 }
 
 /* Muted state for voice channel user */
-.voice-channel-user.muted .voice-channel-user-avatar {
-    opacity: 0.5;
-}
-
 .voice-channel-user.muted .voice-channel-username {
     color: var(--text-dim);
+    position: relative;
+}
+
+/* Muted icon overlay */
+.voice-muted-icon {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 14px;
+    height: 14px;
+    background-color: var(--surface);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    z-index: 1;
+    border: 1px solid var(--border);
+}
+
+.voice-muted-icon svg {
+    width: 10px;
+    height: 10px;
 }
 
 /* Voice Panel (appears at bottom of channels when connected) */
 .voice-panel {
     position: fixed;
-    top: 48px;
     left: 72px;
-    width: 250px;
     bottom: 0;
-    background-color: var(--surface-light, #2b2d31);
-    border-top: 1px solid var(--border, #1e1f22);
-    border-right: 1px solid var(--border, #1e1f22);
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
     z-index: 50;
     display: none;
 }
 
 .voice-panel.active {
-    display: block;
-}
-
-.voice-panel-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background-color: rgba(0, 0, 0, 0.2);
+    flex-direction: column;
 }
 
-.voice-panel-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-dim, #949ba4);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.voice-panel-title i {
-    width: 16px;
-    height: 16px;
-    color: #43b581;
-}
-
-.voice-panel-close {
-    background: none;
-    border: none;
-    color: var(--text-dim, #949ba4);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.voice-panel-close:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text, #ffffff);
-}
-
-.voice-panel-close i {
-    width: 18px;
-    height: 18px;
-}
-
+/* Voice Panel Controls */
 .voice-panel-controls {
     display: flex;
     gap: 8px;
-    padding: 12px 16px;
-    background-color: var(--surface-light, #2b2d31);
+}
+
+.voice-control-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--surface-light);
+    border: none;
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.voice-control-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.voice-control-btn:active {
+    transform: scale(0.98);
+}
+
+.voice-control-btn.active {
+    background: var(--success);
+    color: white;
+}
+
+.voice-control-btn.muted {
+    background: var(--danger);
+    color: white;
+}
+
+.voice-control-btn i {
+    width: 16px;
+    height: 16px;
 }
 
 .voice-leave-btn {
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 500;
+    background: var(--surface-light);
+    color: var(--text);
+}
+
+.voice-leave-btn:hover {
+    background: rgba(237, 66, 69, 0.15);
+    color: var(--danger);
+}
+
+@media (max-width: 768px) {
+    .voice-panel {
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: none;
+        border-radius: 16px 16px 0 0;
+        padding: 12px 16px;
+        z-index: 80;
+    }
+
+    .voice-panel-controls {
+        gap: 10px;
+    }
+
+    .voice-control-btn {
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    .voice-control-btn i {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 .message-reactions {
@@ -3637,6 +3678,28 @@ pre {
     color: var(--text);
     cursor: pointer;
     font-weight: 600;
+}
+
+.blocked-show-btn:hover {
+    color: var(--danger);
+}
+
+/* Dimmed blocked messages */
+.message-group.blocked-dimmed,
+.message-single.blocked-dimmed {
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+.message-group.blocked-dimmed:hover,
+.message-single.blocked-dimmed:hover {
+    opacity: 0.5;
+}
+
+.blocked-dimmed .username,
+.blocked-dimmed .message-text,
+.blocked-dimmed .timestamp {
+    color: var(--text-dim);
 }
 
 .day-separator {
@@ -5928,11 +5991,10 @@ body {
 .voice-participant {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    gap: 12px;
-    transition: background-color 0.2s ease;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    padding: 10px 12px;
+    gap: 10px;
+    transition: background-color 0.15s ease;
+    margin-bottom: 2px;
 }
 
 .voice-participant:hover {
@@ -5940,27 +6002,28 @@ body {
 }
 
 .voice-participant.voice-self {
-    background-color: rgba(88, 101, 242, 0.1);
-    border: 1px solid rgba(88, 101, 242, 0.3);
+    background-color: rgba(78, 80, 88, 0.08);
+    border-radius: 6px;
+    margin: 4px 12px;
 }
 
 /* Voice Avatar Container */
 .voice-avatar {
     position: relative;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--surface-light);
+    border: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
-    color: white;
+    color: var(--text-dim);
     text-transform: uppercase;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Profile Picture Image */
@@ -5968,7 +6031,6 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 50%;
 }
 
 /* Voice Info Section */
@@ -5976,14 +6038,14 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
 }
 
 .voice-name {
     font-size: 14px;
-    font-weight: 600;
-    color: var(--text, #ffffff);
+    font-weight: 500;
+    color: var(--text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -5993,29 +6055,30 @@ body {
 .voice-status {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
 }
 
 .voice-status i {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
 }
 
 .voice-status.talking {
-    color: #43b581;
+    color: var(--success);
 }
 
 .voice-status.talking i {
-    color: #43b581;
+    color: var(--success);
 }
 
 .voice-status.muted {
-    color: #f04747;
+    color: var(--text-dim);
 }
 
 .voice-status.muted i {
-    color: #f04747;
+    color: var(--text-dim);
 }
 
 /* Voice Participant Card (Horizontal layout for voice panel) */
@@ -6023,11 +6086,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 8px;
+    gap: 6px;
+    padding: 12px 8px;
     border-radius: 8px;
-    transition: all 0.2s ease;
-    min-width: 64px;
+    transition: all 0.15s ease;
+    min-width: 68px;
 }
 
 .voice-participant-card:hover {
@@ -6035,8 +6098,9 @@ body {
 }
 
 .voice-participant-card.voice-self {
-    background-color: rgba(88, 101, 242, 0.08);
-    border: 1px solid rgba(88, 101, 242, 0.2);
+    background-color: rgba(78, 80, 88, 0.12);
+    border: 1px solid var(--primary-20);
+    border-radius: 8px;
 }
 
 .voice-avatar-container {
@@ -6048,16 +6112,17 @@ body {
 
 .voice-speaking-indicator {
     position: absolute;
-    inset: -4px;
+    inset: -3px;
     border-radius: 50%;
-    background-color: rgba(67, 181, 129, 0.6);
+    background-color: rgba(59, 165, 92, 0.5);
     border: 2px solid var(--surface);
+    z-index: -1;
     animation: speaking-pulse 1.5s ease-in-out infinite;
 }
 
 .voice-participant-name {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
     text-align: center;
     max-width: 64px;
@@ -6081,10 +6146,12 @@ body {
 /* Speaking Animation */
 @keyframes speaking-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 0 rgba(67, 181, 129, 0.7);
+        opacity: 0.8;
+        transform: scale(1);
     }
     50% {
-        box-shadow: 0 0 0 4px rgba(67, 181, 129, 0);
+        opacity: 0.4;
+        transform: scale(1.08);
     }
 }
 
@@ -6094,27 +6161,27 @@ body {
 
 /* Voice Participants Container */
 #voice-participants {
-    padding: 12px;
+    padding: 8px 0;
     overflow-y: auto;
     max-height: 400px;
 }
 
 #voice-participants::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 #voice-participants::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    background: transparent;
+    border-radius: 3px;
 }
 
 #voice-participants::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+    background: var(--surface-light);
+    border-radius: 3px;
 }
 
 #voice-participants::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--surface-hover);
 }
 
 /* Empty State */
@@ -6122,9 +6189,9 @@ body {
     content: "No one else is in this channel";
     display: block;
     text-align: center;
-    color: var(--text-dim, #72767d);
+    color: var(--text-dim);
     font-size: 13px;
-    padding: 20px;
+    padding: 24px 12px;
 }
 
 /* Voice Channel Header */
@@ -6200,7 +6267,7 @@ body {
         left: 0;
         right: 0;
         width: auto;
-        max-height: 50vh;
+        max-height: 70px;
         overflow-y: auto;
     }
     
