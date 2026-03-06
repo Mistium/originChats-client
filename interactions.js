@@ -168,7 +168,7 @@ function renderEmojis() {
 }
 
 function renderReactionEmojis() {
-    const container = document.querySelector('#reaction-emoji-container');
+    const container = document.querySelector('.reaction-emoji-container');
     if (!container) return;
     container.innerHTML = '';
     if (window.shortcodes?.length > 0) {
@@ -187,7 +187,7 @@ function handleSearch(e) {
 
 function handleReactionSearch(e) {
     const query = e.target.value.trim();
-    const container = document.querySelector('#reaction-emoji-container');
+    const container = document.querySelector('.reaction-emoji-container');
     if (!query) { renderReactionEmojis(); return; }
     _renderEmojiSearchSection(container, query);
 }
@@ -258,7 +258,7 @@ function createReactionPicker() {
         <div class="reaction-picker-search">
             <input type="text" id="reaction-emoji-search" placeholder="Search emoji..." autocomplete="off" />
         </div>
-        <div id="reaction-emoji-container"></div>
+        <div class="reaction-emoji-container"></div>
     `;
     document.body.appendChild(reactionPicker);
 

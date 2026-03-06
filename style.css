@@ -2737,6 +2737,10 @@ a {
     font-size: 16px;
 }
 
+.reaction-emoji-container {
+    overflow: scroll;
+}
+
 .reaction-count {
     font-size: 12px;
     color: var(--text-dim);
