@@ -378,6 +378,25 @@ async function saveReadTimes() {
     }
 }
 
+function updateCurrentChannelReadTime() {
+    if (!state.serverUrl || !state.currentChannel) return;
+    const ignoredChannels = ['home', 'relationships', 'notes', 'cmds', 'new_message'];
+    if (ignoredChannels.includes(state.currentChannel.name)) return;
+
+    if (!state.readTimesByServer[state.serverUrl]) {
+        state.readTimesByServer[state.serverUrl] = {};
+    }
+
+    state.readTimesByServer[state.serverUrl][state.currentChannel.name] = Math.floor(Date.now() / 1000);
+    saveReadTimes();
+}
+
+window.addEventListener('blur', updateCurrentChannelReadTime);
+window.addEventListener('beforeunload', updateCurrentChannelReadTime);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') updateCurrentChannelReadTime();
+});
+
 function isChannelUnread(channel, serverUrl) {
     if (!channel.last_message) return false;
     const readTime = state.readTimesByServer[serverUrl]?.[channel.name];
@@ -1449,6 +1468,7 @@ async function joinDiscoveryServer(server) {
 }
 
 function switchServer(url) {
+    updateCurrentChannelReadTime();
     console.log('[DEBUG] switchServer called with url:', url, 'current state.switchingServer:', state.switchingServer);
     if (state.switchingServer) { console.log('[DEBUG] switchServer blocked - already switching'); return; }
     state.switchingServer = true;
@@ -2227,6 +2247,7 @@ function updateChannelListTyping(channelName) {
 }
 
 async function selectChannel(channel) {
+    updateCurrentChannelReadTime();
     if (!channel) return;
     const channelKey = `${state.serverUrl}:${channel.name}`;
     if (state.pendingMessageFetchesByChannel[channelKey]) return;
@@ -2329,13 +2350,6 @@ async function selectChannel(channel) {
 
     if (state.unreadPings[channel.name]) delete state.unreadPings[channel.name];
 
-    if (!state.readTimesByServer[state.serverUrl]) state.readTimesByServer[state.serverUrl] = {};
-    const readTime = channel.last_message;
-    if (readTime && state.readTimesByServer[state.serverUrl][channel.name] !== readTime) {
-        state.readTimesByServer[state.serverUrl][channel.name] = readTime;
-        saveReadTimes();
-    }
-
     Object.keys(state.pendingMessageFetchesByChannel).forEach(key => {
         if (key !== channelKey && key.startsWith(`${state.serverUrl}:`)) delete state.pendingMessageFetchesByChannel[key];
     });
@@ -2371,6 +2385,7 @@ async function selectChannel(channel) {
 }
 
 function selectHomeChannel() {
+    updateCurrentChannelReadTime();
     state.currentChannel = { name: 'home', display_name: 'Home' };
 
     const channelNameEl = document.getElementById('channel-name');
@@ -2472,6 +2487,7 @@ function renderHomeContent() {
 }
 
 function selectRelationshipsChannel() {
+    updateCurrentChannelReadTime();
     state.currentChannel = { name: 'relationships', display_name: 'Relationships' };
 
     const channelNameEl = document.getElementById('channel-name');
