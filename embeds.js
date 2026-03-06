@@ -72,7 +72,7 @@ async function createEmbed(url) {
         case 'youtube': return createYouTubeEmbed(embedInfo.videoId, url);
         case 'tenor': return await createTenorEmbed(embedInfo.id, url);
         case 'github': return await createGitHubEmbed(embedInfo.path, url);
-        case 'video': return createVideoEmbed(embedInfo.url);
+        case 'video':
         case 'image': return null;
         default:
             if (url.startsWith('data:') || url.startsWith('blob:')) {
@@ -291,8 +291,6 @@ async function isImageUrl(url, timeout = 5000) {
     });
 }
 
-// ─── Potential-image link processing (moved from main.js) ────────────────────
-
 /**
  * Mutates a `.potential-image` link to render its target as an inline video.
  */
@@ -357,17 +355,19 @@ function _processPotentialImageLink(link, groupContent) {
  * and cache misses (calling createEmbed and storing the result).
  */
 function _processEmbedLinks(embedLinks, groupContent) {
-    // Clear stale embeds (needed on the updateMessageContent path)
     groupContent.querySelectorAll('.embed-container').forEach(e => e.remove());
 
     for (const url of embedLinks) {
+        if (hasExtension(url, VIDEO_EXTENSIONS) || url.startsWith('data:video/')) {
+            continue;
+        }
+
         if (url in state._embedCache) {
             const cachedEl = state._embedCache[url];
             if (!cachedEl) continue;
 
             const cloned = cachedEl.cloneNode(true);
 
-            // Re-wire YouTube play button — event listeners don't survive cloneNode
             const thumbnail = cloned.querySelector('.youtube-thumbnail');
             if (thumbnail) {
                 const videoId = url.match(YOUTUBE_REGEX)?.[1];
