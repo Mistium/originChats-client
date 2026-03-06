@@ -419,7 +419,7 @@ function updateTitleWithPings() {
     if (pingCount > 0) {
         document.title = `(${pingCount}) ${state.server}${state.currentChannel ? ' - ' + state.currentChannel.name : ''}`;
     } else {
-        document.title = `${state.server}${state.currentChannel ? ' - ' + state.currentChannel.name : ''}`;
+        document.title = `${state.server.name}${state.currentChannel ? ' - ' + state.currentChannel.name : ''}`;
     }
 }
 
