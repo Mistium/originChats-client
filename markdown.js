@@ -1,8 +1,23 @@
 function replaceShortcodes(text) {
     if (!window.shortcodeMap) return text;
-    return text.replace(/:[a-z0-9_]+:|/g, match => {
-        return window.shortcodeMap[match] || match;
+    return text.replace(/:[\w-]+:/g, match => {
+        const emoji = window.shortcodeMap[match];
+        return emoji || match;
     });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function escapeAttribute(text) {
+    return text.replace(/&/g, "&amp;")
+               .replace(/</g, "&lt;")
+               .replace(/>/g, "&gt;")
+               .replace(/"/g, "&quot;")
+               .replace(/'/g, "&#x27;");
 }
 
 function parseMarkdown(text, embedLinks) {
@@ -29,51 +44,52 @@ function parseMarkdown(text, embedLinks) {
         return `<code>${code}</code>`;
     });
 
-    text = text.replace(/^#{6} (.*)$/gm, "<h6>$1</h6>");
-    text = text.replace(/^#{5} (.*)$/gm, "<h5>$1</h5>");
-    text = text.replace(/^#{4} (.*)$/gm, "<h4>$1</h4>");
-    text = text.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-    text = text.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-    text = text.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+    text = text.replace(/^#{6} (.*)$/gm, (match, content) => `<h6>${escapeHtml(content)}</h6>`);
+    text = text.replace(/^#{5} (.*)$/gm, (match, content) => `<h5>${escapeHtml(content)}</h5>`);
+    text = text.replace(/^#{4} (.*)$/gm, (match, content) => `<h4>${escapeHtml(content)}</h4>`);
+    text = text.replace(/^### (.*)$/gm, (match, content) => `<h3>${escapeHtml(content)}</h3>`);
+    text = text.replace(/^## (.*)$/gm, (match, content) => `<h2>${escapeHtml(content)}</h2>`);
+    text = text.replace(/^# (.*)$/gm, (match, content) => `<h1>${escapeHtml(content)}</h1>`);
 
-    text = text.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
-    text = text.replace(/___(.+?)___/g, "<strong><em>$1</em></strong>");
+    text = text.replace(/\*\*\*(.+?)\*\*\*/g, (match, content) => `<strong><em>${escapeHtml(content)}</em></strong>`);
+    text = text.replace(/___(.+?)___/g, (match, content) => `<strong><em>${escapeHtml(content)}</em></strong>`);
 
-    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    text = text.replace(/__(.+?)__/g, "<strong>$1</strong>");
+    text = text.replace(/\*\*(.+?)\*\*/g, (match, content) => `<strong>${escapeHtml(content)}</strong>`);
+    text = text.replace(/__(.+?)__/g, (match, content) => `<strong>${escapeHtml(content)}</strong>`);
 
-    text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
-    text = text.replace(/_(.+?)_/g, "<em>$1</em>");
+    text = text.replace(/\*(.+?)\*/g, (match, content) => `<em>${escapeHtml(content)}</em>`);
+    text = text.replace(/_(.+?)_/g, (match, content) => `<em>${escapeHtml(content)}</em>`);
 
     text = text.replace(/@([a-zA-Z0-9_]+)/g, (match, user) => {
-        return `<span class="mention" data-user="${user}">@${user}</span>`;
+        return `<span class="mention" data-user="${escapeAttribute(user)}">@${escapeHtml(user)}</span>`;
     });
 
     text = text.replace(/#([a-zA-Z0-9_-]+)/g, (match, channelName) => {
-        return `<span class="channel-mention" data-channel="${channelName}">#${channelName}</span>`;
+        return `<span class="channel-mention" data-channel="${escapeAttribute(channelName)}">#${escapeHtml(channelName)}</span>`;
     });
 
     text = text.replace(/(https?:\/\/[^\s\"']+\.[^\s\"']+)/g, (match, url) => {
         embedLinks.push(url);
+        const safeUrl = escapeAttribute(url);
+        const safeDisplayText = escapeHtml(url);
 
         if (YOUTUBE_REGEX.test(url)) {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`;
         }
 
-        // Check for Tenor GIFs - updated to handle various formats
         if (url.match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i)) {
-            return `<a href="${url}" class="tenor-embed" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            return `<a href="${safeUrl}" class="tenor-embed" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`;
         }
 
         if (hasExtension(url, VIDEO_EXTENSIONS)) {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`;
         }
 
         if (hasExtension(url, IMAGE_EXTENSIONS)) {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${proxyImageUrl(url)}" alt="image" class="message-image" data-image-url="${url}"></a>`;
+            return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer"><img src="${proxyImageUrl(safeUrl)}" alt="image" class="message-image" data-image-url="${safeDisplayText}"></a>`;
         }
 
-        return `<a href="${url}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${url}">${url}</a>`;
+        return `<a href="${safeUrl}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${safeDisplayText}">${safeDisplayText}</a>`;
     });
 
     text = text.replace(/\n(?!<\/?(h[1-6]|pre))/g, "<br>");
@@ -88,9 +104,22 @@ function parseMarkdown(text, embedLinks) {
 function parseMsg(msg, embedLinks) {
     let text = replaceShortcodes(msg.content);
     text = parseMarkdown(text, embedLinks);
+    
+    if (typeof DOMPurify === 'undefined' || !DOMPurify.sanitize) {
+        console.error('DOMPurify not available - messages may not be sanitized properly');
+        return escapeHtml(text);
+    }
+    
     text = DOMPurify.sanitize(text, {
-        ADD_ATTR: ['target', 'rel']
+        ALLOWED_TAGS: ['a', 'span', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'br', 'img'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-user', 'data-channel', 'data-image-url', 'src', 'alt', 'language', 'data-msg-id'],
+        ALLOW_DATA_ATTR: false,
+        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'link', 'meta', 'title'],
+        FORBID_ATTR: ['on*', 'style', 'javascript:', 'data-', 'formaction'],
+        SAFE_FOR_JAVASCRIPT: true,
+        SANITIZE_DOM: true
     });
+    
     return text;
 }
 

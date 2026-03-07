@@ -446,7 +446,20 @@ function updateTitleWithPings() {
     }
 }
 
+async function waitForDOMPurify(maxWait = 5000) {
+    const startTime = Date.now();
+    while (typeof DOMPurify === 'undefined' || !DOMPurify.sanitize) {
+        if (Date.now() - startTime > maxWait) {
+            console.error('DOMPurify failed to load within timeout period');
+            return false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return true;
+}
+
 window.onload = async function () {
+    await waitForDOMPurify(5000);
     requestNotificationPermission();
 
     const savedToken = localStorage.getItem('originchats_token');
@@ -599,15 +612,25 @@ window.onload = async function () {
                 window.shortcodes = data;
                 for (const e of data) {
                     const code = e.label.toLowerCase().replace(/\s+/g, "_");
-                    shortcodeMap[`:${code}:`] = e.emoji;
-                    if (e.emoticon) {
-                        if (Array.isArray(e.emoticon)) {
-                            e.emoticon.forEach(x => shortcodeMap[x] = e.emoji);
-                        } else {
-                            shortcodeMap[e.emoticon] = e.emoji;
+                    const emoji = e.emoji;
+                    
+                    if (typeof emoji === 'string' && emoji.length <= 4 && !/[<>]/.test(emoji)) {
+                        shortcodeMap[`:${code}:`] = emoji;
+                        if (e.emoticon) {
+                            if (Array.isArray(e.emoticon)) {
+                                e.emoticon.forEach(x => shortcodeMap[x] = emoji);
+                            } else {
+                                shortcodeMap[e.emoticon] = emoji;
+                            }
                         }
                     }
                 }
+                
+                Object.defineProperty(window, 'shortcodeMap', {
+                    writable: false,
+                    configurable: false
+                });
+                
                 const picker = document.querySelector('.reaction-picker');
                 if (picker && picker.classList.contains('active') && window.renderEmojis) {
                     window.renderEmojis();
@@ -1968,7 +1991,8 @@ async function handleMessage(msg, serverUrl) {
                             if (state.serverUrl === serverUrl) renderChannels();
                         }
                         playPingSound();
-                        const notifBody = msg.message.content.length > 100 ? msg.message.content.substring(0, 100) + '...' : msg.message.content;
+                        const cleanContent = msg.message.content.replace(/<[^>]*>/g, '');
+                        const notifBody = cleanContent.length > 100 ? cleanContent.substring(0, 100) + '...' : cleanContent;
                         showNotification(`${msg.message.user} mentioned you in #${msg.channel}`, notifBody, msg.channel);
                         updateTitleWithPings();
                         if (!state.serverPingsByServer[serverUrl]) state.serverPingsByServer[serverUrl] = 0;
@@ -1985,7 +2009,8 @@ async function handleMessage(msg, serverUrl) {
                             if (state.serverUrl === serverUrl) renderChannels();
                         }
                         playPingSound();
-                        const notifBody = msg.message.content.length > 100 ? msg.message.content.substring(0, 100) + '...' : msg.message.content;
+                        const cleanContent = msg.message.content.replace(/<[^>]*>/g, '');
+                        const notifBody = cleanContent.length > 100 ? cleanContent.substring(0, 100) + '...' : cleanContent;
                         showNotification(`${msg.message.user} replied to your message in #${msg.channel}`, notifBody, msg.channel);
                         updateTitleWithPings();
                     }
@@ -2739,6 +2764,12 @@ function appendMessage(msg) {
     container.appendChild(element);
     lastUser = msg.user; lastTime = msg.timestamp;
 
+    // Parse emoji with twemoji
+    if (window.twemoji) {
+        const messageText = element.querySelector('.message-text');
+        if (messageText) window.twemoji.parse(messageText);
+    }
+
     if (wasNearBottom) {
         requestAnimationFrame(() => {
             const prevBehavior = container.style.scrollBehavior;
@@ -3013,6 +3044,9 @@ function makeMessageElement(msg, isSameUserRecent) {
     msgText.className = 'message-text';
     const embedLinks = [];
     msgText.innerHTML = parseMsg(msg, embedLinks);
+    if (window.twemoji) {
+        if (msgText) window.twemoji.parse(msgText);
+    }
 
     if (embedLinks.length === 1 && isTenorOnlyMessage(embedLinks, msg.content)) {
         msgText.style.display = 'none';

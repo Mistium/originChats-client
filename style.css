@@ -728,6 +728,8 @@ p {
     padding: 2px 0;
     color: var(--text, #ededed);
     max-width: 100%;
+    display: flex;
+    align-items: center;
 }
 
 .message-text p {
@@ -777,16 +779,14 @@ p {
     padding: 0;
 }
 
-.message-text.emoji-only {
-    font-size: 48px;
+.message-text.emoji-only .emoji {
+    width: 50px;
+    height: 50px;
     line-height: 1.2;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     color: var(--text-dim, #a0a0a0);
-}
-
-.emoji-only {
     letter-spacing: 2px;
 }
 
@@ -4876,6 +4876,28 @@ body {
             transform: translateY(0)
         }
     }
+
+/* Twemoji Emoji Support */
+img.emoji {
+   height: 1em;
+   width: 1em;
+   margin: 0 .05em 0 .1em;
+   vertical-align: -0.1em;
+}
+
+.account-bio img.emoji,
+.message-content img.emoji,
+.reply-bar-text img.emoji,
+.embed-description img.emoji,
+.embed-title img.emoji,
+.account-username-text img.emoji,
+.account-global-name img.emoji,
+.profile-card-inline img.emoji {
+   height: 1em;
+   width: 1em;
+   margin: 0 .05em 0 .1em;
+   vertical-align: -0.1em;
+}
 
 /* Account Profile in Members List Sidebar */
 .account-profile-content {

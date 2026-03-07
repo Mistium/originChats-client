@@ -151,7 +151,9 @@ async function createTenorEmbed(tenorId, originalUrl) {
 
         const img = document.createElement('img');
         img.src = proxyImageUrl(gifUrl);
-        img.alt = data[0].content_description || 'Tenor GIF';
+        const altDiv = document.createElement('div');
+        altDiv.textContent = data[0].content_description || 'Tenor GIF';
+        img.alt = altDiv.innerHTML;
         img.className = 'tenor-gif';
         img.loading = 'lazy';
         img.onerror = () => {
@@ -188,7 +190,13 @@ function createVideoEmbed(url) {
     video.preload = 'metadata';
     video.className = 'video-player';
     video.onerror = () => {
-        container.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">Video failed to load - click to open</a>`;
+        container.innerHTML = '';
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Video failed to load - click to open';
+        container.appendChild(link);
     };
     container.appendChild(video);
     return container;
@@ -487,14 +495,25 @@ function _createGitHubHeader(url, name, badgeText) {
 function _createGitHubStat(label, value) {
     const stat = document.createElement('div');
     stat.className = 'github-stat';
-    stat.innerHTML = `<span class="stat-value">${formatNumber(value)}</span><span class="stat-label">${label}</span>`;
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'stat-value';
+    valueSpan.textContent = formatNumber(value);
+    stat.appendChild(valueSpan);
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'stat-label';
+    labelSpan.textContent = label;
+    stat.appendChild(labelSpan);
     return stat;
 }
 function _createGitHubWebsiteLink(href) {
     const link = document.createElement('a');
     link.href = href.startsWith('http') ? href : `https://${href}`;
     link.target = '_blank'; link.rel = 'noopener noreferrer'; link.className = 'github-website';
-    link.innerHTML = `<i data-lucide="link"></i> ${href.replace(/^https?:\/\//, '')}`;
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'link');
+    link.appendChild(icon);
+    const text = document.createTextNode(href.replace(/^https?:\/\//, ''));
+    link.appendChild(text);
     return link;
 }
 function _createGitHubMetaItem(icon, html) {
