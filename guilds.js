@@ -235,12 +235,12 @@ async function reorderServers(draggedUrl, targetUrl) {
 }
 
 function showGuildContextMenu(event, server) {
-  showContextMenu(event, [
-    { label: 'Mark as Read', icon: 'check-circle', callback: () => markServerAsRead(server.url) },
-    'separator',
-    { label: 'Copy URL', icon: 'copy', callback: () => navigator.clipboard.writeText(server.url) },
-    { label: 'Leave Server', icon: 'log-out', danger: true, callback: () => leaveServer(server.url) }
-  ]);
+  contextMenu(event)
+    .item('Mark as Read', () => markServerAsRead(server.url), 'check-circle')
+    .sep()
+    .item('Copy URL', () => navigator.clipboard.writeText(server.url), 'copy')
+    .danger('Leave Server', () => leaveServer(server.url), 'log-out')
+    .show();
 }
 
 async function leaveServer(url) {

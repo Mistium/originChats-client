@@ -82,56 +82,7 @@ function closeWebSocket(url) {
 }
 
 /**
- * Build and display a context menu at the event position.
- * @param {MouseEvent} event
- * @param {Array<{label: string, icon: string, callback: Function, danger?: boolean}|'separator'>} items
- */
-function showContextMenu(event, items) {
-    closeContextMenu();
-    contextMenu.innerHTML = '';
-
-    items.forEach(item => {
-        if (item === 'separator') {
-            const sep = document.createElement('div');
-            sep.className = 'context-menu-separator';
-            contextMenu.appendChild(sep);
-            return;
-        }
-        const el = document.createElement('div');
-        el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
-        el.innerHTML = `<i data-lucide="${item.icon || 'more-horizontal'}"></i><span>${item.label}</span>`;
-        el.onclick = (e) => {
-            e.stopPropagation();
-            closeContextMenu();
-            item.callback();
-        };
-        contextMenu.appendChild(el);
-    });
-
-    if (!isMobile()) {
-        let x = event.clientX;
-        let y = event.clientY;
-        contextMenu.style.left = x + 'px';
-        contextMenu.style.top = y + 'px';
-        contextMenu.style.display = 'block';
-
-        const rect = contextMenu.getBoundingClientRect();
-        if (x + rect.width > window.innerWidth) {
-            contextMenu.style.left = (window.innerWidth - rect.width - 6) + 'px';
-        }
-        if (y + rect.height > window.innerHeight) {
-            contextMenu.style.top = (window.innerHeight - rect.height - 6) + 'px';
-        }
-    } else {
-        contextMenu.style.display = 'block';
-    }
-
-    if (window.lucide) window.lucide.createIcons({ root: contextMenu });
-    contextMenuOpen = true;
-}
-
-/**
- * Create a guild warning icon element (error badge shown on server icons).
+* Create a guild warning icon element (error badge shown on server icons).
  */
 function createGuildWarningIcon() {
     const warningIcon = document.createElement('div');
@@ -613,7 +564,7 @@ window.onload = async function () {
                 for (const e of data) {
                     const code = e.label.toLowerCase().replace(/\s+/g, "_");
                     const emoji = e.emoji;
-                    
+
                     if (typeof emoji === 'string' && emoji.length <= 4 && !/[<>]/.test(emoji)) {
                         shortcodeMap[`:${code}:`] = emoji;
                         if (e.emoticon) {
@@ -625,12 +576,12 @@ window.onload = async function () {
                         }
                     }
                 }
-                
+
                 Object.defineProperty(window, 'shortcodeMap', {
                     writable: false,
                     configurable: false
                 });
-                
+
                 const picker = document.querySelector('.reaction-picker');
                 if (picker && picker.classList.contains('active') && window.renderEmojis) {
                     window.renderEmojis();
@@ -755,7 +706,7 @@ window.hideErrorBanner = hideErrorBanner;
 function updateGuildActiveState() {
     document.querySelectorAll('.guild-item').forEach(item => {
         item.classList.toggle('active', item.dataset.url === state.serverUrl);
-  });
+    });
 }
 
 async function fetchAccountProfile(username) {
@@ -1048,81 +999,79 @@ window.rejectFriendRequest = rejectFriendRequest;
 window.unblockUser = unblockUser;
 
 function toggleServerDropdown() {
-  const dropdown = document.getElementById('server-dropdown');
-  const arrow = document.getElementById('dropdown-arrow');
-  dropdown.classList.toggle('active');
-  arrow.classList.toggle('open');
-  if (dropdown.classList.contains('active')) renderServerDropdown();
+    const dropdown = document.getElementById('server-dropdown');
+    const arrow = document.getElementById('dropdown-arrow');
+    dropdown.classList.toggle('active');
+    arrow.classList.toggle('open');
+    if (dropdown.classList.contains('active')) renderServerDropdown();
 }
 
 function closeServerDropdown() {
-  const dropdown = document.getElementById('server-dropdown');
-  const arrow = document.getElementById('dropdown-arrow');
-  if (dropdown) dropdown.classList.remove('active');
-  if (arrow) arrow.classList.remove('open');
+    const dropdown = document.getElementById('server-dropdown');
+    const arrow = document.getElementById('dropdown-arrow');
+    if (dropdown) dropdown.classList.remove('active');
+    if (arrow) arrow.classList.remove('open');
 }
 
 function isMobile() {
-  return window.matchMedia('(max-width: 768px)').matches || 'ontouchstart' in window;
+    return window.matchMedia('(max-width: 768px)').matches || 'ontouchstart' in window;
 }
 
 function markChannelAsRead(channel, serverUrl) {
-  const targetUrl = serverUrl || state.serverUrl;
+    const targetUrl = serverUrl || state.serverUrl;
 
-  if (!state.readTimesByServer[targetUrl]) {
-    state.readTimesByServer[targetUrl] = {};
-  }
+    if (!state.readTimesByServer[targetUrl]) {
+        state.readTimesByServer[targetUrl] = {};
+    }
 
-  if (channel.last_message) {
-    state.readTimesByServer[targetUrl][channel.name] = channel.last_message;
-  }
+    if (channel.last_message) {
+        state.readTimesByServer[targetUrl][channel.name] = channel.last_message;
+    }
 
-  const channelKey = `${targetUrl}:${channel.name}`;
-  if (state.unreadByChannel[channelKey]) {
-    state.unreadCountsByServer[targetUrl] = Math.max(0, (state.unreadCountsByServer[targetUrl] || 0) - state.unreadByChannel[channelKey]);
-    delete state.unreadByChannel[channelKey];
-  }
+    const channelKey = `${targetUrl}:${channel.name}`;
+    if (state.unreadByChannel[channelKey]) {
+        state.unreadCountsByServer[targetUrl] = Math.max(0, (state.unreadCountsByServer[targetUrl] || 0) - state.unreadByChannel[channelKey]);
+        delete state.unreadByChannel[channelKey];
+    }
 
-  if (state.unreadPings[channel.name]) delete state.unreadPings[channel.name];
-  if (state.unreadReplies[channel.name]) delete state.unreadReplies[channel.name];
+    if (state.unreadPings[channel.name]) delete state.unreadPings[channel.name];
+    if (state.unreadReplies[channel.name]) delete state.unreadReplies[channel.name];
 
-  saveReadTimes();
-  renderChannels();
+    saveReadTimes();
+    renderChannels();
 }
 
 function markDMAsRead(dmServer) {
-  const serverUrl = 'dms.mistium.com';
+    const serverUrl = 'dms.mistium.com';
 
-  if (!state.readTimesByServer[serverUrl]) {
-    state.readTimesByServer[serverUrl] = {};
-  }
+    if (!state.readTimesByServer[serverUrl]) {
+        state.readTimesByServer[serverUrl] = {};
+    }
 
-  if (dmServer.last_message) {
-    state.readTimesByServer[serverUrl][dmServer.channel] = dmServer.last_message;
-  }
+    if (dmServer.last_message) {
+        state.readTimesByServer[serverUrl][dmServer.channel] = dmServer.last_message;
+    }
 
-  const channelKey = `${serverUrl}:${dmServer.channel}`;
-  if (state.unreadByChannel[channelKey]) {
-    state.unreadCountsByServer[serverUrl] = Math.max(0, (state.unreadCountsByServer[serverUrl] || 0) - state.unreadByChannel[channelKey]);
-    delete state.unreadByChannel[channelKey];
-  }
+    const channelKey = `${serverUrl}:${dmServer.channel}`;
+    if (state.unreadByChannel[channelKey]) {
+        state.unreadCountsByServer[serverUrl] = Math.max(0, (state.unreadCountsByServer[serverUrl] || 0) - state.unreadByChannel[channelKey]);
+        delete state.unreadByChannel[channelKey];
+    }
 
-  if (state.unreadPings[dmServer.channel]) delete state.unreadPings[dmServer.channel];
-  if (state.unreadReplies[dmServer.channel]) delete state.unreadReplies[dmServer.channel];
+    if (state.unreadPings[dmServer.channel]) delete state.unreadPings[dmServer.channel];
+    if (state.unreadReplies[dmServer.channel]) delete state.unreadReplies[dmServer.channel];
 
-  saveReadTimes();
-  renderGuildSidebar();
+    saveReadTimes();
+    renderGuildSidebar();
 }
 
 function showChannelContextMenu(event, channel) {
   const serverUrl = state.serverUrl;
-  const isUnread = isChannelUnread(channel, serverUrl) || state.unreadByChannel[`${serverUrl}:${channel.name}`] > 0;
-
-  showContextMenu(event, [
-    { label: 'Mark as Read', icon: 'check-circle', callback: () => markChannelAsRead(channel, serverUrl) },
-    'separator',
-    { label: 'Copy Channel Name', icon: 'copy', callback: () => navigator.clipboard.writeText(channel.name) }
-  ]);
+  contextMenu(event)
+    .item('Mark as Read', () => markChannelAsRead(channel, serverUrl), 'check-circle')
+    .sep()
+    .item('Copy Channel Name', () => navigator.clipboard.writeText(channel.name), 'copy')
+    .show();
 }
 
 function renderServerDropdown() {
@@ -1287,13 +1236,13 @@ function switchServer(url) {
     const channelHeaderName = document.getElementById('channel-header-name');
     const serverChannelHeader = document.getElementById('server-channel-header');
 
-if (url === 'dms.mistium.com') {
-  if (serverChannelHeader) serverChannelHeader.style.display = 'none';
-  fetchMyAccountData();
-  selectHomeChannel();
-  const dmFriendsContainer = document.getElementById('dm-friends-container');
-  if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
-} else {
+    if (url === 'dms.mistium.com') {
+        if (serverChannelHeader) serverChannelHeader.style.display = 'none';
+        fetchMyAccountData();
+        selectHomeChannel();
+        const dmFriendsContainer = document.getElementById('dm-friends-container');
+        if (dmFriendsContainer) dmFriendsContainer.style.display = 'none';
+    } else {
         if (serverChannelHeader) serverChannelHeader.style.display = 'flex';
         if (channelHeaderName) channelHeaderName.parentElement.style.display = 'flex';
         const addBtn = document.getElementById('channel-add-btn');
@@ -1641,38 +1590,38 @@ async function handleMessage(msg, serverUrl) {
             wsSend({ cmd: 'users_online' }, serverUrl);
             break;
 
-case 'channels_get':
-  console.log('[DEBUG] channels_get received for server:', serverUrl, 'msg.val:', msg.val);
-  state.channelsByServer[serverUrl] = msg.val;
-  state.loadingChannelsByServer[serverUrl] = false;
+        case 'channels_get':
+            console.log('[DEBUG] channels_get received for server:', serverUrl, 'msg.val:', msg.val);
+            state.channelsByServer[serverUrl] = msg.val;
+            state.loadingChannelsByServer[serverUrl] = false;
 
-  if (!state.readTimesByServer[serverUrl]) {
-    state.readTimesByServer[serverUrl] = {};
-  }
-  
-  msg.val.forEach(channel => {
-    if (channel.last_message && state.readTimesByServer[serverUrl][channel.name] === undefined) {
-      state.readTimesByServer[serverUrl][channel.name] = 0;
-    }
-  });
+            if (!state.readTimesByServer[serverUrl]) {
+                state.readTimesByServer[serverUrl] = {};
+            }
 
-  renderGuildSidebar();
-  if (state.serverUrl === serverUrl) {
-    renderChannels();
-    if (!state.currentChannel && state.channels.length > 0 && serverUrl !== 'dms.mistium.com') {
-      const lastChannelName = state.lastChannelByServer[serverUrl];
-      const lastChannel = lastChannelName ? state.channels.find(c => c.name === lastChannelName) : null;
-      selectChannel(lastChannel || state.channels[0]);
-    }
-    if (serverUrl === 'dms.mistium.com' && !state.currentChannel) selectHomeChannel();
-    if (state.pendingChannelSelectsByServer[serverUrl] && serverUrl !== 'dms.mistium.com') {
-      const pendingChannel = state.pendingChannelSelectsByServer[serverUrl];
-      delete state.pendingChannelSelectsByServer[serverUrl];
-      const actualChannel = state.channels.find(c => c.name === pendingChannel.name);
-      if (actualChannel) selectChannel(actualChannel);
-    }
-  }
-  break;
+            msg.val.forEach(channel => {
+                if (channel.last_message && state.readTimesByServer[serverUrl][channel.name] === undefined) {
+                    state.readTimesByServer[serverUrl][channel.name] = 0;
+                }
+            });
+
+            renderGuildSidebar();
+            if (state.serverUrl === serverUrl) {
+                renderChannels();
+                if (!state.currentChannel && state.channels.length > 0 && serverUrl !== 'dms.mistium.com') {
+                    const lastChannelName = state.lastChannelByServer[serverUrl];
+                    const lastChannel = lastChannelName ? state.channels.find(c => c.name === lastChannelName) : null;
+                    selectChannel(lastChannel || state.channels[0]);
+                }
+                if (serverUrl === 'dms.mistium.com' && !state.currentChannel) selectHomeChannel();
+                if (state.pendingChannelSelectsByServer[serverUrl] && serverUrl !== 'dms.mistium.com') {
+                    const pendingChannel = state.pendingChannelSelectsByServer[serverUrl];
+                    delete state.pendingChannelSelectsByServer[serverUrl];
+                    const actualChannel = state.channels.find(c => c.name === pendingChannel.name);
+                    if (actualChannel) selectChannel(actualChannel);
+                }
+            }
+            break;
 
         case 'users_list':
             if (!state.usersByServer[serverUrl]) state.usersByServer[serverUrl] = {};
@@ -1754,31 +1703,31 @@ case 'channels_get':
             break;
         }
 
-case 'message_new':
-  if (!state.messagesByServer[serverUrl] || !state.messagesByServer[serverUrl][msg.channel]) return;
-  state.messagesByServer[serverUrl][msg.channel].push(msg.message);
+        case 'message_new':
+            if (!state.messagesByServer[serverUrl] || !state.messagesByServer[serverUrl][msg.channel]) return;
+            state.messagesByServer[serverUrl][msg.channel].push(msg.message);
 
-  const channels = state.channelsByServer[serverUrl];
-  if (channels) {
-    const channel = channels.find(c => c.name === msg.channel);
-    if (channel && msg.message.timestamp) {
-      channel.last_message = msg.message.timestamp;
-    }
-  }
+            const channels = state.channelsByServer[serverUrl];
+            if (channels) {
+                const channel = channels.find(c => c.name === msg.channel);
+                if (channel && msg.message.timestamp) {
+                    channel.last_message = msg.message.timestamp;
+                }
+            }
 
-  if (state.serverUrl !== serverUrl || msg.channel !== state.currentChannel?.name) {
-    if (!state.unreadCountsByServer[serverUrl]) state.unreadCountsByServer[serverUrl] = 0;
-    state.unreadCountsByServer[serverUrl]++;
-    const channelKey = `${serverUrl}:${msg.channel}`;
-    if (!state.unreadByChannel[channelKey]) state.unreadByChannel[channelKey] = 0;
-    state.unreadByChannel[channelKey]++;
-    if (serverUrl === 'dms.mistium.com' && msg.message.user !== state.currentUser?.username) {
-      addDMServer(msg.message.user, msg.channel);
-      playPingSound();
-    }
-    if (state.serverUrl === serverUrl) requestAnimationFrame(() => renderChannels());
-    renderGuildSidebar();
-  }
+            if (state.serverUrl !== serverUrl || msg.channel !== state.currentChannel?.name) {
+                if (!state.unreadCountsByServer[serverUrl]) state.unreadCountsByServer[serverUrl] = 0;
+                state.unreadCountsByServer[serverUrl]++;
+                const channelKey = `${serverUrl}:${msg.channel}`;
+                if (!state.unreadByChannel[channelKey]) state.unreadByChannel[channelKey] = 0;
+                state.unreadByChannel[channelKey]++;
+                if (serverUrl === 'dms.mistium.com' && msg.message.user !== state.currentUser?.username) {
+                    addDMServer(msg.message.user, msg.channel);
+                    playPingSound();
+                }
+                if (state.serverUrl === serverUrl) requestAnimationFrame(() => renderChannels());
+                renderGuildSidebar();
+            }
 
             {
                 const typingServer = state.typingUsersByServer[serverUrl];
@@ -2152,25 +2101,25 @@ async function selectChannel(channel) {
         if (key !== channelKey && key.startsWith(`${state.serverUrl}:`)) delete state.pendingMessageFetchesByChannel[key];
     });
 
-  if (state.unreadByChannel[channelKey]) {
-    state.unreadCountsByServer[state.serverUrl] = Math.max(0, (state.unreadCountsByServer[state.serverUrl] || 0) - state.unreadByChannel[channelKey]);
-    delete state.unreadByChannel[channelKey];
-    renderGuildSidebar();
-  }
-
-  if (state.serverUrl === 'dms.mistium.com') {
-    const ignoredChannels = ['home', 'relationships', 'notes', 'cmds', 'new_message'];
-    if (!ignoredChannels.includes(channel.name)) {
-      const initialLength = state.dmServers.length;
-      state.dmServers = state.dmServers.filter(dm => dm.channel !== channel.name);
-      if (state.dmServers.length !== initialLength) {
-        localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+    if (state.unreadByChannel[channelKey]) {
+        state.unreadCountsByServer[state.serverUrl] = Math.max(0, (state.unreadCountsByServer[state.serverUrl] || 0) - state.unreadByChannel[channelKey]);
+        delete state.unreadByChannel[channelKey];
         renderGuildSidebar();
-      }
     }
-  }
 
-  renderChannels();
+    if (state.serverUrl === 'dms.mistium.com') {
+        const ignoredChannels = ['home', 'relationships', 'notes', 'cmds', 'new_message'];
+        if (!ignoredChannels.includes(channel.name)) {
+            const initialLength = state.dmServers.length;
+            state.dmServers = state.dmServers.filter(dm => dm.channel !== channel.name);
+            if (state.dmServers.length !== initialLength) {
+                localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+                renderGuildSidebar();
+            }
+        }
+    }
+
+    renderChannels();
 
     document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
     const targetItem = Array.from(document.querySelectorAll('.channel-item')).find(el => el.querySelector('[data-channel-name]')?.textContent === channel.name);
@@ -2449,28 +2398,28 @@ state._olderStart = {};
 state._olderCooldown = {};
 
 function scrollToBottom() {
-  const container = document.getElementById('messages');
-  if (!container) return;
-  requestAnimationFrame(() => {
+    const container = document.getElementById('messages');
+    if (!container) return;
     requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
-      updateScrollButton();
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+            updateScrollButton();
+        });
     });
-  });
 }
 
 function updateScrollButton() {
-  const scrollBtn = document.getElementById('scroll-to-bottom');
-  const container = document.getElementById('messages');
-  if (!scrollBtn || !container) return;
-  const isNearBottom = (container.scrollHeight - (container.scrollTop + container.clientHeight)) < 80;
-  scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
+    const scrollBtn = document.getElementById('scroll-to-bottom');
+    const container = document.getElementById('messages');
+    if (!scrollBtn || !container) return;
+    const isNearBottom = (container.scrollHeight - (container.scrollTop + container.clientHeight)) < 80;
+    scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
 }
 
 function attachImageScrollHandler(img) {
-  const handler = () => scrollToBottom();
-  img.addEventListener('load', handler, { once: true });
-  img.addEventListener('error', handler, { once: true });
+    const handler = () => scrollToBottom();
+    img.addEventListener('load', handler, { once: true });
+    img.addEventListener('error', handler, { once: true });
 }
 
 window.scrollToBottom = scrollToBottom;
@@ -2499,206 +2448,6 @@ function getDaySeparator(timestamp) {
     separator.style.cssText = 'position: relative; z-index: 1; margin: 8px 0;';
     separator.innerHTML = `<span class="day-separator-text">${text}</span>`;
     return separator;
-}
-
-async function renderMessages(shouldScrollToBottom = true) {
-    if (state.renderInProgress) return;
-    state.renderInProgress = true;
-
-    const container = document.getElementById("messages");
-    if (!state.currentChannel?.name) { container.innerHTML = ''; state.renderInProgress = false; return; }
-
-    const channel = state.currentChannel.name;
-    if (!state.messagesByServer[state.serverUrl]?.[channel]) {
-        container.innerHTML = "";
-        state.renderInProgress = false;
-        return;
-    }
-
-    const messages = state.messagesByServer[state.serverUrl][channel].slice().sort((a, b) => a.timestamp - b.timestamp);
-
-    if (messages.length === 0) {
-        state.renderInProgress = false;
-        const channelName = state.currentChannel.display_name || state.currentChannel.name;
-        container.innerHTML = `
-            <div class="empty-channel-message">
-                <div class="empty-channel-icon">💬</div>
-                <div class="empty-channel-title">Welcome to #${channelName}</div>
-                <div class="empty-channel-text">This is the start of the <strong>#${channelName}</strong> channel.</div>
-                <div class="empty-channel-text">Be the first to send a message!</div>
-            </div>
-        `;
-        return;
-    }
-
-    const existingMsgIds = new Set();
-    container.querySelectorAll('[data-msg-id]').forEach(el => existingMsgIds.add(el.dataset.msgId));
-
-    const existingDaySeparators = new Set();
-    container.querySelectorAll('[data-separator-date]').forEach(el => existingDaySeparators.add(el.dataset.separatorDate));
-
-    const isInitialRender = existingMsgIds.size === 0;
-    if (isInitialRender) {
-        container.innerHTML = '';
-    } else {
-        container.querySelector('.loading-throbber')?.remove();
-    }
-
-    const fragment = document.createDocumentFragment();
-    lastUser = null; lastTime = 0; lastGroup = null;
-    let consecutiveCount = 0, lastDate = null;
-
-    for (const msg of messages) {
-        if (existingMsgIds.has(msg.id)) {
-            lastUser = msg.user; lastTime = msg.timestamp;
-            lastDate = new Date(msg.timestamp * 1000).toDateString();
-            if (msg.user === lastUser && msg.timestamp - lastTime < 300) { consecutiveCount++; } else { consecutiveCount = 0; }
-            continue;
-        }
-        const msgDate = new Date(msg.timestamp * 1000).toDateString();
-        if (lastDate !== null && msgDate !== lastDate && !existingDaySeparators.has(msgDate)) {
-            fragment.appendChild(getDaySeparator(msg.timestamp));
-            consecutiveCount = 0;
-        }
-        lastDate = msgDate;
-
-        const isSameUserRecent = msg.user === lastUser && msg.timestamp - lastTime < 300 && consecutiveCount < 20;
-        if (msg.user === lastUser && msg.timestamp - lastTime < 300) { consecutiveCount++; } else { consecutiveCount = 0; }
-
-        fragment.appendChild(makeMessageElement(msg, isSameUserRecent));
-        lastUser = msg.user; lastTime = msg.timestamp;
-    }
-
-  if (fragment.childNodes.length > 0) container.appendChild(fragment);
-
-  if (shouldScrollToBottom || isInitialRender) {
-    scrollToBottom();
-    let observer;
-    try {
-      observer = new MutationObserver(() => { if (!state._olderLoading) scrollToBottom(); });
-      observer.observe(container, { childList: true, subtree: true });
-    } catch { }
-    container.querySelectorAll('img').forEach(img => {
-      if (!img.complete) {
-        attachImageScrollHandler(img);
-      }
-    });
-    setTimeout(() => { if (observer) observer.disconnect(); }, 2000);
-  }
-
-  setupImageLazyLoading(container);
-  updateTypingIndicator();
-  state.renderInProgress = false;
-}
-
-function appendMessage(msg) {
-  if (!state.currentChannel || state.renderInProgress) return;
-  const container = document.getElementById("messages");
-
-  container.querySelector('.empty-channel-message')?.remove();
-
-  const messages = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name] || [];
-  const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
-  const isSameUserRecent = prevMsg && msg.user === prevMsg.user && msg.timestamp - prevMsg.timestamp < 300;
-
-  if (prevMsg) {
-    const prevDate = new Date(prevMsg.timestamp * 1000).toDateString();
-    if (prevDate !== new Date(msg.timestamp * 1000).toDateString()) {
-      lastUser = null; lastTime = 0;
-      container.appendChild(getDaySeparator(msg.timestamp));
-    }
-  }
-
-  const element = makeMessageElement(msg, isSameUserRecent);
-  container.appendChild(element);
-  lastUser = msg.user; lastTime = msg.timestamp;
-
-  if (window.twemoji) {
-    const messageText = element.querySelector('.message-text');
-    if (messageText) window.twemoji.parse(messageText);
-  }
-
-  scrollToBottom();
-}
-
-function updateMessageContent(msgId, newContent) {
-    const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
-    if (!wrapper) return;
-    const msgText = wrapper.querySelector('.message-text');
-    if (!msgText) return;
-    const msg = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === msgId);
-    if (!msg) return;
-
-    const embedLinks = [];
-    msgText.innerHTML = parseMsg(msg, embedLinks);
-
-    msgText.querySelectorAll('.message-image').forEach(img => {
-        if (img.dataset.imageUrl) {
-            attachImageErrorFallback(img, img.dataset.imageUrl || img.src);
-            img.loading = 'lazy';
-        }
-    });
-
-    if (embedLinks.length === 1 && isTenorOnlyMessage(embedLinks, msg.content)) {
-        msgText.style.display = 'none';
-    } else {
-        msgText.style.display = '';
-        msgText.classList.toggle('emoji-only', isEmojiOnly(msg.content));
-    }
-
-    msgText.querySelectorAll("pre code").forEach(block => hljs.highlightElement(block));
-    msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, wrapper.querySelector('.message-group-content')));
-
-    msgText.classList.remove('mentioned');
-    if (state.currentUser) {
-        const matches = msg.content.match(pingRegex);
-        if (matches && matches.filter(m => m.trim().toLowerCase() === '@' + state.currentUser.username.toLowerCase()).length > 0) {
-            msgText.classList.add('mentioned');
-        }
-    }
-
-    const groupContent = wrapper.querySelector('.message-group-content');
-    if (groupContent) _processEmbedLinks(embedLinks, groupContent);
-
-    const header = wrapper.querySelector('.message-header');
-    if (header) {
-        let editedIndicator = header.querySelector('.edited-indicator');
-        if (msg.edited || msg.editedAt) {
-            if (!editedIndicator) {
-                editedIndicator = document.createElement('span');
-                editedIndicator.className = 'edited-indicator';
-                editedIndicator.textContent = '(edited)';
-                header.appendChild(editedIndicator);
-            }
-        } else if (editedIndicator) {
-            editedIndicator.remove();
-        }
-    }
-
-    wrapper.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const img = e.target.closest('.message-image');
-        const link = e.target.closest('a[href]');
-        if (img && img.dataset.imageUrl) {
-            openImageContextMenu(e, msg, img.dataset.imageUrl);
-        } else if (link && link.href && !link.href.startsWith('javascript:')) {
-            openLinkContextMenu(e, link.href);
-        } else {
-            openMessageContextMenu(e, msg);
-        }
-    });
-}
-
-function removeMessage(msgId) {
-    const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
-    if (!wrapper) return;
-    const wasGroupHead = wrapper.classList.contains('message-group');
-    const nextSibling = wrapper.nextElementSibling;
-    wrapper.remove();
-    if (wasGroupHead && nextSibling && nextSibling.classList.contains('message-single')) {
-        const nextMsg = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === nextSibling.dataset.msgId);
-        if (nextMsg) nextSibling.replaceWith(makeMessageElement(nextMsg, false));
-    }
 }
 
 function makeMessageElement(msg, isSameUserRecent) {
@@ -2871,7 +2620,6 @@ function makeMessageElement(msg, isSameUserRecent) {
         const action = getBlockedMessageAction(blockedMode);
         if (action === 'hide') { wrapper.style.display = 'none'; return wrapper; }
         if (action === 'dim') { wrapper.classList.add('blocked-dimmed'); return wrapper; }
-        // collapse
         const notice = document.createElement('div');
         notice.className = 'blocked-notice';
         const btn = document.createElement('button');
@@ -2897,299 +2645,398 @@ function makeMessageElement(msg, isSameUserRecent) {
         msgText.style.display = 'none';
     } else {
         msgText.style.display = '';
-        if (isEmojiOnly(msg.content)) msgText.classList.add('emoji-only');
+  msgText.classList.toggle('emoji-only', isEmojiOnly(msg.content));
+  }
+
+  msgText.querySelectorAll("pre code").forEach(block => {
+    try {
+      const code = block.textContent;
+      block.textContent = code;
+      hljs.highlightElement(block);
+    } catch (e) {
+      console.debug('Highlight error:', e);
     }
+  });
+  msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, groupContent));
 
-    if (!isHead) {
-        const hoverTs = document.createElement('div');
-        hoverTs.className = 'hover-timestamp';
-        hoverTs.dataset.timestamp = msg.timestamp;
-        hoverTs.textContent = formatTimestamp(msg.timestamp);
-        if (msg.edited || msg.editedAt) {
-            const editedSpan = document.createElement('span');
-            editedSpan.className = 'edited-indicator';
-            editedSpan.textContent = '(edited)';
-            hoverTs.appendChild(editedSpan);
-        }
-        groupContent.appendChild(hoverTs);
+  msgText.classList.remove('mentioned');
+  if (state.currentUser) {
+    const matches = msg.content.match(pingRegex);
+    if (matches && matches.filter(m => m.trim().toLowerCase() === '@' + state.currentUser.username.toLowerCase()).length > 0) {
+      msgText.classList.add('mentioned');
     }
+  }
 
-    msgText.querySelectorAll("pre code").forEach(block => hljs.highlightElement(block));
-    msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, groupContent));
+  const groupContent2 = wrapper.querySelector('.message-group-content');
+  if (groupContent2) _processEmbedLinks(embedLinks, groupContent2);
 
-    if (state.currentUser) {
-        const matches = msg.content.match(pingRegex);
-        if (matches && matches.filter(m => m.trim().toLowerCase() === '@' + state.currentUser.username.toLowerCase()).length > 0) {
-            msgText.classList.add('mentioned');
-        }
+  if (!isHead) {
+    const hoverTs = document.createElement('div');
+    hoverTs.className = 'hover-timestamp';
+    hoverTs.dataset.timestamp = msg.timestamp;
+    hoverTs.textContent = formatTimestamp(msg.timestamp);
+    if (msg.edited || msg.editedAt) {
+      const editedSpan = document.createElement('span');
+      editedSpan.className = 'edited-indicator';
+      editedSpan.textContent = '(edited)';
+      hoverTs.appendChild(editedSpan);
     }
+    groupContent.appendChild(hoverTs);
+  }
 
-    wrapper.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const img = e.target.closest('.message-image');
-        const link = e.target.closest('a[href]');
-        if (img && img.dataset.imageUrl) {
-            openImageContextMenu(e, msg, img.dataset.imageUrl);
-        } else if (link && link.href && !link.href.startsWith('javascript:')) {
-            openLinkContextMenu(e, link.href);
-        } else {
-            openMessageContextMenu(e, msg);
-        }
+  groupContent.appendChild(msgText);
+
+  msgText.querySelectorAll('.message-image').forEach(img => attachImageErrorFallback(img, img.src || img.dataset.imageUrl));
+
+  window.renderReactions(msg, groupContent);
+
+  setupMessageSwipe(wrapper, msg);
+
+  wrapper.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const imgEl = e.target.closest('.message-image');
+    const link = e.target.closest('a[href]');
+    if (imgEl && imgEl.dataset.imageUrl) {
+      openImageContextMenu(e, msg, imgEl.dataset.imageUrl);
+    } else if (link && link.href && !link.href.startsWith('javascript:')) {
+      openLinkContextMenu(e, link.href);
+    } else {
+      openMessageContextMenu(e, msg);
+    }
+  });
+
+  return wrapper;
+}
+
+async function renderMessages(shouldScrollToBottom = true) {
+  if (state.renderInProgress) return;
+  state.renderInProgress = true;
+
+  const container = document.getElementById("messages");
+  if (!state.currentChannel?.name) { container.innerHTML = ''; state.renderInProgress = false; return; }
+
+  const channel = state.currentChannel.name;
+  if (!state.messagesByServer[state.serverUrl]?.[channel]) {
+    container.innerHTML = "";
+    state.renderInProgress = false;
+    return;
+  }
+
+  const messages = state.messagesByServer[state.serverUrl][channel].slice().sort((a, b) => a.timestamp - b.timestamp);
+
+  if (messages.length === 0) {
+    state.renderInProgress = false;
+    const channelName = state.currentChannel.display_name || state.currentChannel.name;
+    container.innerHTML = `
+      <div class="empty-channel-message">
+        <div class="empty-channel-icon">💬</div>
+        <div class="empty-channel-title">Welcome to #${channelName}</div>
+        <div class="empty-channel-text">This is the start of the <strong>#${channelName}</strong> channel.</div>
+        <div class="empty-channel-text">Be the first to send a message!</div>
+      </div>
+    `;
+    return;
+  }
+
+  const existingMsgIds = new Set();
+  container.querySelectorAll('[data-msg-id]').forEach(el => existingMsgIds.add(el.dataset.msgId));
+
+  const existingDaySeparators = new Set();
+  container.querySelectorAll('[data-separator-date]').forEach(el => existingDaySeparators.add(el.dataset.separatorDate));
+
+  const isInitialRender = existingMsgIds.size === 0;
+  if (isInitialRender) {
+    container.innerHTML = '';
+  } else {
+    container.querySelector('.loading-throbber')?.remove();
+  }
+
+  const fragment = document.createDocumentFragment();
+  lastUser = null; lastTime = 0; lastGroup = null;
+  let consecutiveCount = 0, lastDate = null;
+
+  for (const msg of messages) {
+    if (existingMsgIds.has(msg.id)) {
+      lastUser = msg.user; lastTime = msg.timestamp;
+      lastDate = new Date(msg.timestamp * 1000).toDateString();
+      if (msg.user === lastUser && msg.timestamp - lastTime < 300) { consecutiveCount++; } else { consecutiveCount = 0; }
+      continue;
+    }
+    const msgDate = new Date(msg.timestamp * 1000).toDateString();
+    if (lastDate !== null && msgDate !== lastDate && !existingDaySeparators.has(msgDate)) {
+      fragment.appendChild(getDaySeparator(msg.timestamp));
+      consecutiveCount = 0;
+    }
+    lastDate = msgDate;
+
+    const isSameUserRecent = msg.user === lastUser && msg.timestamp - lastTime < 300 && consecutiveCount < 20;
+    if (msg.user === lastUser && msg.timestamp - lastTime < 300) { consecutiveCount++; } else { consecutiveCount = 0; }
+
+    fragment.appendChild(makeMessageElement(msg, isSameUserRecent));
+    lastUser = msg.user; lastTime = msg.timestamp;
+  }
+
+  if (fragment.childNodes.length > 0) container.appendChild(fragment);
+
+  if (shouldScrollToBottom || isInitialRender) {
+    scrollToBottom();
+    let observer;
+    try {
+      observer = new MutationObserver(() => { if (!state._olderLoading) scrollToBottom(); });
+      observer.observe(container, { childList: true, subtree: true });
+    } catch { }
+    container.querySelectorAll('img').forEach(img => {
+      if (!img.complete) {
+        attachImageScrollHandler(img);
+      }
     });
+    setTimeout(() => { if (observer) observer.disconnect(); }, 2000);
+  }
 
-    groupContent.appendChild(msgText);
-    _processEmbedLinks(embedLinks, groupContent);
-    window.renderReactions(msg, groupContent);
-    setupMessageSwipe(wrapper, msg);
-    return wrapper;
+  setupImageLazyLoading(container);
+  updateTypingIndicator();
+  state.renderInProgress = false;
+}
+
+function appendMessage(msg) {
+    if (!state.currentChannel || state.renderInProgress) return;
+    const container = document.getElementById("messages");
+
+    container.querySelector('.empty-channel-message')?.remove();
+
+    const messages = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name] || [];
+    const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
+    const isSameUserRecent = prevMsg && msg.user === prevMsg.user && msg.timestamp - prevMsg.timestamp < 300;
+
+    if (prevMsg) {
+        const prevDate = new Date(prevMsg.timestamp * 1000).toDateString();
+        if (prevDate !== new Date(msg.timestamp * 1000).toDateString()) {
+            lastUser = null; lastTime = 0;
+            container.appendChild(getDaySeparator(msg.timestamp));
+        }
+    }
+
+    const element = makeMessageElement(msg, isSameUserRecent);
+    container.appendChild(element);
+    lastUser = msg.user; lastTime = msg.timestamp;
+
+    if (window.twemoji) {
+        const messageText = element.querySelector('.message-text');
+        if (messageText) window.twemoji.parse(messageText);
+    }
+
+  scrollToBottom();
+}
+
+function updateMessageContent(msgId, newContent) {
+  const wrapper = document.querySelector(`[data-msg-id="${msgId}"]`);
+  if (!wrapper) return;
+  const msgText = wrapper.querySelector('.message-text');
+  if (!msgText) return;
+  const msg = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === msgId);
+  if (!msg) return;
+
+  const embedLinks = [];
+  msgText.innerHTML = parseMsg(msg, embedLinks);
+
+  msgText.querySelectorAll('.message-image').forEach(img => {
+    if (img.dataset.imageUrl) {
+      attachImageErrorFallback(img, img.dataset.imageUrl || img.src);
+      img.loading = 'lazy';
+    }
+  });
+
+  if (embedLinks.length === 1 && isTenorOnlyMessage(embedLinks, msg.content)) {
+    msgText.style.display = 'none';
+  } else {
+    msgText.style.display = '';
+    msgText.classList.toggle('emoji-only', isEmojiOnly(msg.content));
+  }
+
+  msgText.querySelectorAll("pre code").forEach(block => {
+    try {
+      const code = block.textContent;
+      block.textContent = code;
+      hljs.highlightElement(block);
+    } catch (e) {
+      console.debug('Highlight error:', e);
+    }
+  });
+  msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, wrapper.querySelector('.message-group-content')));
+
+  if (state.currentUser) {
+    const matches = msg.content.match(pingRegex);
+    if (matches && matches.filter(m => m.trim().toLowerCase() === '@' + state.currentUser.username.toLowerCase()).length > 0) {
+      msgText.classList.add('mentioned');
+    }
+  }
 }
 
 function revealBlockedMessage(wrapper, msg) {
-    const groupContent = wrapper.querySelector('.message-group-content');
-    if (!groupContent) return;
-    groupContent.innerHTML = '';
+  const groupContent = wrapper.querySelector('.message-group-content');
+  if (!groupContent) return;
+  groupContent.innerHTML = '';
 
-    const user = getUserByUsernameCaseInsensitive(msg.user) || { username: msg.user };
-    const isReply = "reply_to" in msg;
+  const user = getUserByUsernameCaseInsensitive(msg.user) || { username: msg.user };
+  const isReply = "reply_to" in msg;
 
-    if (isReply) {
-        const replyTo = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === msg.reply_to.id);
-        const replyDiv = document.createElement('div');
-        replyDiv.className = 'message-reply';
+  if (isReply) {
+    const replyTo = state.messagesByServer[state.serverUrl]?.[state.currentChannel.name]?.find(m => m.id === msg.reply_to.id);
+    const replyDiv = document.createElement('div');
+    replyDiv.className = 'message-reply';
 
-        if (replyTo) {
-            const replyUser = getUserByUsernameCaseInsensitive(replyTo.user) || { username: replyTo.user };
-            const replyText = document.createElement('div');
-            replyText.className = 'reply-text';
-            const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'reply-username';
-            usernameSpan.textContent = replyUser.username + ': ';
-            const contentSpan = document.createElement('span');
-            contentSpan.className = 'reply-content';
-            contentSpan.textContent = replyTo.content;
-            replyText.appendChild(usernameSpan);
-            replyText.appendChild(contentSpan);
-            replyDiv.appendChild(getAvatar(replyUser.username, 'small'));
-            replyDiv.appendChild(replyText);
-        } else {
-            const notFoundIcon = document.createElement('div');
-            notFoundIcon.innerHTML = '<i data-lucide="x-circle"></i>';
-            const notFoundText = document.createElement('div');
-            notFoundText.className = 'reply-text';
-            notFoundText.innerHTML = '<span class="reply-username">Message not found</span>';
-            replyDiv.appendChild(notFoundIcon);
-            replyDiv.appendChild(notFoundText);
-            if (window.lucide) window.lucide.createIcons({ root: notFoundIcon });
-        }
-        wrapper.insertBefore(replyDiv, wrapper.firstChild);
+    if (replyTo) {
+      const replyUser = getUserByUsernameCaseInsensitive(replyTo.user) || { username: replyTo.user };
+      const replyText = document.createElement('div');
+      replyText.className = 'reply-text';
+      const usernameSpan = document.createElement('span');
+      usernameSpan.className = 'reply-username';
+      usernameSpan.textContent = replyUser.username + ': ';
+      const contentSpan = document.createElement('span');
+      contentSpan.className = 'reply-content';
+      contentSpan.textContent = replyTo.content;
+      replyText.appendChild(usernameSpan);
+      replyText.appendChild(contentSpan);
+      replyDiv.appendChild(getAvatar(replyUser.username, 'small'));
+      replyDiv.appendChild(replyText);
+    } else {
+      const notFoundIcon = document.createElement('div');
+      notFoundIcon.innerHTML = '<i data-lucide="x-circle"></i>';
+      const notFoundText = document.createElement('div');
+      notFoundText.className = 'reply-text';
+      notFoundText.innerHTML = '<span class="reply-username">Message not found</span>';
+      replyDiv.appendChild(notFoundIcon);
+      replyDiv.appendChild(notFoundText);
+      if (window.lucide) window.lucide.createIcons({ root: notFoundIcon });
     }
+    wrapper.insertBefore(replyDiv, wrapper.firstChild);
+  }
 
-    const header = document.createElement('div');
-    header.className = 'message-header';
-    const usernameEl = document.createElement('span');
-    usernameEl.className = 'username';
-    usernameEl.textContent = msg.user;
-    usernameEl.style.color = user.color || '#fff';
-    usernameEl.style.cursor = 'pointer';
-    usernameEl.addEventListener('click', (e) => { e.stopPropagation(); openAccountModal(msg.user); });
-    const ts = document.createElement('span');
-    ts.className = 'timestamp';
-    ts.textContent = formatTimestamp(msg.timestamp);
-    ts.dataset.timestamp = msg.timestamp;
-    ts.title = getFullTimestamp(msg.timestamp);
-    header.appendChild(usernameEl);
-    header.appendChild(ts);
-    groupContent.appendChild(header);
+  const header = document.createElement('div');
+  header.className = 'message-header';
+  const usernameEl = document.createElement('span');
+  usernameEl.className = 'username';
+  usernameEl.textContent = msg.user;
+  usernameEl.style.color = user.color || '#fff';
+  usernameEl.style.cursor = 'pointer';
+  usernameEl.addEventListener('click', (e) => { e.stopPropagation(); openAccountModal(msg.user); });
+  const ts = document.createElement('span');
+  ts.className = 'timestamp';
+  ts.textContent = formatTimestamp(msg.timestamp);
+  ts.dataset.timestamp = msg.timestamp;
+  ts.title = getFullTimestamp(msg.timestamp);
+  header.appendChild(usernameEl);
+  header.appendChild(ts);
+  groupContent.appendChild(header);
 
-    const msgText = document.createElement('div');
-    msgText.className = 'message-text';
-    const embedLinks = [];
-    msgText.innerHTML = parseMsg(msg, embedLinks);
-    groupContent.appendChild(msgText);
+  const msgText = document.createElement('div');
+  msgText.className = 'message-text';
+  const embedLinks = [];
+  msgText.innerHTML = parseMsg(msg, embedLinks);
+  groupContent.appendChild(msgText);
 
-    msgText.querySelectorAll('.message-image').forEach(img => attachImageErrorFallback(img, img.src || img.dataset.imageUrl));
-    msgText.querySelectorAll("pre code").forEach(block => hljs.highlightElement(block));
-    msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, groupContent));
+  msgText.querySelectorAll('.message-image').forEach(img => attachImageErrorFallback(img, img.src || img.dataset.imageUrl));
+  msgText.querySelectorAll("pre code").forEach(block => {
+    try {
+      const code = block.textContent;
+      block.textContent = code;
+      hljs.highlightElement(block);
+    } catch (e) {
+      console.debug('Highlight error:', e);
+    }
+  });
+  msgText.querySelectorAll("a.potential-image").forEach(link => _processPotentialImageLink(link, groupContent));
 
-    window.renderReactions(msg, groupContent);
+  window.renderReactions(msg, groupContent);
 }
 
-let contextMenu = document.getElementById("context-menu");
-let contextMenuOpen = false;
-
 function openMessageContextMenu(event, msg) {
-    async function deleteMessage(msg) {
-        if (state.currentChannel?.name === 'notes' && window.notesChannel) {
-            await window.notesChannel.deleteMessage(msg.id);
-            if (state.messagesByServer[state.serverUrl]?.['notes']) {
-                state.messagesByServer[state.serverUrl]['notes'] = state.messagesByServer[state.serverUrl]['notes'].filter(m => m.id !== msg.id);
-            }
-            renderMessages();
-            return;
-        }
-        wsSend({ cmd: 'message_delete', id: msg.id, channel: state.currentChannel.name }, state.serverUrl);
+  async function deleteMessage(msg) {
+    if (state.currentChannel?.name === 'notes' && window.notesChannel) {
+      await window.notesChannel.deleteMessage(msg.id);
+      if (state.messagesByServer[state.serverUrl]?.['notes']) {
+        state.messagesByServer[state.serverUrl]['notes'] = state.messagesByServer[state.serverUrl]['notes'].filter(m => m.id !== msg.id);
+      }
+      renderMessages();
+      return;
     }
-    window.deleteMessage = deleteMessage;
+    wsSend({ cmd: 'message_delete', id: msg.id, channel: state.currentChannel.name }, state.serverUrl);
+  }
+  window.deleteMessage = deleteMessage;
 
-    const items = [];
-    if (msg.user === state.currentUser?.username) {
-        items.push({ label: 'Edit message', icon: 'edit-3', callback: () => startEditMessage(msg) });
-    }
-    items.push(
-        { label: 'Reply to message', icon: 'message-circle', callback: () => replyToMessage(msg) },
-        { label: 'Copy text', icon: 'copy', callback: () => {
-            if (msg.content) {
-                navigator.clipboard.writeText(msg.content).catch(() => {
-                    const ta = document.createElement('textarea');
-                    ta.value = msg.content;
-                    ta.style.cssText = 'position: fixed; left: -9999px;';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch { }
-                    document.body.removeChild(ta);
-                });
-            }
-        }},
-        { label: 'Copy message ID', icon: 'hash', callback: () => {
-            navigator.clipboard.writeText(msg.id).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = msg.id;
-                ta.style.cssText = 'position: fixed; left: -9999px;';
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand('copy'); } catch { }
-                document.body.removeChild(ta);
-            });
-        }},
-        { label: 'Quote message', icon: 'corner-up-right', callback: () => {
-            const input = document.getElementById('message-input');
-            const quotedText = msg.content ? `> ${msg.content.replace(/\n/g, '\n> ')}` : '> [Attachment]';
-            input.value = quotedText + '\n\n' + input.value;
-            input.focus();
-            input.selectionStart = input.selectionEnd = 0;
-            input.dispatchEvent(new Event('input'));
-        }},
-        {
-            label: 'Add reaction', icon: 'smile', callback: () => {
-                const anchor = document.createElement('div');
-                anchor.style.cssText = `position: absolute; left: ${event.clientX}px; top: ${event.clientY}px;`;
-                document.body.appendChild(anchor);
-                openReactionPicker(msg.id, anchor);
-                setTimeout(() => anchor.remove(), 100);
-            }
-        },
-        'separator',
-        { label: 'Delete message', icon: 'trash-2', callback: () => deleteMessage(msg), danger: true }
-    );
-    showContextMenu(event, items);
+  const copyText = () => { if (msg.content) navigator.clipboard.writeText(msg.content); };
+  const copyId = () => navigator.clipboard.writeText(msg.id);
+  const quote = () => {
+    const input = document.getElementById('message-input');
+    const qt = msg.content ? `> ${msg.content.replace(/\n/g, '\n> ')}` : '> [Attachment]';
+    input.value = qt + '\n\n' + input.value;
+    input.focus();
+    input.selectionStart = input.selectionEnd = 0;
+    input.dispatchEvent(new Event('input'));
+  };
+  const react = () => {
+    const anchor = document.createElement('div');
+    anchor.style.cssText = `position: absolute; left: ${event.clientX}px; top: ${event.clientY}px;`;
+    document.body.appendChild(anchor);
+    openReactionPicker(msg.id, anchor);
+    setTimeout(() => anchor.remove(), 100);
+  };
+
+  const m = contextMenu(event);
+  if (msg.user === state.currentUser?.username) m.item('Edit', () => startEditMessage(msg), 'edit-3');
+  m.item('Reply', () => replyToMessage(msg), 'message-circle')
+    .item('Copy text', copyText, 'copy')
+    .item('Copy ID', copyId, 'hash')
+    .item('Quote', quote, 'corner-up-right')
+    .item('React', react, 'smile')
+    .sep()
+    .danger('Delete', () => deleteMessage(msg))
+    .show();
 }
 
 function openLinkContextMenu(event, url) {
-    showContextMenu(event, [
-        {
-            label: 'Copy URL', icon: 'copy', callback: () => {
-                navigator.clipboard.writeText(url).catch(() => {
-                    const ta = document.createElement('textarea');
-                    ta.value = url;
-                    ta.style.cssText = 'position: fixed; left: -9999px;';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch { }
-                    document.body.removeChild(ta);
-                });
-            }
-        },
-        { label: 'Open in new tab', icon: 'external-link', callback: () => window.open(url, '_blank', 'noopener,noreferrer') }
-    ]);
+  contextMenu(event)
+    .item('Copy URL', () => navigator.clipboard.writeText(url), 'copy')
+    .item('Open in new tab', () => window.open(url, '_blank', 'noopener,noreferrer'), 'external-link')
+    .show();
 }
 
 function openImageContextMenu(event, msg, imageUrl) {
-    async function deleteMessage(msg) {
-        if (state.currentChannel?.name === 'notes' && window.notesChannel) {
-            await window.notesChannel.deleteMessage(msg.id);
-            if (state.messagesByServer[state.serverUrl]?.['notes']) {
-                state.messagesByServer[state.serverUrl]['notes'] = state.messagesByServer[state.serverUrl]['notes'].filter(m => m.id !== msg.id);
-            }
-            renderMessages();
-            return;
-        }
-        wsSend({ cmd: 'message_delete', id: msg.id, channel: state.currentChannel.name }, state.serverUrl);
+  async function deleteMessage(msg) {
+    if (state.currentChannel?.name === 'notes' && window.notesChannel) {
+      await window.notesChannel.deleteMessage(msg.id);
+      if (state.messagesByServer[state.serverUrl]?.['notes']) {
+        state.messagesByServer[state.serverUrl]['notes'] = state.messagesByServer[state.serverUrl]['notes'].filter(m => m.id !== msg.id);
+      }
+      renderMessages();
+      return;
     }
-    window.deleteMessage = deleteMessage;
+    wsSend({ cmd: 'message_delete', id: msg.id, channel: state.currentChannel.name }, state.serverUrl);
+  }
+  window.deleteMessage = deleteMessage;
 
-    const items = [];
-    if (msg.user === state.currentUser?.username) {
-        items.push({ label: 'Edit message', icon: 'edit-3', callback: () => startEditMessage(msg) });
-    }
-    items.push(
-        { label: 'Reply to message', icon: 'message-circle', callback: () => replyToMessage(msg) },
-        { label: 'Copy text', icon: 'copy', callback: () => {
-            if (msg.content) {
-                navigator.clipboard.writeText(msg.content).catch(() => {
-                    const ta = document.createElement('textarea');
-                    ta.value = msg.content;
-                    ta.style.cssText = 'position: fixed; left: -9999px;';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch { }
-                    document.body.removeChild(ta);
-                });
-            }
-        }},
-        { label: 'Copy message ID', icon: 'hash', callback: () => {
-            navigator.clipboard.writeText(msg.id).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = msg.id;
-                ta.style.cssText = 'position: fixed; left: -9999px;';
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand('copy'); } catch { }
-                document.body.removeChild(ta);
-            });
-        }},
-        { label: 'Quote message', icon: 'corner-up-right', callback: () => {
-            const input = document.getElementById('message-input');
-            const quotedText = msg.content ? `> ${msg.content.replace(/\n/g, '\n> ')}` : '> [Attachment]';
-            input.value = quotedText + '\n\n' + input.value;
-            input.focus();
-            input.selectionStart = input.selectionEnd = 0;
-            input.dispatchEvent(new Event('input'));
-        }},
-        {
-            label: 'Add reaction', icon: 'smile', callback: () => {
-                const anchor = document.createElement('div');
-                anchor.style.cssText = `position: absolute; left: ${event.clientX}px; top: ${event.clientY}px;`;
-                document.body.appendChild(anchor);
-                openReactionPicker(msg.id, anchor);
-                setTimeout(() => anchor.remove(), 100);
-            }
-        },
-        'separator',
-        { label: 'Copy image URL', icon: 'link', callback: () => {
-            navigator.clipboard.writeText(imageUrl).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = imageUrl;
-                ta.style.cssText = 'position: fixed; left: -9999px;';
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand('copy'); } catch { }
-                document.body.removeChild(ta);
-            });
-        }},
-        { label: 'Open image in new tab', icon: 'external-link', callback: () => window.open(imageUrl, '_blank', 'noopener,noreferrer') },
-        'separator',
-        { label: 'Delete message', icon: 'trash-2', callback: () => deleteMessage(msg), danger: true }
-    );
-    showContextMenu(event, items);
-}
+  const copyText = () => { if (msg.content) navigator.clipboard.writeText(msg.content); };
+  const copyId = () => navigator.clipboard.writeText(msg.id);
+  const copyUrl = () => navigator.clipboard.writeText(imageUrl);
+  const react = () => {
+    const anchor = document.createElement('div');
+    anchor.style.cssText = `position: absolute; left: ${event.clientX}px; top: ${event.clientY}px;`;
+    document.body.appendChild(anchor);
+    openReactionPicker(msg.id, anchor);
+    setTimeout(() => anchor.remove(), 100);
+  };
 
-document.addEventListener("click", (e) => {
-    if (contextMenuOpen && !e.target.closest('.context-menu') && !e.target.closest('.guild-item')) closeContextMenu();
-});
-
-function closeContextMenu() {
-    contextMenu.style.display = "none";
-    contextMenuOpen = false;
+  const m = contextMenu(event);
+  if (msg.user === state.currentUser?.username) m.item('Edit', () => startEditMessage(msg), 'edit-3');
+  m.item('Reply', () => replyToMessage(msg), 'message-circle')
+    .item('Copy text', copyText, 'copy')
+    .item('Copy ID', copyId, 'hash')
+    .item('Copy image URL', copyUrl, 'image')
+    .item('Open image', () => window.open(imageUrl, '_blank', 'noopener,noreferrer'), 'external-link')
+    .item('React', react, 'smile')
+    .sep()
+    .danger('Delete', () => deleteMessage(msg))
+    .show();
 }
 
 function checkPermission(roles, permissions) {
@@ -4191,19 +4038,15 @@ if (input) {
 }
 
 function showDMContextMenu(event, dmServer) {
-  showContextMenu(event, [
-    { label: 'Mark as Read', icon: 'check-circle', callback: () => markDMAsRead(dmServer) },
-    'separator',
-    {
-      label: 'Remove from sidebar',
-      icon: 'x-circle',
-      callback: () => {
-        state.dmServers = state.dmServers.filter(dm => dm.channel !== dmServer.channel);
-        localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
-        renderGuildSidebar();
-      }
-    }
-  ]);
+  contextMenu(event)
+    .item('Mark as Read', () => markDMAsRead(dmServer), 'check-circle')
+    .sep()
+    .item('Remove from sidebar', () => {
+      state.dmServers = state.dmServers.filter(dm => dm.channel !== dmServer.channel);
+      localStorage.setItem('originchats_dm_servers', JSON.stringify(state.dmServers));
+      renderGuildSidebar();
+    }, 'x-circle')
+    .show();
 }
 
 function openDMCreateModal() {
@@ -4521,9 +4364,9 @@ function initAppearanceSettings() {
 }
 
 function applyMessageGrouping(enabled) {
-  document.body.classList.toggle('no-message-grouping', !enabled);
-  const messages = state.messagesByServer[state.serverUrl]?.[state.currentChannel?.name];
-  if (messages) renderMessages(false);
+    document.body.classList.toggle('no-message-grouping', !enabled);
+    const messages = state.messagesByServer[state.serverUrl]?.[state.currentChannel?.name];
+    if (messages) renderMessages(false);
 }
 
 function applyFontFamily(font) {
@@ -4593,48 +4436,48 @@ window.initChatSettings = initChatSettings;
 window.initAppearanceSettings = initAppearanceSettings;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Apply all persisted settings on load
-  const settingsToApply = [
-    [localStorage.getItem('originchats_font_size'), v => applyFontSize(v)],
-    [localStorage.getItem('originchats_theme'), v => applyTheme(v)],
-    [localStorage.getItem('originchats_message_grouping'), v => applyMessageGrouping(v === 'true')],
-    [localStorage.getItem('originchats_font_family'), v => applyFontFamily(v)],
-    [localStorage.getItem('originchats_enable_animations'), v => applyAnimations(v === 'true')],
-    [localStorage.getItem('originchats_reduce_motion'), v => v === 'true' && applyReduceMotion(true)],
-    [localStorage.getItem('originchats_show_scrollbars'), v => applyScrollbars(v === 'true')],
-    [localStorage.getItem('originchats_show_avatar_borders'), v => applyAvatarBorders(v === 'true')],
-    [localStorage.getItem('originchats_show_message_shadows'), v => applyMessageShadows(v === 'true')]
-  ];
-  settingsToApply.forEach(([val, fn]) => { if (val !== null) fn(val); });
+    // Apply all persisted settings on load
+    const settingsToApply = [
+        [localStorage.getItem('originchats_font_size'), v => applyFontSize(v)],
+        [localStorage.getItem('originchats_theme'), v => applyTheme(v)],
+        [localStorage.getItem('originchats_message_grouping'), v => applyMessageGrouping(v === 'true')],
+        [localStorage.getItem('originchats_font_family'), v => applyFontFamily(v)],
+        [localStorage.getItem('originchats_enable_animations'), v => applyAnimations(v === 'true')],
+        [localStorage.getItem('originchats_reduce_motion'), v => v === 'true' && applyReduceMotion(true)],
+        [localStorage.getItem('originchats_show_scrollbars'), v => applyScrollbars(v === 'true')],
+        [localStorage.getItem('originchats_show_avatar_borders'), v => applyAvatarBorders(v === 'true')],
+        [localStorage.getItem('originchats_show_message_shadows'), v => applyMessageShadows(v === 'true')]
+    ];
+    settingsToApply.forEach(([val, fn]) => { if (val !== null) fn(val); });
 
-  const savedWallpaper = localStorage.getItem('originchats_wallpaper');
-  const savedWallpaperOpacity = localStorage.getItem('originchats_wallpaper_opacity') || '100';
-  if (savedWallpaper) {
-    applyWallpaper(savedWallpaper, savedWallpaperOpacity);
-    applyWallpaperDimming(localStorage.getItem('originchats_wallpaper_dimmed') === 'true');
-  }
+    const savedWallpaper = localStorage.getItem('originchats_wallpaper');
+    const savedWallpaperOpacity = localStorage.getItem('originchats_wallpaper_opacity') || '100';
+    if (savedWallpaper) {
+        applyWallpaper(savedWallpaper, savedWallpaperOpacity);
+        applyWallpaperDimming(localStorage.getItem('originchats_wallpaper_dimmed') === 'true');
+    }
 
-  window.shouldShowEmbeds = localStorage.getItem('originchats_show_embeds') !== 'false';
-  window.showTimestamps = localStorage.getItem('originchats_show_timestamps') !== 'false';
-  window.gifAutoplayEnabled = localStorage.getItem('originchats_gif_autoplay') !== 'false';
+    window.shouldShowEmbeds = localStorage.getItem('originchats_show_embeds') !== 'false';
+    window.showTimestamps = localStorage.getItem('originchats_show_timestamps') !== 'false';
+    window.gifAutoplayEnabled = localStorage.getItem('originchats_gif_autoplay') !== 'false';
 
-  // Scroll to bottom button
-  const scrollBtn = document.getElementById('scroll-to-bottom');
-  const messagesEl = document.getElementById('messages');
+    // Scroll to bottom button
+    const scrollBtn = document.getElementById('scroll-to-bottom');
+    const messagesEl = document.getElementById('messages');
 
-  if (scrollBtn && messagesEl) {
-    const updateScrollButton = () => {
-      const isNearBottom = (messagesEl.scrollHeight - (messagesEl.scrollTop + messagesEl.clientHeight)) < 80;
-      scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
-    };
+    if (scrollBtn && messagesEl) {
+        const updateScrollButton = () => {
+            const isNearBottom = (messagesEl.scrollHeight - (messagesEl.scrollTop + messagesEl.clientHeight)) < 80;
+            scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
+        };
 
-    messagesEl.addEventListener('scroll', updateScrollButton);
+        messagesEl.addEventListener('scroll', updateScrollButton);
 
-    scrollBtn.addEventListener('click', () => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+        scrollBtn.addEventListener('click', () => {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        });
 
-    const observer = new MutationObserver(updateScrollButton);
-    observer.observe(messagesEl, { childList: true, subtree: true });
-  }
+        const observer = new MutationObserver(updateScrollButton);
+        observer.observe(messagesEl, { childList: true, subtree: true });
+    }
 });

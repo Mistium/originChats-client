@@ -21,21 +21,19 @@ function escapeAttribute(text) {
 }
 
 function parseMarkdown(text, embedLinks) {
-    const codeBlocks = [];
+  const codeBlocks = [];
 
-    text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-        lang = lang || "plaintext";
-        code = code.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+  text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    lang = lang || "plaintext";
 
-        const placeholder = `§CODEBLOCK_${codeBlocks.length}§${Math.random().toString(36).substr(2, 9)}§`;
-        codeBlocks.push({
-            placeholder,
-            html: `<pre><code class="language-${lang}">${code}</code></pre>`
-        });
-        return placeholder;
+    const placeholder = `§CODEBLOCK_${codeBlocks.length}§${Math.random().toString(36).substr(2, 9)}§`;
+    codeBlocks.push({
+      placeholder,
+      lang,
+      code
     });
+    return placeholder;
+  });
 
     text = text.replace(/`([^`]+)`/g, (match, code) => {
         code = code.replace(/&/g, "&amp;")
@@ -89,16 +87,21 @@ function parseMarkdown(text, embedLinks) {
             return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer"><img src="${proxyImageUrl(safeUrl)}" alt="image" class="message-image" data-image-url="${safeDisplayText}"></a>`;
         }
 
-        return `<a href="${safeUrl}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${safeDisplayText}">${safeDisplayText}</a>`;
-    });
+  return `<a href="${safeUrl}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${safeDisplayText}">${safeDisplayText}</a>`;
+  });
 
-    text = text.replace(/\n(?!<\/?(h[1-6]|pre))/g, "<br>");
+  text = text.replace(/\n(?!<\/?(h[1-6]|pre))/g, "<br>");
 
-    for (const block of codeBlocks) {
-        text = text.replace(block.placeholder, block.html);
-    }
+  for (const block of codeBlocks) {
+    const escapedCode = block.code
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const html = `<pre><code class="language-${block.lang}">${escapedCode}</code></pre>`;
+    text = text.replace(block.placeholder, html);
+  }
 
-    return text;
+  return text;
 }
 
 function parseMsg(msg, embedLinks) {
