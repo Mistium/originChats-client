@@ -2407,25 +2407,25 @@ function renderHomeContent() {
     messagesEl.innerHTML = '';
 
     const content = document.createElement('div');
-    content.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 40px 20px;';
+    content.className = 'home-content';
 
     const welcomeIcon = document.createElement('i');
     welcomeIcon.setAttribute('data-lucide', 'home');
-    welcomeIcon.style.cssText = 'width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.5;';
+    welcomeIcon.className = 'home-heading-icon';
     content.appendChild(welcomeIcon);
 
     const welcomeText = document.createElement('h2');
     welcomeText.textContent = 'Welcome Home';
-    welcomeText.style.cssText = 'font-size: 28px; font-weight: 600; margin-bottom: 8px; color: var(--text);';
+    welcomeText.className = 'home-heading-title';
     content.appendChild(welcomeText);
 
     const subtitle = document.createElement('p');
     subtitle.textContent = 'What would you like to do?';
-    subtitle.style.cssText = 'font-size: 14px; color: var(--text-dim); margin-bottom: 40px;';
+    subtitle.className = 'home-heading-subtitle';
     content.appendChild(subtitle);
 
     const grid = document.createElement('div');
-    grid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 600px;';
+    grid.className = 'home-options-grid';
 
     const options = [
         { icon: 'users', title: 'Manage Relationships', description: 'View and manage your friends', action: () => selectRelationshipsChannel() },
@@ -2436,25 +2436,23 @@ function renderHomeContent() {
 
     options.forEach(option => {
         const card = document.createElement('div');
-        card.style.cssText = 'background: var(--surface-light); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 120px;';
-        card.onmouseenter = () => { card.style.borderColor = 'var(--primary)'; card.style.transform = 'translateY(-2px)'; };
-        card.onmouseleave = () => { card.style.borderColor = 'var(--border)'; card.style.transform = 'translateY(0)'; };
+        card.className = 'home-option-card';
         card.onclick = option.action;
 
         const iconWrapper = document.createElement('div');
-        iconWrapper.style.cssText = 'width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;';
+        iconWrapper.className = 'home-option-icon';
         const icon = document.createElement('i');
         icon.setAttribute('data-lucide', option.icon);
-        icon.style.cssText = 'width: 20px; height: 20px; color: var(--text);';
+        icon.className = '';
         iconWrapper.appendChild(icon);
 
         const title = document.createElement('h3');
         title.textContent = option.title;
-        title.style.cssText = 'font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px;';
+        title.className = 'home-option-title';
 
         const description = document.createElement('p');
         description.textContent = option.description;
-        description.style.cssText = 'font-size: 13px; color: var(--text-dim); margin: 0;';
+        description.className = 'home-option-description';
 
         card.appendChild(iconWrapper);
         card.appendChild(title);
@@ -2666,11 +2664,11 @@ async function renderMessages(scrollToBottom = true) {
         state.renderInProgress = false;
         const channelName = state.currentChannel.display_name || state.currentChannel.name;
         container.innerHTML = `
-            <div class="empty-channel-message" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-dim);">
-                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">💬</div>
-                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text);">Welcome to #${channelName}</div>
-                <div style="font-size: 14px;">This is the start of the <strong>#${channelName}</strong> channel.</div>
-                <div style="font-size: 14px; margin-top: 4px;">Be the first to send a message!</div>
+            <div class="empty-channel-message">
+                <div class="empty-channel-icon">💬</div>
+                <div class="empty-channel-title">Welcome to #${channelName}</div>
+                <div class="empty-channel-text">This is the start of the <strong>#${channelName}</strong> channel.</div>
+                <div class="empty-channel-text">Be the first to send a message!</div>
             </div>
         `;
         return;
@@ -2836,8 +2834,11 @@ function updateMessageContent(msgId, newContent) {
 
     wrapper.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+        const img = e.target.closest('.message-image');
         const link = e.target.closest('a[href]');
-        if (link && link.href && !link.href.startsWith('javascript:')) {
+        if (img && img.dataset.imageUrl) {
+            openImageContextMenu(e, msg, img.dataset.imageUrl);
+        } else if (link && link.href && !link.href.startsWith('javascript:')) {
             openLinkContextMenu(e, link.href);
         } else {
             openMessageContextMenu(e, msg);
@@ -3081,8 +3082,11 @@ function makeMessageElement(msg, isSameUserRecent) {
 
     wrapper.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+        const img = e.target.closest('.message-image');
         const link = e.target.closest('a[href]');
-        if (link && link.href && !link.href.startsWith('javascript:')) {
+        if (img && img.dataset.imageUrl) {
+            openImageContextMenu(e, msg, img.dataset.imageUrl);
+        } else if (link && link.href && !link.href.startsWith('javascript:')) {
             openLinkContextMenu(e, link.href);
         } else {
             openMessageContextMenu(e, msg);
@@ -3189,6 +3193,38 @@ function openMessageContextMenu(event, msg) {
     }
     items.push(
         { label: 'Reply to message', icon: 'message-circle', callback: () => replyToMessage(msg) },
+        { label: 'Copy text', icon: 'copy', callback: () => {
+            if (msg.content) {
+                navigator.clipboard.writeText(msg.content).catch(() => {
+                    const ta = document.createElement('textarea');
+                    ta.value = msg.content;
+                    ta.style.cssText = 'position: fixed; left: -9999px;';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch { }
+                    document.body.removeChild(ta);
+                });
+            }
+        }},
+        { label: 'Copy message ID', icon: 'hash', callback: () => {
+            navigator.clipboard.writeText(msg.id).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = msg.id;
+                ta.style.cssText = 'position: fixed; left: -9999px;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch { }
+                document.body.removeChild(ta);
+            });
+        }},
+        { label: 'Quote message', icon: 'corner-up-right', callback: () => {
+            const input = document.getElementById('message-input');
+            const quotedText = msg.content ? `> ${msg.content.replace(/\n/g, '\n> ')}` : '> [Attachment]';
+            input.value = quotedText + '\n\n' + input.value;
+            input.focus();
+            input.selectionStart = input.selectionEnd = 0;
+            input.dispatchEvent(new Event('input'));
+        }},
         {
             label: 'Add reaction', icon: 'smile', callback: () => {
                 const anchor = document.createElement('div');
@@ -3198,7 +3234,8 @@ function openMessageContextMenu(event, msg) {
                 setTimeout(() => anchor.remove(), 100);
             }
         },
-        { label: 'Delete message', icon: 'trash-2', callback: () => deleteMessage(msg) }
+        'separator',
+        { label: 'Delete message', icon: 'trash-2', callback: () => deleteMessage(msg), danger: true }
     );
     showContextMenu(event, items);
 }
@@ -3220,6 +3257,86 @@ function openLinkContextMenu(event, url) {
         },
         { label: 'Open in new tab', icon: 'external-link', callback: () => window.open(url, '_blank', 'noopener,noreferrer') }
     ]);
+}
+
+function openImageContextMenu(event, msg, imageUrl) {
+    async function deleteMessage(msg) {
+        if (state.currentChannel?.name === 'notes' && window.notesChannel) {
+            await window.notesChannel.deleteMessage(msg.id);
+            if (state.messagesByServer[state.serverUrl]?.['notes']) {
+                state.messagesByServer[state.serverUrl]['notes'] = state.messagesByServer[state.serverUrl]['notes'].filter(m => m.id !== msg.id);
+            }
+            renderMessages();
+            return;
+        }
+        wsSend({ cmd: 'message_delete', id: msg.id, channel: state.currentChannel.name }, state.serverUrl);
+    }
+    window.deleteMessage = deleteMessage;
+
+    const items = [];
+    if (msg.user === state.currentUser?.username) {
+        items.push({ label: 'Edit message', icon: 'edit-3', callback: () => startEditMessage(msg) });
+    }
+    items.push(
+        { label: 'Reply to message', icon: 'message-circle', callback: () => replyToMessage(msg) },
+        { label: 'Copy text', icon: 'copy', callback: () => {
+            if (msg.content) {
+                navigator.clipboard.writeText(msg.content).catch(() => {
+                    const ta = document.createElement('textarea');
+                    ta.value = msg.content;
+                    ta.style.cssText = 'position: fixed; left: -9999px;';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch { }
+                    document.body.removeChild(ta);
+                });
+            }
+        }},
+        { label: 'Copy message ID', icon: 'hash', callback: () => {
+            navigator.clipboard.writeText(msg.id).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = msg.id;
+                ta.style.cssText = 'position: fixed; left: -9999px;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch { }
+                document.body.removeChild(ta);
+            });
+        }},
+        { label: 'Quote message', icon: 'corner-up-right', callback: () => {
+            const input = document.getElementById('message-input');
+            const quotedText = msg.content ? `> ${msg.content.replace(/\n/g, '\n> ')}` : '> [Attachment]';
+            input.value = quotedText + '\n\n' + input.value;
+            input.focus();
+            input.selectionStart = input.selectionEnd = 0;
+            input.dispatchEvent(new Event('input'));
+        }},
+        {
+            label: 'Add reaction', icon: 'smile', callback: () => {
+                const anchor = document.createElement('div');
+                anchor.style.cssText = `position: absolute; left: ${event.clientX}px; top: ${event.clientY}px;`;
+                document.body.appendChild(anchor);
+                openReactionPicker(msg.id, anchor);
+                setTimeout(() => anchor.remove(), 100);
+            }
+        },
+        'separator',
+        { label: 'Copy image URL', icon: 'link', callback: () => {
+            navigator.clipboard.writeText(imageUrl).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = imageUrl;
+                ta.style.cssText = 'position: fixed; left: -9999px;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch { }
+                document.body.removeChild(ta);
+            });
+        }},
+        { label: 'Open image in new tab', icon: 'external-link', callback: () => window.open(imageUrl, '_blank', 'noopener,noreferrer') },
+        'separator',
+        { label: 'Delete message', icon: 'trash-2', callback: () => deleteMessage(msg), danger: true }
+    );
+    showContextMenu(event, items);
 }
 
 document.addEventListener("click", (e) => {
@@ -3659,7 +3776,20 @@ function renderEmojiPopup() {
         li.className = 'emoji-item' + (index === emojiState.selectedIndex ? ' selected' : '');
         li.dataset.shortcode = shortcode;
         li.dataset.index = index;
-        li.innerHTML = `<span class="emoji-preview">${emoji}</span><div class="emoji-info"><div class="emoji-shortcode">${escapeHtml(shortcode)}</div></div>`;
+        const previewSpan = document.createElement('span');
+        previewSpan.className = 'emoji-preview';
+        previewSpan.textContent = emoji;
+        if (window.twemoji) {
+            window.twemoji.parse(previewSpan);
+        }
+        li.appendChild(previewSpan);
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'emoji-info';
+        const shortcodeDiv = document.createElement('div');
+        shortcodeDiv.className = 'emoji-shortcode';
+        shortcodeDiv.textContent = shortcode;
+        infoDiv.appendChild(shortcodeDiv);
+        li.appendChild(infoDiv);
         li.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); selectEmoji(index); });
         li.addEventListener('mouseenter', () => { emojiState.selectedIndex = index; updateEmojiSelection(); });
         list.appendChild(li);

@@ -39,6 +39,9 @@ function _createEmojiButton(emoji) {
     btn.className = 'reaction-picker-emoji';
     btn.textContent = emoji;
     btn.type = 'button';
+    if (window.twemoji) {
+        window.twemoji.parse(btn);
+    }
     btn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -522,7 +525,17 @@ function renderReactions(msg, container) {
         const hasReacted = users.includes(state.currentUser?.username);
         const reactionEl = document.createElement('span');
         reactionEl.className = 'reaction' + (hasReacted ? ' reacted' : '');
-        reactionEl.innerHTML = `<span class="reaction-emoji">${emoji}</span><span class="reaction-count">${users.length}</span>`;
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'reaction-emoji';
+        emojiSpan.textContent = emoji;
+        if (window.twemoji) {
+            window.twemoji.parse(emojiSpan);
+        }
+        reactionEl.appendChild(emojiSpan);
+        const countSpan = document.createElement('span');
+        countSpan.className = 'reaction-count';
+        countSpan.textContent = users.length;
+        reactionEl.appendChild(countSpan);
 
         const tooltip = document.createElement('div');
         tooltip.className = 'reaction-tooltip';
