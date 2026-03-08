@@ -980,14 +980,10 @@ function getUserByUsernameCaseInsensitive(username, serverUrl) {
     return null;
 }
 
-function isEmojiOnly(content) {
-    if (!content || content.trim().length === 0) return false;
-    const trimmed = content.trim();
-    if (trimmed.length > 23) return false;
-    const emojiRegex = /\p{Extended_Pictographic}/gu;
-    const emojis = trimmed.match(emojiRegex) || [];
-    const nonEmojiChars = trimmed.replace(emojiRegex, '').replace(/\s/g, '');
-    return nonEmojiChars.length === 0 && emojis.length > 0;
+function isEmojiOnly(str) {
+  const regex = emojiRegex();
+  const stripped = str.trim().replace(regex, '').trim();
+  return stripped.length === 0 && regex.test(str);
 }
 
 window.openAccountModal = openAccountModal;
@@ -2641,15 +2637,17 @@ function makeMessageElement(msg, isSameUserRecent) {
     msgText.className = 'message-text';
     const embedLinks = [];
     msgText.innerHTML = parseMsg(msg, embedLinks);
-    if (window.twemoji) {
-        if (msgText) window.twemoji.parse(msgText);
-    }
+
 
     if (embedLinks.length === 1 && isTenorOnlyMessage(embedLinks, msg.content)) {
         msgText.style.display = 'none';
     } else {
         msgText.style.display = '';
         msgText.classList.toggle('emoji-only', isEmojiOnly(msg.content));
+    }
+
+    if (window.twemoji) {
+        if (msgText) window.twemoji.parse(msgText);
     }
 
     msgText.querySelectorAll("pre code").forEach(block => {
@@ -2855,6 +2853,10 @@ function updateMessageContent(msgId, newContent) {
     } else {
         msgText.style.display = '';
         msgText.classList.toggle('emoji-only', isEmojiOnly(msg.content));
+    }
+
+    if (window.twemoji) {
+        window.twemoji.parse(msgText);
     }
 
     msgText.querySelectorAll("pre code").forEach(block => {

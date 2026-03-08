@@ -74,10 +74,20 @@
                     <div class="channel-header-info">
                         <div class="channel-header-name" id="channel-header-name">Server Name</div>
                     </div>
-                    <button class="server-settings-btn" id="server-settings-btn" onclick="openServerSettings()"
-                        title="Server Settings">
-                        <i data-lucide="settings-2"></i>
-                    </button>
+                    <div class="channel-header-actions">
+                        <button class="channel-action-btn" id="channel-search-btn" onclick="openMessageSearch()"
+                            title="Search Messages">
+                            <i data-lucide="search"></i>
+                        </button>
+                        <button class="channel-action-btn" id="channel-pinned-btn" onclick="openPinnedMessages()"
+                            title="Pinned Messages">
+                            <i data-lucide="pin"></i>
+                        </button>
+                        <button class="server-settings-btn" id="server-settings-btn" onclick="openServerSettings()"
+                            title="Server Settings">
+                            <i data-lucide="settings-2"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="channels-list" id="channels-list"></div>
             </div>
@@ -937,13 +947,13 @@
         <script src="markdown.js" defer></script>
         <script src="interactions.js" defer></script>
         <script src="uploads.js" defer></script>
-<script src="notes-channel.js" defer></script>
-<script src="channels.js" defer></script>
-<script src="voice.js" defer></script>
-<script src="members-content.js" defer></script>
-<script src="contextMenu.js" defer></script>
-<script src="guilds.js" defer></script>
-<script src="script.js" defer></script>
+        <script src="notes-channel.js" defer></script>
+        <script src="channels.js" defer></script>
+        <script src="voice.js" defer></script>
+        <script src="members-content.js" defer></script>
+        <script src="contextMenu.js" defer></script>
+        <script src="guilds.js" defer></script>
+        <script src="script.js" defer></script>
         <script src="serverSettings.js" defer></script>
 
         <!-- Highlight.js with auto-detection -->
@@ -952,17 +962,7 @@
             defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js" defer></script>
-
-        <!-- Eruda debugger (only load on localhost, not mobile for performance) -->
-        <script>
-            const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-            if (isLocalhost) {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-                script.onload = () => eruda.init();
-                document.head.appendChild(script);
-            }
-        </script>
+        <script src="https://cdn.jsdelivr.net/npm/emoji-regex@10/index.js"></script>
 </body>
 
 </html>
