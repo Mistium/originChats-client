@@ -2071,6 +2071,7 @@ a {
     font-weight: 700;
     color: var(--text);
     margin-bottom: 8px;
+    margin-top: 10px;
 }
 
 .gift-note {
