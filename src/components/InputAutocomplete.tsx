@@ -7,6 +7,7 @@ import {
   serverUrl,
 } from "../state";
 import { avatarUrl } from "../utils";
+import { emojiImgUrl } from "../lib/emoji";
 
 type AutocompleteType = "user" | "channel" | "emoji" | "slash" | "role";
 
@@ -433,14 +434,23 @@ export function InputAutocomplete({
                   style={{ background: item.icon || "#5865F2" }}
                 />
               )}
-              {item.type === "emoji" && item.hexcode && (
-                <img
-                  src={`https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${item.hexcode.toLowerCase()}.svg`}
-                  alt={item.icon}
-                  className="autocomplete-emoji-icon"
-                  draggable={false}
-                />
-              )}
+              {item.type === "emoji" &&
+                item.hexcode &&
+                (() => {
+                  const url = emojiImgUrl(item.hexcode);
+                  return url ? (
+                    <img
+                      src={url}
+                      alt={item.icon}
+                      className="autocomplete-emoji-icon"
+                      draggable={false}
+                    />
+                  ) : (
+                    <span className="autocomplete-emoji-icon autocomplete-emoji-system">
+                      {item.icon}
+                    </span>
+                  );
+                })()}
               {item.type === "channel" && (
                 <span className="autocomplete-icon-hash">#</span>
               )}

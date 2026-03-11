@@ -168,22 +168,20 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     if (!menu) return;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const isMobile = vw <= 768 || "ontouchstart" in window;
-
     let finalX = x;
     let finalY = y;
-    if (!isMobile) {
-      if (finalX + menu.offsetWidth > vw - PAD) {
-        finalX = vw - menu.offsetWidth - PAD;
-        preferLeftRef.current = true;
-      } else {
-        preferLeftRef.current = false;
-      }
-      if (finalY + menu.offsetHeight > vh - PAD)
-        finalY = vh - menu.offsetHeight - PAD;
-      finalX = Math.max(PAD, finalX);
-      finalY = Math.max(PAD, finalY);
+
+    if (finalX + menu.offsetWidth > vw - PAD) {
+      finalX = vw - menu.offsetWidth - PAD;
+      preferLeftRef.current = true;
+    } else {
+      preferLeftRef.current = false;
     }
+    if (finalY + menu.offsetHeight > vh - PAD)
+      finalY = vh - menu.offsetHeight - PAD;
+    finalX = Math.max(PAD, finalX);
+    finalY = Math.max(PAD, finalY);
+
     menu.style.left = `${finalX}px`;
     menu.style.top = `${finalY}px`;
     menu.style.visibility = "visible";

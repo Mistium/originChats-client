@@ -188,6 +188,14 @@ export function finishMessageFetch(sUrl: string, channelName: string): void {
   }
 }
 
+export function fetchMissingReplyMessage(
+  sUrl: string,
+  channelName: string,
+  replyToId: string,
+): void {
+  wsSend({ cmd: "message_get", channel: channelName, id: replyToId }, sUrl);
+}
+
 export function wsSend(data: any, sUrl?: string): boolean {
   const url = sUrl || serverUrl.value;
   const conn = wsConnections[url];
@@ -256,6 +264,15 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
   dismissBanner(bannerId);
   delete reconnectBannerIds[sUrl];
   reconnectAttempts[sUrl] = 0;
+
+  // Clear all cached message state for this server
+  messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
+  if (loadedChannelsByServer[sUrl]) {
+    loadedChannelsByServer[sUrl].clear();
+  }
+  if (reachedOldestByServer[sUrl]) {
+    reachedOldestByServer[sUrl].clear();
+  }
 
   if (wsConnections[sUrl]) {
     const existing = wsConnections[sUrl];
@@ -416,6 +433,15 @@ export function connectToServer(sUrl: string, manual = false): void {
   if (reconnectTimeouts[sUrl]) {
     clearTimeout(reconnectTimeouts[sUrl]);
     reconnectTimeouts[sUrl] = 0;
+  }
+
+  // Clear all cached message state for this server
+  messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
+  if (loadedChannelsByServer[sUrl]) {
+    loadedChannelsByServer[sUrl].clear();
+  }
+  if (reachedOldestByServer[sUrl]) {
+    reachedOldestByServer[sUrl].clear();
   }
 
   if (wsConnections[sUrl]) {
@@ -894,6 +920,39 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         const { selectChannel } = await import("./actions");
         const channels = channelsByServer.value[sUrl] || [];
         if (channels.length > 0) selectChannel(channels[0]);
+      }
+      break;
+    }
+    case "message_get": {
+      if (!messagesByServer.value[sUrl]) break;
+      const channel = msg.channel;
+      const message = msg.message;
+      if (!channel || !message) break;
+      if (!messagesByServer.value[sUrl][channel]) {
+        messagesByServer.value = {
+          ...messagesByServer.value,
+          [sUrl]: { ...messagesByServer.value[sUrl], [channel]: [] },
+        };
+      }
+      const existingMsgs = messagesByServer.value[sUrl][channel];
+      const alreadyExists = existingMsgs.some((m: any) => m.id === message.id);
+      if (!alreadyExists) {
+        const insertIdx = existingMsgs.findIndex(
+          (m: any) => m.timestamp > message.timestamp,
+        );
+        const newMsgs =
+          insertIdx === -1
+            ? [...existingMsgs, message]
+            : [
+                ...existingMsgs.slice(0, insertIdx),
+                message,
+                ...existingMsgs.slice(insertIdx),
+              ];
+        messagesByServer.value = {
+          ...messagesByServer.value,
+          [sUrl]: { ...messagesByServer.value[sUrl], [channel]: newMsgs },
+        };
+        renderMessagesSignal.value++;
       }
       break;
     }

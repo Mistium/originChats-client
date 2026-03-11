@@ -2783,6 +2783,18 @@ body.font-serif {
   flex: 1;
 }
 
+.appearance-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--surface-light, #141419);
+  color: var(--text-dim, #a0a0a0);
+}
+
 .appearance-toggle-title {
   font-size: 14px;
   font-weight: 500;

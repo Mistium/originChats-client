@@ -1,9 +1,12 @@
+import { Icon } from "./Icon";
+
 interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   label?: string;
   description?: string;
+  icon?: string;
 }
 
 export function Checkbox({
@@ -12,6 +15,7 @@ export function Checkbox({
   disabled,
   label,
   description,
+  icon,
 }: CheckboxProps) {
   const input = (
     <label className={`checkbox-root${disabled ? " disabled" : ""}`}>
@@ -30,6 +34,11 @@ export function Checkbox({
 
   return (
     <label className="appearance-toggle-row">
+      {icon && (
+        <span className="appearance-toggle-icon">
+          <Icon name={icon} size={16} />
+        </span>
+      )}
       <div className="appearance-toggle-text">
         <div className="appearance-toggle-title">{label}</div>
         {description && (

@@ -307,6 +307,9 @@ export const accentColor = signal<string>("");
 
 export const pingHighlightColor = signal<string>("");
 
+// Emoji rendering
+export const useSystemEmojis = signal<boolean>(false);
+
 // Chat display settings
 export const messageFontSize = signal<number>(15);
 
@@ -585,6 +588,10 @@ export async function initSettingsFromDb(): Promise<void> {
     await s.get<string>("maxInlineImageWidth", undefined),
     400,
   );
+  useSystemEmojis.value = bool(
+    await s.get<string>("useSystemEmojis", undefined),
+    false,
+  );
   micThreshold.value = num(await s.get<string>("micThreshold", undefined), 30);
   voiceVideoRes.value = num(await s.get<string>("vcRes", undefined), 720);
   voiceVideoFps.value = num(await s.get<string>("vcFps", undefined), 30);
@@ -700,6 +707,11 @@ effect(() => {
   if (_settingsLoaded)
     dbSettings.set("maxInlineImageWidth", String(maxInlineImageWidth.value));
   applyMaxImageWidth(maxInlineImageWidth.value);
+});
+
+effect(() => {
+  if (_settingsLoaded)
+    dbSettings.set("useSystemEmojis", String(useSystemEmojis.value));
 });
 
 effect(() => {

@@ -61,13 +61,11 @@ export function MembersList() {
       }));
   }
 
-  // Build hoisted role list in server-defined order (only roles with hoisted: true)
   const rolesMap = rolesByServer.value[serverUrl.value] || {};
   const hoistedRoles = Object.entries(rolesMap)
     .filter(([, role]) => role.hoisted === true)
     .map(([name, role]) => ({ name, color: role.color || null }));
 
-  // For each member, find the first hoisted role they have (in server role order)
   const getHoistedRole = (
     member: (typeof memberList)[number],
   ): string | null => {
@@ -77,7 +75,6 @@ export function MembersList() {
     return null;
   };
 
-  // Build sections: one per hoisted role (members with that role), then online/offline remainder
   const assignedToHoisted = new Set<string>();
 
   const hoistedSections = hoistedRoles
@@ -96,51 +93,73 @@ export function MembersList() {
   const onlineRemainder = remainder.filter((u) => u.status === "online");
   const offlineRemainder = remainder.filter((u) => u.status !== "online");
 
+  const totalOnline =
+    hoistedSections.reduce((sum, s) => sum + s.members.length, 0) +
+    onlineRemainder.length;
+  const totalOffline = offlineRemainder.length;
+
   return (
     <div id="members-list" className={mobilePanelOpen.value ? "open" : ""}>
-      {/* Hoisted role sections */}
-      {hoistedSections.map(({ roleName, color, members }) => (
-        <div key={roleName}>
-          <h2 style={color ? { color } : undefined}>
-            {roleName} — {members.length}
-          </h2>
-          {members.map((user) => (
-            <MemberItem
-              key={user.username}
-              user={user}
-              offline={user.status !== "online"}
-              onContextMenu={showUserMenu}
-            />
+      <div className="members-header-mobile">
+        <h3>Members</h3>
+        <span className="members-count">
+          {totalOnline + totalOffline} members
+        </span>
+        <button
+          className="right-panel-close"
+          onClick={() => {
+            mobilePanelOpen.value = false;
+          }}
+          aria-label="Close"
+        >
+          <Icon name="X" size={18} />
+        </button>
+      </div>
+      <div className="members-list-content">
+        <>
+          {hoistedSections.map(({ roleName, color, members }) => (
+            <div key={roleName}>
+              <h2 style={color ? { color } : undefined}>
+                {roleName} — {members.length}
+              </h2>
+              {members.map((user) => (
+                <MemberItem
+                  key={user.username}
+                  user={user}
+                  offline={user.status !== "online"}
+                  onContextMenu={showUserMenu}
+                />
+              ))}
+            </div>
           ))}
-        </div>
-      ))}
 
-      {/* Remaining members grouped by online/offline */}
-      {onlineRemainder.length > 0 && (
-        <>
-          <h2>Online — {onlineRemainder.length}</h2>
-          {onlineRemainder.map((user) => (
-            <MemberItem
-              key={user.username}
-              user={user}
-              onContextMenu={showUserMenu}
-            />
-          ))}
+          {onlineRemainder.length > 0 && (
+            <>
+              <h2>Online — {onlineRemainder.length}</h2>
+              {onlineRemainder.map((user) => (
+                <MemberItem
+                  key={user.username}
+                  user={user}
+                  onContextMenu={showUserMenu}
+                />
+              ))}
+            </>
+          )}
+          {offlineRemainder.length > 0 && (
+            <>
+              <h2>Offline — {offlineRemainder.length}</h2>
+              {offlineRemainder.map((user) => (
+                <MemberItem
+                  key={user.username}
+                  user={user}
+                  offline
+                  onContextMenu={showUserMenu}
+                />
+              ))}
+            </>
+          )}
         </>
-      )}
-      {offlineRemainder.length > 0 && (
-        <>
-          <h2>Offline — {offlineRemainder.length}</h2>
-          {offlineRemainder.map((user) => (
-            <MemberItem
-              key={user.username}
-              user={user}
-              offline
-              onContextMenu={showUserMenu}
-            />
-          ))}
-        </>
-      )}
+      </div>
 
       {userMenu && (
         <UserContextMenu
@@ -169,7 +188,10 @@ function MemberItem({
       onClick={(e: any) => openUserPopout(e, user.username, true)}
       onContextMenu={(e: any) => onContextMenu(e, user.username)}
     >
-      <img src={avatarUrl(user.username)} alt={user.username} />
+      <div className="member-avatar-wrapper">
+        <img src={avatarUrl(user.username)} alt={user.username} />
+        {!offline && <div className="member-status-indicator" />}
+      </div>
       <span
         className="name"
         style={user.color ? { color: user.color } : undefined}

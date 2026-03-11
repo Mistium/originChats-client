@@ -31,6 +31,7 @@ import {
   showTimestamps,
   showEditedIndicator,
   maxInlineImageWidth,
+  useSystemEmojis,
   micThreshold,
   voiceVideoRes,
   voiceVideoFps,
@@ -616,6 +617,7 @@ export function SettingsModal() {
                     onChange={(v) => {
                       sendTypingIndicators.value = v;
                     }}
+                    icon="Keyboard"
                     label="Send typing indicators"
                     description="Let others see when you are typing a message"
                   />
@@ -1372,6 +1374,7 @@ function AppearanceTab() {
             onChange={(v) => {
               hideScrollbars.value = v;
             }}
+            icon="ScrollText"
             label="Hide scrollbars"
             description="Hide scrollbars throughout the app"
           />
@@ -1380,6 +1383,7 @@ function AppearanceTab() {
             onChange={(v) => {
               hideAvatarBorders.value = v;
             }}
+            icon="CircleUser"
             label="Hide avatar borders"
             description="Remove borders around user avatars"
           />
@@ -1388,6 +1392,7 @@ function AppearanceTab() {
             onChange={(v) => {
               reduceMotion.value = v;
             }}
+            icon="Gauge"
             label="Reduce motion"
             description="Shorten or disable animations"
           />
@@ -1689,6 +1694,7 @@ function NotificationsTab() {
           onChange={(v) => {
             dmMessageSound.value = v;
           }}
+          icon="Volume2"
           label="Play sound for DM messages"
           description="Play the ping sound when you receive a new DM. Pings (@mentions and replies) always play a sound regardless of this setting."
         />
@@ -1859,6 +1865,7 @@ function ChatTab() {
             onChange={(v) => {
               compactMode.value = v;
             }}
+            icon="AlignJustify"
             label="Compact mode"
             description="Tighter message spacing, smaller avatars"
           />
@@ -1867,6 +1874,7 @@ function ChatTab() {
             onChange={(v) => {
               showTimestamps.value = v;
             }}
+            icon="Clock"
             label="Show timestamps"
             description="Display time on every message"
           />
@@ -1875,8 +1883,18 @@ function ChatTab() {
             onChange={(v) => {
               showEditedIndicator.value = v;
             }}
+            icon="Pencil"
             label="Show edited indicator"
             description='Show "(edited)" on modified messages'
+          />
+          <Checkbox
+            checked={useSystemEmojis.value}
+            onChange={(v) => {
+              useSystemEmojis.value = v;
+            }}
+            icon="Smile"
+            label="Use system emojis"
+            description="Render emojis using your OS font instead of Twemoji images"
           />
         </div>
       </div>

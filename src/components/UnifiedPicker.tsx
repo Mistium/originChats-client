@@ -4,6 +4,7 @@ import { recentEmojis } from "../state";
 import { Icon } from "./Icon";
 import { VirtualGrid } from "./VirtualGrid";
 import { favGifs as dbFavGifs } from "../lib/db";
+import { emojiImgUrl } from "../lib/emoji";
 
 interface EmojiEntry {
   label: string;
@@ -40,18 +41,35 @@ export interface UnifiedPickerProps {
   initialTab?: "emoji" | "gif";
 }
 
-function hexcodeToTwemojiUrl(hexcode: string): string {
-  return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${hexcode.toLowerCase()}.svg`;
+function hexcodeToEmoji(hexcode: string): string {
+  return String.fromCodePoint(
+    ...hexcode.split("-").map((h) => parseInt(h, 16)),
+  );
 }
 
-function TwemojiImg({ hexcode, alt }: { hexcode: string; alt: string }) {
+function TwemojiImg({
+  hexcode,
+  alt,
+  emoji,
+}: {
+  hexcode: string;
+  alt: string;
+  emoji?: string;
+}) {
+  const url = emojiImgUrl(hexcode);
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt={alt}
+        className="twemoji-picker-img"
+        draggable={false}
+      />
+    );
+  }
+  const char = emoji ?? hexcodeToEmoji(hexcode);
   return (
-    <img
-      src={hexcodeToTwemojiUrl(hexcode)}
-      alt={alt}
-      className="twemoji-picker-img"
-      draggable={false}
-    />
+    <span className="twemoji-picker-img twemoji-picker-system">{char}</span>
   );
 }
 

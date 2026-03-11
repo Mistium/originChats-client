@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { Fragment, type h } from "preact";
+import { Fragment, type h, type ComponentChildren } from "preact";
 import { useSignalEffect } from "@preact/signals";
-import twemoji from "@twemoji/api";
+import { parseEmojisInContainer, emojiImgUrl } from "../lib/emoji";
 import {
   currentChannel,
   messages,
@@ -42,7 +42,7 @@ import {
   showVoiceCallView,
 } from "../lib/ui-signals";
 import { voiceState } from "../voice";
-import { wsSend } from "../lib/websocket";
+import { wsSend, fetchMissingReplyMessage } from "../lib/websocket";
 import {
   highlightCodeInContainer,
   setShortcodeMap,
@@ -70,6 +70,24 @@ import { ErrorBannerStack } from "./ErrorBanner";
 import { createGift, ROTUR_GIFT_URL } from "../lib/rotur-api";
 import { VoiceCallView } from "./VoiceCallView";
 import { CallButton } from "./buttons/CallButton";
+
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp * 1000;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp * 1000).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 interface PendingImage {
   url: string;
@@ -196,12 +214,15 @@ function groupMessages(messages: Message[]): MessageGroup[] {
 }
 
 function scrollToMessage(id: string): void {
-  const el = document.querySelector(`[data-msg-id="${id}"]`);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.classList.add("highlight-message");
-    setTimeout(() => el.classList.remove("highlight-message"), 2000);
-  }
+  mobilePanelOpen.value = false;
+  setTimeout(() => {
+    const el = document.querySelector(`[data-msg-id="${id}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("highlight-flash");
+      setTimeout(() => el.classList.remove("highlight-flash"), 2000);
+    }
+  }, 100);
 }
 
 function RightPanelMessageCard({ msg }: { msg: any }) {
@@ -217,12 +238,16 @@ function RightPanelMessageCard({ msg }: { msg: any }) {
           className="right-panel-avatar"
           alt={msg.user}
         />
-        <span className="right-panel-username">{msg.user}</span>
+        <span
+          className="right-panel-username"
+          style={{
+            color: users.value[msg.user?.toLowerCase()]?.color || undefined,
+          }}
+        >
+          {msg.user}
+        </span>
         <span className="right-panel-time">
-          {new Date(msg.timestamp * 1000).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })}
+          {formatRelativeTime(msg.timestamp)}
         </span>
       </div>
       <div className="right-panel-message-content">
@@ -230,6 +255,9 @@ function RightPanelMessageCard({ msg }: { msg: any }) {
           content={msg.content}
           currentUsername={currentUser.value?.username}
         />
+      </div>
+      <div className="right-panel-message-action">
+        <Icon name="ExternalLink" size={14} />
       </div>
     </div>
   );
@@ -292,6 +320,15 @@ function RightPanel() {
         <div className="right-panel-header">
           <Icon name="Pin" size={18} />
           <span>Pinned Messages</span>
+          <button
+            className="right-panel-close"
+            onClick={() => {
+              mobilePanelOpen.value = false;
+            }}
+            aria-label="Close"
+          >
+            <Icon name="X" size={18} />
+          </button>
         </div>
         <div className="right-panel-content">
           {loading ? (
@@ -332,6 +369,15 @@ function RightPanel() {
         <div className="right-panel-header">
           <Icon name="Search" size={18} />
           <span>Search</span>
+          <button
+            className="right-panel-close"
+            onClick={() => {
+              mobilePanelOpen.value = false;
+            }}
+            aria-label="Close"
+          >
+            <Icon name="X" size={18} />
+          </button>
         </div>
         <div className="right-panel-search-input">
           <input
@@ -392,12 +438,40 @@ function RightPanel() {
       });
     };
 
+    const jumpToMessage = async (msg: any) => {
+      const { selectChannel } = await import("../lib/actions");
+      const targetChannel = channels.value.find(
+        (c: any) => c.name === msg.channel,
+      );
+      if (targetChannel && currentChannel.value?.name !== msg.channel) {
+        selectChannel(targetChannel);
+      }
+      mobilePanelOpen.value = false;
+      setTimeout(() => {
+        const el = document.querySelector(`[data-msg-id="${msg.id}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("highlight-flash");
+          setTimeout(() => el.classList.remove("highlight-flash"), 2000);
+        }
+      }, 100);
+    };
+
     return (
       <div id="members-list" className={panelClass}>
         <div className="right-panel-header">
           <Icon name="Bell" size={18} />
           <span>Inbox</span>
           {total > 0 && <span className="inbox-panel-total">{total}</span>}
+          <button
+            className="right-panel-close"
+            onClick={() => {
+              mobilePanelOpen.value = false;
+            }}
+            aria-label="Close"
+          >
+            <Icon name="X" size={18} />
+          </button>
         </div>
         <div className="right-panel-content">
           {loading && msgs.length === 0 ? (
@@ -418,25 +492,25 @@ function RightPanel() {
                   idx === msgs.length - 1 ||
                   msgs[idx + 1].channel !== msg.channel;
                 return (
-                  <>
+                  <div
+                    key={msg.id || `${msg.channel}-${msg.timestamp}`}
+                    className="inbox-ping-card-wrapper"
+                  >
                     {showChannel && (
-                      <div
-                        key={`header-${msg.channel}-${msg.timestamp}`}
-                        className="inbox-ping-group-header"
-                      >
-                        <Icon name="Hash" size={11} />
+                      <div className="inbox-ping-group-header">
+                        <Icon name="Hash" size={12} />
                         <span className="inbox-ping-card-channel">
                           {msg.channel}
                         </span>
                       </div>
                     )}
                     <div
-                      key={msg.id || `${msg.channel}-${msg.timestamp}`}
                       className={`inbox-ping-card${isLastInGroup ? " inbox-ping-card--last" : ""}`}
+                      onClick={() => jumpToMessage(msg)}
                     >
                       {msg.reply_to && (
                         <div className="inbox-ping-card-reply">
-                          <Icon name="CornerUpRight" size={13} />
+                          <Icon name="CornerUpRight" size={14} />
                           <img
                             src={`https://avatars.rotur.dev/${msg.reply_to.user}`}
                             className="inbox-ping-card-reply-avatar"
@@ -464,8 +538,8 @@ function RightPanel() {
                                 );
                                 if (found) {
                                   const c = found.content;
-                                  return c.length > 60
-                                    ? c.substring(0, 60) + "…"
+                                  return c.length > 50
+                                    ? c.substring(0, 50) + "…"
                                     : c;
                                 }
                               }
@@ -482,29 +556,32 @@ function RightPanel() {
                         />
                         <div className="inbox-ping-card-content">
                           <div className="inbox-ping-card-header">
-                            <span className="inbox-ping-card-username">
+                            <span
+                              className="inbox-ping-card-username"
+                              style={{
+                                color:
+                                  users.value[msg.user?.toLowerCase()]?.color ||
+                                  undefined,
+                              }}
+                            >
                               {msg.user}
                             </span>
                             <span className="inbox-ping-card-time">
-                              {new Date(
-                                msg.timestamp * 1000,
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {formatRelativeTime(msg.timestamp)}
                             </span>
                           </div>
                           <span className="inbox-ping-card-text">
-                            {msg.content.length > 180
-                              ? msg.content.substring(0, 180) + "…"
+                            {msg.content.length > 150
+                              ? msg.content.substring(0, 150) + "…"
                               : msg.content}
                           </span>
                         </div>
                       </div>
+                      <div className="inbox-ping-card-action">
+                        <Icon name="ExternalLink" size={14} />
+                      </div>
                     </div>
-                  </>
+                  </div>
                 );
               })}
               {hasMore && (
@@ -551,6 +628,206 @@ function BlockedMessageBanner({
         </span>
       </button>
       {expanded && <div className="blocked-message-content">{children}</div>}
+    </div>
+  );
+}
+
+const SWIPE_THRESHOLD = 50;
+const SWIPE_MAX = 72;
+const SPRING_TENSION = 320;
+const SPRING_FRICTION = 1000;
+
+interface SwipeableMessageProps {
+  children: ComponentChildren;
+  canEdit: boolean;
+  onReply: () => void;
+  onEdit: () => void;
+}
+
+function SwipeableMessage({
+  children,
+  canEdit,
+  onReply,
+  onEdit,
+}: SwipeableMessageProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const translateX = useRef(0);
+  const velocity = useRef(0);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const isDragging = useRef(false);
+  const isHorizontal = useRef<boolean | null>(null);
+  const rafId = useRef<number | null>(null);
+  const triggered = useRef(false);
+  const pointerId = useRef<number | null>(null);
+  const [actionDir, setActionDir] = useState<"reply" | "edit" | null>(null);
+  const [triggered2, setTriggered2] = useState(false);
+
+  const applyTranslate = (x: number) => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const inner = el.querySelector(".swipe-inner") as HTMLElement | null;
+    if (inner) inner.style.transform = `translateX(${x}px)`;
+    // icon reveal
+    const icon = el.querySelector(".swipe-action-icon") as HTMLElement | null;
+    if (icon) {
+      const progress = Math.min(Math.abs(x) / SWIPE_THRESHOLD, 1);
+      const scale = 0.4 + 0.6 * progress;
+      const opacity = progress;
+      icon.style.opacity = String(opacity);
+      icon.style.transform = `scale(${scale})`;
+    }
+  };
+
+  const springBack = () => {
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    let pos = translateX.current;
+    let vel = velocity.current * 0.3; // dampen on release
+
+    const step = () => {
+      const spring = -SPRING_TENSION * pos;
+      const damper = -SPRING_FRICTION * vel;
+      const acc = (spring + damper) / 60;
+      vel += acc / 60;
+      pos += vel;
+
+      if (Math.abs(pos) < 0.3 && Math.abs(vel) < 0.3) {
+        pos = 0;
+        vel = 0;
+        translateX.current = 0;
+        velocity.current = 0;
+        applyTranslate(0);
+        setActionDir(null);
+        setTriggered2(false);
+        return;
+      }
+      translateX.current = pos;
+      applyTranslate(pos);
+      rafId.current = requestAnimationFrame(step);
+    };
+    rafId.current = requestAnimationFrame(step);
+  };
+
+  const onPointerDown = (e: PointerEvent) => {
+    if (e.pointerType === "mouse") return;
+    if (pointerId.current !== null) return;
+    pointerId.current = e.pointerId;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    isDragging.current = true;
+    isHorizontal.current = null;
+    triggered.current = false;
+    velocity.current = 0;
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!isDragging.current || e.pointerId !== pointerId.current) return;
+    const dx = e.clientX - startX.current;
+    const dy = e.clientY - startY.current;
+
+    // Determine gesture axis on first significant movement
+    if (isHorizontal.current === null) {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      isHorizontal.current = Math.abs(dx) > Math.abs(dy);
+      if (!isHorizontal.current) {
+        isDragging.current = false;
+        return;
+      }
+    }
+    if (!isHorizontal.current) return;
+    e.preventDefault();
+
+    // Determine direction semantics
+    const dir = dx > 0 ? "reply" : canEdit ? "edit" : null;
+    if (!dir) {
+      // No action for this direction — allow very small rubber band then stop
+      const clamped = dx < 0 ? Math.max(dx * 0.15, -16) : 0;
+      velocity.current = clamped - translateX.current;
+      translateX.current = clamped;
+      applyTranslate(clamped);
+      return;
+    }
+
+    setActionDir(dir);
+
+    // Rubber-band: full drag up to threshold, then sqrt scaling
+    let newX: number;
+    const absDx = Math.abs(dx);
+    if (absDx <= SWIPE_THRESHOLD) {
+      newX = dx;
+    } else {
+      const overshoot = absDx - SWIPE_THRESHOLD;
+      const rubberBand = SWIPE_THRESHOLD + Math.sqrt(overshoot) * 3.5;
+      newX = Math.min(rubberBand, SWIPE_MAX) * Math.sign(dx);
+    }
+
+    velocity.current = newX - translateX.current;
+    translateX.current = newX;
+    applyTranslate(newX);
+
+    // Trigger haptic feedback at threshold (once per swipe)
+    if (!triggered.current && Math.abs(newX) >= SWIPE_THRESHOLD) {
+      triggered.current = true;
+      setTriggered2(true);
+      if (navigator.vibrate) navigator.vibrate(12);
+    }
+  };
+
+  const onPointerUp = (e: PointerEvent) => {
+    if (!isDragging.current || e.pointerId !== pointerId.current) return;
+    isDragging.current = false;
+    pointerId.current = null;
+
+    if (triggered.current) {
+      const dir = actionDir;
+      // Fire action after spring back starts
+      setTimeout(() => {
+        if (dir === "reply") onReply();
+        else if (dir === "edit") onEdit();
+      }, 50);
+    }
+
+    springBack();
+  };
+
+  const onPointerCancel = (e: PointerEvent) => {
+    if (e.pointerId !== pointerId.current) return;
+    isDragging.current = false;
+    pointerId.current = null;
+    springBack();
+  };
+
+  // Determine which icon to show
+  const iconName = actionDir === "edit" ? "Pencil" : "Reply";
+  const iconColor =
+    actionDir === "edit"
+      ? "var(--warning)"
+      : actionDir === "reply"
+        ? "var(--mention)"
+        : "var(--text-dim)";
+  const iconSide = actionDir === "edit" ? "right" : "left";
+
+  return (
+    <div
+      ref={wrapperRef}
+      className={`swipe-wrapper${triggered2 ? " swipe-triggered" : ""}`}
+      onPointerDown={onPointerDown as any}
+      onPointerMove={onPointerMove as any}
+      onPointerUp={onPointerUp as any}
+      onPointerCancel={onPointerCancel as any}
+    >
+      {actionDir && (
+        <div className={`swipe-action-icon swipe-action-icon--${iconSide}`}>
+          <div
+            className="swipe-action-icon-bg"
+            style={{ background: iconColor }}
+          />
+          <Icon name={iconName as any} size={18} />
+        </div>
+      )}
+      <div className="swipe-inner">{children}</div>
     </div>
   );
 }
@@ -761,22 +1038,23 @@ export function MessageArea() {
     }
   });
 
-  useEffect(() => {
-    const applyTwemojiAndHighlight = () => {
+  useSignalEffect(() => {
+    // Subscribe to both signals so twemoji re-runs on new messages AND on
+    // channel switches (even when the message signal value hasn't changed,
+    // e.g. switching to a cached channel).
+    renderMessagesSignal.value;
+    currentChannel.value;
+
+    // Schedule after the current paint so the new channel's DOM is in place.
+    requestAnimationFrame(() => {
       const messagesContainer = document.getElementById("messages");
       if (!messagesContainer) return;
 
-      twemoji.parse(messagesContainer, {
-        className: "emoji",
-        folder: "svg",
-        ext: ".svg",
-      });
+      parseEmojisInContainer(messagesContainer);
 
       highlightCodeInContainer(messagesContainer);
-    };
-
-    applyTwemojiAndHighlight();
-  }, [renderMessagesSignal.value]);
+    });
+  });
 
   const currentMessages = currentChannel.value
     ? messages.value[currentChannel.value.name] || []
@@ -1230,7 +1508,15 @@ export function MessageArea() {
     if (!msg.reply_to) return null;
     const channelMessages =
       messages.value[currentChannel.value?.name || ""] || [];
-    return channelMessages.find((m) => m.id === msg.reply_to?.id) || null;
+    const replyMsg = channelMessages.find((m) => m.id === msg.reply_to?.id);
+    if (!replyMsg && currentChannel.value?.name && msg.reply_to?.id) {
+      fetchMissingReplyMessage(
+        serverUrl.value,
+        currentChannel.value.name,
+        msg.reply_to.id,
+      );
+    }
+    return replyMsg || null;
   };
 
   const formatTimestamp = (timestamp: number): string => {
@@ -1295,151 +1581,157 @@ export function MessageArea() {
           : "message-single";
 
       return (
-        <div
+        <SwipeableMessage
           key={msg.id || msg.timestamp}
-          className={groupClass}
-          data-msg-id={msg.id}
-          onContextMenu={(e: any) => handleMessageContextMenu(e, msg)}
+          canEdit={isOwn}
+          onReply={() => startReply(msg)}
+          onEdit={() => startEdit(msg)}
         >
-          {replyTo && (
-            <div
-              className="message-reply"
-              onClick={(e) => {
-                e.stopPropagation();
-                const replyMsg = getReplyMessage(msg);
-                if (replyMsg) {
-                  const original = document.querySelector(
-                    `[data-msg-id="${replyMsg.id}"]`,
-                  );
-                  if (original)
-                    original.scrollIntoView({
-                      behavior: "smooth",
-                      block: "center",
-                    });
-                }
-              }}
-            >
-              <Icon name="CornerUpRight" size={20} />
-              <img
-                src={avatarUrl(replyTo.user)}
-                className="avatar-small"
-                alt=""
-              />
-              <div className="reply-text">
-                <span
-                  className="reply-username"
-                  style={{ color: getUserColor(getReplyName(msg)) }}
-                >
-                  {getReplyName(msg)}
-                </span>
-                <span className="reply-content">{getReplyPreview(msg)}</span>
-              </div>
-            </div>
-          )}
-          {!replyTo && interaction && (
-            <div className="message-reply">
-              <Icon name="CornerUpRight" size={20} />
-              <img
-                src={avatarUrl(interaction.username)}
-                className="avatar-small"
-                alt=""
-              />
-              <div className="reply-text">
-                <span
-                  className="reply-username"
-                  style={{ color: getUserColor(interaction.username) }}
-                >
-                  {interaction.username}
-                </span>
-                <span className="reply-content">
-                  <span className="interaction-command">
-                    /{interaction.command}
+          <div
+            className={groupClass}
+            data-msg-id={msg.id}
+            onContextMenu={(e: any) => handleMessageContextMenu(e, msg)}
+          >
+            {replyTo && (
+              <div
+                className="message-reply"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const replyMsg = getReplyMessage(msg);
+                  if (replyMsg) {
+                    const original = document.querySelector(
+                      `[data-msg-id="${replyMsg.id}"]`,
+                    );
+                    if (original)
+                      original.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                  }
+                }}
+              >
+                <Icon name="CornerUpRight" size={20} />
+                <img
+                  src={avatarUrl(replyTo.user)}
+                  className="avatar-small"
+                  alt=""
+                />
+                <div className="reply-text">
+                  <span
+                    className="reply-username"
+                    style={{ color: getUserColor(getReplyName(msg)) }}
+                  >
+                    {getReplyName(msg)}
                   </span>
-                </span>
-              </div>
-            </div>
-          )}
-          {(isHead || interaction) && (
-            <>
-              {replyTo || interaction ? (
-                <div className="message-group-body">
-                  <img
-                    src={avatarUrl(msg.user)}
-                    className="avatar clickable"
-                    alt={msg.user}
-                    onClick={(e: any) => openUserPopout(e, msg.user)}
-                    onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                  />
-                  <div className="message-group-content">
-                    <div className="message-header">
-                      <span
-                        className="username clickable"
-                        style={{ color: getUserColor(msg.user) }}
-                        onClick={(e: any) => openUserPopout(e, msg.user)}
-                        onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                      >
-                        {msg.user}
-                      </span>
-                      <span className="timestamp">
-                        {formatTimestamp(msg.timestamp)}
-                      </span>
-                      {msg.edited && (
-                        <span className="edited-indicator">(edited)</span>
-                      )}
-                    </div>
-                    <MessageContent
-                      content={msg.content}
-                      currentUsername={currentUser.value?.username}
-                    />
-                    {renderReactions(msg, reactions)}
-                  </div>
+                  <span className="reply-content">{getReplyPreview(msg)}</span>
                 </div>
-              ) : (
-                <>
-                  <img
-                    src={avatarUrl(msg.user)}
-                    className="avatar clickable"
-                    alt={msg.user}
-                    onClick={(e: any) => openUserPopout(e, msg.user)}
-                    onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                  />
-                  <div className="message-group-content">
-                    <div className="message-header">
-                      <span
-                        className="username clickable"
-                        style={{ color: getUserColor(msg.user) }}
-                        onClick={(e: any) => openUserPopout(e, msg.user)}
-                        onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                      >
-                        {msg.user}
-                      </span>
-                      <span className="timestamp">
-                        {formatTimestamp(msg.timestamp)}
-                      </span>
-                      {msg.edited && (
-                        <span className="edited-indicator">(edited)</span>
-                      )}
-                    </div>
-                    <MessageContent
-                      content={msg.content}
-                      currentUsername={currentUser.value?.username}
+              </div>
+            )}
+            {!replyTo && interaction && (
+              <div className="message-reply">
+                <Icon name="CornerUpRight" size={20} />
+                <img
+                  src={avatarUrl(interaction.username)}
+                  className="avatar-small"
+                  alt=""
+                />
+                <div className="reply-text">
+                  <span
+                    className="reply-username"
+                    style={{ color: getUserColor(interaction.username) }}
+                  >
+                    {interaction.username}
+                  </span>
+                  <span className="reply-content">
+                    <span className="interaction-command">
+                      /{interaction.command}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+            {(isHead || interaction) && (
+              <>
+                {replyTo || interaction ? (
+                  <div className="message-group-body">
+                    <img
+                      src={avatarUrl(msg.user)}
+                      className="avatar clickable"
+                      alt={msg.user}
+                      onClick={(e: any) => openUserPopout(e, msg.user)}
+                      onContextMenu={(e: any) => showUserMenu(e, msg.user)}
                     />
-                    {renderReactions(msg, reactions)}
+                    <div className="message-group-content">
+                      <div className="message-header">
+                        <span
+                          className="username clickable"
+                          style={{ color: getUserColor(msg.user) }}
+                          onClick={(e: any) => openUserPopout(e, msg.user)}
+                          onContextMenu={(e: any) => showUserMenu(e, msg.user)}
+                        >
+                          {msg.user}
+                        </span>
+                        <span className="timestamp">
+                          {formatTimestamp(msg.timestamp)}
+                        </span>
+                        {msg.edited && (
+                          <span className="edited-indicator">(edited)</span>
+                        )}
+                      </div>
+                      <MessageContent
+                        content={msg.content}
+                        currentUsername={currentUser.value?.username}
+                      />
+                      {renderReactions(msg, reactions)}
+                    </div>
                   </div>
-                </>
-              )}
-            </>
-          )}
-          {!isHead && !interaction && (
-            <div className="message-group-content">
-              <MessageContent
-                content={msg.content}
-                currentUsername={currentUser.value?.username}
-              />
-              {renderReactions(msg, reactions)}
-            </div>
-          )}
-        </div>
+                ) : (
+                  <>
+                    <img
+                      src={avatarUrl(msg.user)}
+                      className="avatar clickable"
+                      alt={msg.user}
+                      onClick={(e: any) => openUserPopout(e, msg.user)}
+                      onContextMenu={(e: any) => showUserMenu(e, msg.user)}
+                    />
+                    <div className="message-group-content">
+                      <div className="message-header">
+                        <span
+                          className="username clickable"
+                          style={{ color: getUserColor(msg.user) }}
+                          onClick={(e: any) => openUserPopout(e, msg.user)}
+                          onContextMenu={(e: any) => showUserMenu(e, msg.user)}
+                        >
+                          {msg.user}
+                        </span>
+                        <span className="timestamp">
+                          {formatTimestamp(msg.timestamp)}
+                        </span>
+                        {msg.edited && (
+                          <span className="edited-indicator">(edited)</span>
+                        )}
+                      </div>
+                      <MessageContent
+                        content={msg.content}
+                        currentUsername={currentUser.value?.username}
+                      />
+                      {renderReactions(msg, reactions)}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+            {!isHead && !interaction && (
+              <div className="message-group-content">
+                <MessageContent
+                  content={msg.content}
+                  currentUsername={currentUser.value?.username}
+                />
+                {renderReactions(msg, reactions)}
+              </div>
+            )}
+          </div>
+        </SwipeableMessage>
       );
     });
   }
@@ -1472,12 +1764,18 @@ export function MessageArea() {
                 setReactionModal({ emoji, users: liveUsers });
               }}
             >
-              <img
-                className="reaction-emoji"
-                src={`https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${twemoji.convert.toCodePoint(emoji).toLowerCase()}.svg`}
-                alt={emoji}
-                draggable={false}
-              />
+              {emojiImgUrl(emoji, true) ? (
+                <img
+                  className="reaction-emoji"
+                  src={emojiImgUrl(emoji, true)!}
+                  alt={emoji}
+                  draggable={false}
+                />
+              ) : (
+                <span className="reaction-emoji reaction-emoji-system">
+                  {emoji}
+                </span>
+              )}
               <span className="reaction-count">{users.length}</span>
               <span className="reaction-tooltip">
                 <span className="reaction-tooltip-avatars">
@@ -2247,12 +2545,18 @@ function ReactionModal({ emoji, users, onClose }: ReactionModalProps) {
     >
       <div className="reaction-modal">
         <div className="reaction-modal-header">
-          <img
-            className="reaction-modal-emoji"
-            src={`https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${twemoji.convert.toCodePoint(emoji).toLowerCase()}.svg`}
-            alt={emoji}
-            draggable={false}
-          />
+          {emojiImgUrl(emoji, true) ? (
+            <img
+              className="reaction-modal-emoji"
+              src={emojiImgUrl(emoji, true)!}
+              alt={emoji}
+              draggable={false}
+            />
+          ) : (
+            <span className="reaction-modal-emoji reaction-modal-emoji-system">
+              {emoji}
+            </span>
+          )}
           <div className="reaction-modal-header-text">
             <span className="reaction-modal-title">Reacted with {emoji}</span>
             <span className="reaction-modal-subtitle">

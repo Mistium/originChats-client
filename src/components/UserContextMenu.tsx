@@ -33,24 +33,24 @@ export function UserContextMenu({
   const hasPendingRequest = friendRequests.value.includes(username);
 
   useEffect(() => {
-    if (menuRef.current) {
-      const rect = menuRef.current.getBoundingClientRect();
-      const padding = 6;
-      let finalX = x;
-      let finalY = y;
+    const menu = menuRef.current;
+    if (!menu) return;
+    const padding = 6;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let finalX = x;
+    let finalY = y;
 
-      if (x + rect.width > window.innerWidth - padding) {
-        finalX = window.innerWidth - rect.width - padding;
-      }
-      if (y + rect.height > window.innerHeight - padding) {
-        finalY = window.innerHeight - rect.height - padding;
-      }
-      if (finalX < padding) finalX = padding;
-      if (finalY < padding) finalY = padding;
+    if (finalX + menu.offsetWidth > vw - padding)
+      finalX = vw - menu.offsetWidth - padding;
+    if (finalY + menu.offsetHeight > vh - padding)
+      finalY = vh - menu.offsetHeight - padding;
+    if (finalX < padding) finalX = padding;
+    if (finalY < padding) finalY = padding;
 
-      menuRef.current.style.left = `${finalX}px`;
-      menuRef.current.style.top = `${finalY}px`;
-    }
+    menu.style.left = `${finalX}px`;
+    menu.style.top = `${finalY}px`;
+    menu.style.visibility = "visible";
   }, [x, y]);
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export function UserContextMenu({
     <div
       ref={menuRef}
       className="user-context-menu"
-      style={{ position: "fixed" }}
+      style={{ position: "fixed", visibility: "hidden" }}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="user-context-header" onClick={openProfile}>

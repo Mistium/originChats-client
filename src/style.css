@@ -900,6 +900,27 @@ p {
   flex-shrink: 0;
 }
 
+.right-panel-close {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: none;
+  justify-content: center;
+  margin-left: auto;
+  padding: 4px 6px;
+  transition:
+    background var(--anim-fast) ease,
+    color var(--anim-fast) ease;
+}
+
+.right-panel-close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
 .right-panel-search-input {
   display: flex;
   gap: 6px;
@@ -1011,6 +1032,7 @@ p {
   0% {
     background: color-mix(in srgb, var(--mention, #9b87f5) 25%, transparent);
   }
+
   100% {
     background: transparent;
   }
@@ -2053,15 +2075,15 @@ p {
     transform: translateX(0);
   }
 
-  /* ── Right panel: slides in from the right ── */
+  /* ── Right panel: slides in from the right, full screen on mobile ── */
   #members-list {
     background: var(--surface);
-    border-left: 1px solid var(--border);
-    border-radius: 16px 0 0 16px;
+    border-left: none;
+    border-radius: 0;
     bottom: 0;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
-    left: auto;
-    max-width: 85vw;
+    box-shadow: none;
+    left: 0;
+    max-width: 100%;
     min-width: 0;
     padding: 0;
     position: fixed;
@@ -2069,7 +2091,7 @@ p {
     top: 0;
     transform: translateX(100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    width: 300px;
+    width: 100%;
     z-index: 102;
   }
 
@@ -2344,6 +2366,7 @@ p {
   margin-left: 0;
   max-width: 100%;
   padding: 2px 0;
+  user-select: text;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -3352,12 +3375,15 @@ a {
 .dialog-sm {
   max-width: 360px;
 }
+
 .dialog-md {
   max-width: 480px;
 }
+
 .dialog-lg {
   max-width: 600px;
 }
+
 .dialog-xl {
   max-width: 720px;
 }
@@ -4355,6 +4381,85 @@ a {
   padding: 1px 6px;
 }
 
+/* ─── Swipe-to-reply / swipe-to-edit ──────────────────────────────────────── */
+
+.swipe-wrapper {
+  position: relative;
+  touch-action: pan-y;
+  user-select: none;
+  width: 100%;
+}
+
+.swipe-inner {
+  will-change: transform;
+  /* No CSS transition — spring physics handled in JS */
+}
+
+/* Icon that appears on the side being swiped */
+.swipe-action-icon {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: scale(0.4);
+  /* Instant update to follow JS values */
+  transition: none;
+  width: 52px;
+  z-index: 0;
+}
+
+.swipe-action-icon--left {
+  left: 4px;
+}
+
+.swipe-action-icon--right {
+  right: 4px;
+}
+
+.swipe-action-icon-bg {
+  border-radius: 50%;
+  height: 36px;
+  inset: 50% auto auto 50%;
+  opacity: 0.18;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 36px;
+}
+
+.swipe-action-icon svg {
+  color: var(--text);
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
+  position: relative;
+  z-index: 1;
+}
+
+/* When the threshold has been crossed — icon bounces */
+.swipe-triggered .swipe-action-icon {
+  animation: swipe-icon-pop 0.22s var(--ease-standard) forwards;
+}
+
+@keyframes swipe-icon-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.35);
+  }
+
+  70% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
 .highlight-message {
   animation: messageHighlight 2s ease-out;
 }
@@ -4383,6 +4488,7 @@ a {
   padding: var(--space-1);
   position: fixed;
   z-index: var(--z-context-menu);
+
   from {
     opacity: 0;
     transform: scale(0.95);
@@ -5368,57 +5474,75 @@ a {
 .gh-embed__lang-dot[data-lang="JavaScript"] {
   background: #f1e05a;
 }
+
 .gh-embed__lang-dot[data-lang="TypeScript"] {
   background: #3178c6;
 }
+
 .gh-embed__lang-dot[data-lang="Python"] {
   background: #3572a5;
 }
+
 .gh-embed__lang-dot[data-lang="Rust"] {
   background: #dea584;
 }
+
 .gh-embed__lang-dot[data-lang="Go"] {
   background: #00add8;
 }
+
 .gh-embed__lang-dot[data-lang="Java"] {
   background: #b07219;
 }
+
 .gh-embed__lang-dot[data-lang="C"] {
   background: #555555;
 }
+
 .gh-embed__lang-dot[data-lang="C++"] {
   background: #f34b7d;
 }
+
 .gh-embed__lang-dot[data-lang="C#"] {
   background: #178600;
 }
+
 .gh-embed__lang-dot[data-lang="PHP"] {
   background: #4f5d95;
 }
+
 .gh-embed__lang-dot[data-lang="Ruby"] {
   background: #701516;
 }
+
 .gh-embed__lang-dot[data-lang="Swift"] {
   background: #f05138;
 }
+
 .gh-embed__lang-dot[data-lang="Kotlin"] {
   background: #a97bff;
 }
+
 .gh-embed__lang-dot[data-lang="Dart"] {
   background: #00b4ab;
 }
+
 .gh-embed__lang-dot[data-lang="Shell"] {
   background: #89e051;
 }
+
 .gh-embed__lang-dot[data-lang="HTML"] {
   background: #e34c26;
 }
+
 .gh-embed__lang-dot[data-lang="CSS"] {
   background: #563d7c;
 }
+
 .gh-embed__lang-dot[data-lang="Vue"] {
   background: #41b883;
 }
+
 .gh-embed__lang-dot[data-lang="Svelte"] {
   background: #ff3e00;
 }
@@ -7320,6 +7444,7 @@ pre {
     opacity: 0;
     transform: scale(0.4);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -7336,6 +7461,7 @@ pre {
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.4);
@@ -8302,14 +8428,14 @@ pre {
     background: var(--layer-sidebar-bg);
     bottom: 0;
     left: 0;
-    min-width: 56px;
-    padding: 8px 0;
+    min-width: 68px;
+    padding: 12px 0;
     position: fixed;
     top: 0;
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     visibility: hidden;
-    width: 56px;
+    width: 68px;
     z-index: 103;
   }
 
@@ -8320,28 +8446,45 @@ pre {
 
   /* Channel list offset to the right of guild sidebar when both open */
   .channels.open {
-    left: 56px;
-    width: calc(100% - 56px);
+    left: 68px;
+    width: calc(100% - 68px);
+  }
+
+  .guild-list {
+    gap: 10px;
+    padding: 0 10px;
   }
 
   .guild-item,
   .guild-icon {
-    height: 40px;
-    width: 40px;
+    height: 48px;
+    width: 48px;
   }
 
   .guild-icon svg {
-    height: 20px;
-    width: 20px;
+    height: 24px;
+    width: 24px;
   }
 
   .guild-pill {
-    left: -10px;
+    left: -12px;
     width: 4px;
   }
 
   .guild-item.active .guild-pill {
-    height: 32px;
+    height: 40px;
+  }
+
+  .guild-unread-dot,
+  .guild-ping {
+    height: 14px;
+    width: 14px;
+  }
+
+  .guild-ping-badge {
+    font-size: 12px;
+    height: 20px;
+    min-width: 20px;
   }
 
   /* Disable tooltips on touch devices */
@@ -10652,6 +10795,12 @@ body,
   }
 }
 
+@media (min-width: 769px) {
+  .members-header-mobile {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   #members-list .search-header {
     padding: 12px;
@@ -10720,6 +10869,7 @@ body,
     font-size: 12px;
     padding: 4px 8px;
   }
+
   .voice-panel {
     left: 0;
     overflow-y: auto;
@@ -10741,6 +10891,352 @@ body,
 
   .voice-name {
     font-size: 13px;
+  }
+
+  /* ============= MOBILE MEMBERS LIST IMPROVEMENTS ============= */
+  #members-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .members-header-mobile {
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 16px 16px 12px;
+  }
+
+  .members-header-mobile .right-panel-close {
+    margin-left: auto;
+  }
+
+  .members-header-mobile h3 {
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .members-count {
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .members-list-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .members-empty {
+    align-items: center;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+    padding: 48px 20px;
+    text-align: center;
+  }
+
+  .member {
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  .member-avatar-wrapper {
+    position: relative;
+  }
+
+  .member img {
+    height: 48px;
+    width: 48px;
+    border-radius: var(--avatar-radius, 50%);
+  }
+
+  .member-status-indicator {
+    background: #23a559;
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    bottom: 0;
+    height: 14px;
+    position: absolute;
+    right: 0;
+    width: 14px;
+  }
+
+  .member .name {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .member.offline {
+    opacity: 0.5;
+  }
+
+  .member.offline .member-status-indicator {
+    display: none;
+  }
+
+  #members-list h2 {
+    font-size: 12px;
+    font-weight: 700;
+    margin: 16px 0 8px 4px;
+    padding: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ============= MOBILE INBOX PANEL IMPROVEMENTS ============= */
+  .inbox-ping-group-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 12px 16px;
+    margin-top: 0;
+    border-radius: 0;
+  }
+
+  .inbox-ping-card {
+    padding: 16px;
+    gap: 10px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background: var(--surface-light);
+  }
+
+  .inbox-ping-card--last {
+    border-radius: 12px;
+  }
+
+  .inbox-ping-card-reply {
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .inbox-ping-card-reply-avatar {
+    height: 20px;
+    width: 20px;
+  }
+
+  .inbox-ping-card-reply-user {
+    font-size: 14px;
+  }
+
+  .inbox-ping-card-reply-text {
+    font-size: 13px;
+  }
+
+  .inbox-ping-card-avatar {
+    height: 44px;
+    width: 44px;
+  }
+
+  .inbox-ping-card-username {
+    font-size: 15px;
+  }
+
+  .inbox-ping-card-text {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .inbox-ping-card-time {
+    font-size: 12px;
+  }
+
+  .inbox-panel-load-more {
+    margin: 16px;
+    padding: 14px 20px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+
+  .inbox-panel-total {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .right-panel-content {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* ============= MOBILE RIGHT PANEL COMMON IMPROVEMENTS ============= */
+  .right-panel-header {
+    padding: 16px;
+    font-size: 18px;
+    gap: 10px;
+  }
+
+  .right-panel-header svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .right-panel-close {
+    display: flex;
+    margin-left: auto;
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .right-panel-close svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .right-panel-search-input {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .right-panel-search-input input {
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+
+  .search-submit-btn {
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+
+  .right-panel-empty {
+    padding: 60px 24px;
+    gap: 16px;
+  }
+
+  .right-panel-empty svg {
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+  }
+
+  .right-panel-empty span {
+    font-size: 15px;
+  }
+
+  .right-panel-message {
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin: 0 12px 10px;
+  }
+
+  .right-panel-message-header {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .right-panel-avatar {
+    height: 36px;
+    width: 36px;
+  }
+
+  .right-panel-username {
+    font-size: 15px;
+  }
+
+  .right-panel-time {
+    font-size: 12px;
+  }
+
+  .right-panel-message-content {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .right-panel-message {
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .right-panel-message:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
+  .right-panel-message-action {
+    align-items: center;
+    color: var(--text-dim);
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    opacity: 0;
+    position: absolute;
+    right: 12px;
+    top: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .right-panel-message:hover .right-panel-message-action,
+  .right-panel-message:active .right-panel-message-action {
+    opacity: 0.6;
+  }
+
+  .loading-throbber {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Inbox card wrapper for proper structure */
+  .inbox-ping-card-wrapper {
+    display: contents;
+  }
+
+  /* Inbox card click indicator */
+  .inbox-ping-card {
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .inbox-ping-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
+  .inbox-ping-card-action {
+    align-items: center;
+    color: var(--text-dim);
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    opacity: 0;
+    position: absolute;
+    right: 12px;
+    top: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .inbox-ping-card:hover .inbox-ping-card-action,
+  .inbox-ping-card:active .inbox-ping-card-action {
+    opacity: 0.6;
+  }
+
+  /* Highlight flash animation for jump to message */
+  @keyframes highlight-flash {
+    0% {
+      background: var(--mention, #9b87f5);
+      background: color-mix(in srgb, var(--mention, #9b87f5) 30%, transparent);
+    }
+
+    100% {
+      background: transparent;
+    }
+  }
+
+  .highlight-flash {
+    animation: highlight-flash 2s ease-out;
   }
 }
 
@@ -11291,6 +11787,7 @@ body,
   100% {
     box-shadow: 0 0 0 0 rgba(59, 165, 92, 0.4);
   }
+
   50% {
     box-shadow: 0 0 12px 4px rgba(59, 165, 92, 0.25);
   }
@@ -11435,6 +11932,7 @@ body,
     opacity: 0;
     transform: scale(0.95) translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -11985,6 +12483,23 @@ body,
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .dm-profile-panel-header {
+    font-size: 18px;
+    padding: 16px;
+  }
+
+  .dm-profile-panel-header .profile-panel-close {
+    height: 36px;
+    width: 36px;
+  }
+
+  .dm-profile-panel-body {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 /* Remove card shadow/border/radius when embedded in the DM panel */
