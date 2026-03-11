@@ -8,6 +8,10 @@ export type EmbedType =
   | "video"
   | "image"
   | "gift"
+  | "wikipedia"
+  | "spotify"
+  | "steam"
+  | "mistwarp"
   | "unknown";
 
 export interface EmbedInfo {
@@ -20,4 +24,9 @@ export interface EmbedInfo {
   repo?: string;
   sha?: string;
   path?: string;
+  articleTitle?: string;
+  wikiLang?: string;
+  spotifyUrl?: string;
+  steamAppId?: string;
+  mistWarpId?: string;
 }

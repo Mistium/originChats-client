@@ -5425,6 +5425,305 @@ a {
   }
 }
 
+/* ===== Wikipedia embed ===== */
+.wiki-embed {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-left: 4px solid #bbb;
+  border-radius: 8px;
+  color: var(--text);
+  display: block;
+  max-width: min(520px, 100%);
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.wiki-embed:hover {
+  border-left-color: #aaa;
+}
+
+.wiki-embed__body {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.wiki-embed__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.wiki-embed__header {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.wiki-embed__logo {
+  align-items: center;
+  background: var(--text);
+  border-radius: 50%;
+  color: var(--surface-light);
+  display: flex;
+  font-size: 10px;
+  font-weight: 700;
+  height: 18px;
+  justify-content: center;
+  width: 18px;
+}
+
+.wiki-embed__source {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.wiki-embed__title {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.wiki-embed__description {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-style: italic;
+  margin-bottom: 6px;
+}
+
+.wiki-embed__extract {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--text-muted, var(--text-dim));
+  display: -webkit-box;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  overflow: hidden;
+}
+
+.wiki-embed__thumb {
+  border-radius: 4px;
+  flex-shrink: 0;
+  height: 70px;
+  object-fit: cover;
+  width: 100px;
+}
+
+@media (max-width: 480px) {
+  .wiki-embed__thumb {
+    display: none;
+  }
+}
+
+/* ===== Spotify embed ===== */
+.spotify-embed {
+  border-radius: 12px;
+  max-width: min(520px, 100%);
+  overflow: hidden;
+}
+
+.spotify-embed iframe {
+  display: block;
+}
+
+/* ===== Steam embed ===== */
+.steam-embed {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  display: block;
+  max-width: min(460px, 100%);
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.steam-embed:hover {
+  border-color: #4a90d9;
+}
+
+.steam-embed__header {
+  display: block;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.steam-embed__body {
+  padding: 10px 12px 12px;
+}
+
+.steam-embed__meta {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.steam-embed__badge {
+  background: rgba(100, 160, 220, 0.2);
+  border-radius: 4px;
+  color: #7bb8e8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.steam-embed__price {
+  color: #7bb8e8;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.steam-embed__name {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.steam-embed__desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text-dim);
+  display: -webkit-box;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* ===== MistWarp embed ===== */
+.mistwarp-embed {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-left: 4px solid #9c6fe0;
+  border-radius: 8px;
+  color: var(--text);
+  display: block;
+  max-width: min(480px, 100%);
+  overflow: hidden;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    filter 0.15s ease;
+}
+
+.mistwarp-embed:hover {
+  filter: brightness(1.07);
+}
+
+.mistwarp-embed__top {
+  display: flex;
+  gap: 0;
+  min-height: 105px;
+}
+
+.mistwarp-embed__thumb {
+  display: block;
+  flex-shrink: 0;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.mistwarp-embed__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 12px 10px;
+}
+
+.mistwarp-embed__header {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.mistwarp-embed__source {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.mistwarp-embed__modified {
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.mistwarp-embed__title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mistwarp-embed__author {
+  align-items: center;
+  color: var(--text-dim);
+  display: flex;
+  font-size: 12px;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.mistwarp-embed__avatar {
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+}
+
+.mistwarp-embed__desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--text-dim);
+  display: -webkit-box;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  overflow: hidden;
+}
+
+.mistwarp-embed__stats {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 14px;
+  padding: 7px 12px;
+}
+
+.mistwarp-embed__stat {
+  align-items: center;
+  color: var(--text-dim);
+  display: flex;
+  font-size: 12px;
+  gap: 4px;
+}
+
+.mistwarp-embed__stat svg {
+  flex-shrink: 0;
+}
+
 /* Discord-style Voice Channel User List */
 .voice-channel-wrapper {
   display: flex;

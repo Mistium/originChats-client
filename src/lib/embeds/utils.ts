@@ -76,6 +76,44 @@ export async function detectEmbedType(url: string) {
     return { type, url, path };
   }
 
+  // Wikipedia
+  const wikiMatch = url.match(
+    /(?:^|\/\/)([a-z]{2,})\.wikipedia\.org\/wiki\/([^#?]+)/i,
+  );
+  if (wikiMatch) {
+    return {
+      type: "wikipedia",
+      url,
+      wikiLang: wikiMatch[1].toLowerCase(),
+      articleTitle: decodeURIComponent(wikiMatch[2].replace(/_/g, " ")),
+    };
+  }
+
+  // Spotify
+  if (
+    /open\.spotify\.com\/(track|album|playlist|episode|artist)\/[A-Za-z0-9]+/i.test(
+      url,
+    )
+  ) {
+    return { type: "spotify", url, spotifyUrl: url };
+  }
+
+  // Steam store page
+  const steamMatch = url.match(/store\.steampowered\.com\/app\/(\d+)/i);
+  if (steamMatch) {
+    return { type: "steam", url, steamAppId: steamMatch[1] };
+  }
+
+  // MistWarp — project ID can be in the path (/123) or the hash (#123)
+  const mistWarpMatch = url.match(/warp\.mistium\.com(?:\/(\d+)|[^#]*#(\d+))/i);
+  if (mistWarpMatch) {
+    return {
+      type: "mistwarp",
+      url,
+      mistWarpId: mistWarpMatch[1] ?? mistWarpMatch[2],
+    };
+  }
+
   if (hasExtension(url, VIDEO_EXTENSIONS) || url.startsWith("data:video/")) {
     return { type: "video", url };
   }
