@@ -26,6 +26,7 @@ import {
   pingsInboxOffset,
   PINGS_INBOX_LIMIT,
   reachedOldestByServer,
+  currentUserByServer,
 } from "../state";
 
 import {
@@ -39,7 +40,9 @@ import {
   mobilePanelOpen,
   closeMobileNav,
   showContextMenu,
+  showVoiceCallView,
 } from "../lib/ui-signals";
+import { voiceManager, voiceState } from "../voice";
 import { wsSend } from "../lib/websocket";
 import {
   highlightCodeInContainer,
@@ -66,6 +69,7 @@ import type { Message, SlashCommand } from "../types";
 import { avatarUrl } from "../utils";
 import { ErrorBannerStack } from "./ErrorBanner";
 import { createGift, ROTUR_GIFT_URL } from "../lib/rotur-api";
+import { VoiceCallView } from "./VoiceCallView";
 
 interface PendingImage {
   url: string;
@@ -1522,6 +1526,23 @@ export function MessageArea() {
 
   const isDM = serverUrl.value === DM_SERVER_URL;
 
+  // ── Call button / embedded voice logic ────────────────────────────────────
+  const ch = currentChannel.value;
+  // Only channels explicitly typed as "chat" get the call button + embedded panel
+  const isChatChannel = ch !== null && ch.type === "chat";
+  const voice = voiceState.value;
+  const myUsername = currentUserByServer.value[serverUrl.value]?.username;
+  const inCallHere = isChatChannel && voice.currentChannel === ch?.name;
+
+  const handleCallBtn = () => {
+    if (!ch) return;
+    if (inCallHere) {
+      voiceManager.leaveChannel();
+    } else {
+      voiceManager.joinChannel(ch.name, myUsername, ch.type);
+    }
+  };
+
   return (
     <div className="main-content-wrapper">
       <div className="main-messages-header">
@@ -1534,6 +1555,15 @@ export function MessageArea() {
           </span>
         </div>
         <div className="main-header-right">
+          {isChatChannel && (
+            <button
+              className={`header-icon-btn ${inCallHere ? "active" : ""}`}
+              onClick={handleCallBtn}
+              title={inCallHere ? "Open call" : "Start call"}
+            >
+              <Icon name={inCallHere ? "PhoneCall" : "Phone"} size={20} />
+            </button>
+          )}
           <button
             className={`header-icon-btn ${rightPanelView.value === "inbox" ? "active" : ""}`}
             onClick={() => togglePanel("inbox")}
@@ -1584,6 +1614,7 @@ export function MessageArea() {
         </div>
       </div>
       <ErrorBannerStack />
+      {inCallHere && !showVoiceCallView.value && <VoiceCallView embedded />}
       <div className="main-content-area">
         <div
           className="messages-container"

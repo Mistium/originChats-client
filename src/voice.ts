@@ -154,9 +154,14 @@ class VoiceManager {
   async joinChannel(
     channelName: string,
     myUsername?: string,
+    channelType?: string,
   ): Promise<boolean> {
     if (this._currentChannel === channelName) {
-      showVoiceCallView.value = !showVoiceCallView.value;
+      // For chat channels the embedded panel is always visible — toggling
+      // fullscreen is handled by the expand button in the panel itself.
+      if (channelType !== "chat") {
+        showVoiceCallView.value = !showVoiceCallView.value;
+      }
       return true;
     }
 
@@ -230,7 +235,11 @@ class VoiceManager {
       this._startLocalSpeakingDetection();
     }
 
-    showVoiceCallView.value = true;
+    // For chat channels the embedded panel in MessageArea shows automatically;
+    // for all other channel types open the fullscreen overlay.
+    if (channelType !== "chat") {
+      showVoiceCallView.value = true;
+    }
     this._publish();
     return true;
   }

@@ -750,6 +750,11 @@ p {
   color: var(--text);
 }
 
+.header-btn.active {
+  background: var(--surface-hover);
+  color: var(--success, #3ba55c);
+}
+
 .header-btn i {
   height: 20px;
   width: 20px;
@@ -11032,6 +11037,65 @@ body,
    Voice Call View (Fullscreen)
    ======================================== */
 
+/* ── Embedded voice panel (inside chat channels) ── */
+
+.voice-call-view--embedded {
+  /* Sits above the messages area, takes up ~40% of the available height */
+  flex: 0 0 40%;
+  max-height: 40%;
+  min-height: 220px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  /* Don't inherit the bg from the fullscreen version — blend with the panel */
+  background: var(--surface, #1e1e2e);
+}
+
+/* When the embedded panel is present the main-content-wrapper becomes a split
+   flex column: [voice panel 40%] + [content area 60%] */
+.main-content-wrapper:has(.voice-call-view--embedded) .main-content-area {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Tighten the embedded header — it doesn't need as much padding */
+.voice-call-view--embedded .voice-call-header {
+  padding: 8px 16px;
+}
+
+/* Compact participant tiles in embedded mode */
+.voice-call-view--embedded .voice-call-participants {
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.voice-call-view--embedded .voice-call-tile {
+  min-width: 80px;
+  width: 100px;
+  padding: 10px 10px 8px;
+}
+
+.voice-call-view--embedded .voice-call-tile-avatar {
+  height: 44px;
+  width: 44px;
+}
+
+/* Slimmer controls bar in embedded mode */
+.voice-call-view--embedded .voice-call-controls {
+  padding: 8px 16px;
+  gap: 10px;
+}
+
+.voice-call-view--embedded .voice-call-control-btn {
+  height: 36px;
+  width: 36px;
+}
+
+.voice-call-view--embedded .voice-call-control-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .voice-call-view {
   background: var(--bg, #1a1a2e);
   display: flex;
@@ -11698,7 +11762,7 @@ body,
 }
 
 .profile-panel-content {
-  min-width: 340px;
+  width: 340px;
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;

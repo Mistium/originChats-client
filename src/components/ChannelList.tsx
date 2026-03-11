@@ -54,6 +54,8 @@ export function ChannelList() {
   const [, forceUpdate] = useReducer((n) => n + 1, 0);
   useSignalEffect(() => {
     renderChannelsSignal.value; // subscribe to channel changes
+    voiceState.value; // re-render when voice state changes
+    showVoiceCallView.value; // re-render when call view opens/closes
     forceUpdate(undefined);
   });
   const isDM = serverUrl.value === DM_SERVER_URL;
@@ -69,6 +71,16 @@ export function ChannelList() {
   const voice = voiceState.value;
   const isInVoice = !!voice.currentChannel;
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
+
+  // When the voice call view is open for a dedicated voice channel (not a chat
+  // channel), suppress the text-channel active highlight so only the voice
+  // channel entry shows as selected.
+  const voiceChannelActive =
+    showVoiceCallView.value &&
+    voice.currentChannel !== null &&
+    channels.value.find(
+      (c) => c.name === voice.currentChannel && c.type === "voice",
+    ) !== undefined;
 
   const handleChannelClick = (channel: any) => {
     if (channel.type === "voice") {
@@ -297,7 +309,7 @@ export function ChannelList() {
           return (
             <div
               key={channel.name}
-              className={`channel-item ${currentChannel.value?.name === channel.name ? "active" : ""} ${hasUnread ? "has-unread" : ""} ${isMuted ? "muted" : ""}`}
+              className={`channel-item ${!voiceChannelActive && currentChannel.value?.name === channel.name ? "active" : ""} ${hasUnread ? "has-unread" : ""} ${isMuted ? "muted" : ""}`}
               onClick={() => handleChannelClick(channel)}
               onContextMenu={(e: any) => handleChannelContextMenu(e, channel)}
             >

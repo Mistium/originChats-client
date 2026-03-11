@@ -1,3 +1,5 @@
+import { useReducer } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
 import {
   currentServer,
   currentChannel,
@@ -6,16 +8,49 @@ import {
   DM_SERVER_URL,
   dmServers,
   serverUrl,
+  currentUserByServer,
 } from "../state";
 import { Icon } from "./Icon";
 import {
   mobileSidebarOpen,
   mobilePanelOpen,
   rightPanelView,
+  showVoiceCallView,
 } from "../lib/ui-signals";
+import { voiceManager, voiceState } from "../voice";
 
 export function Header() {
+  const [, forceUpdate] = useReducer((n) => n + 1, 0);
+  useSignalEffect(() => {
+    // Subscribe to every signal read inside this component so it re-renders
+    // whenever the current channel, voice state, or ping counts change.
+    currentChannel.value;
+    voiceState.value;
+    serverPingsByServer.value;
+    unreadByChannel.value;
+    serverUrl.value;
+    currentUserByServer.value;
+    showVoiceCallView.value;
+    forceUpdate(undefined);
+  });
   const isDM = serverUrl.value === DM_SERVER_URL;
+  const ch = currentChannel.value;
+  // Call button only shown for channels explicitly typed as "chat"
+  const isChatChannel = ch !== null && ch.type === "chat";
+  const voice = voiceState.value;
+  const myUsername = currentUserByServer.value[serverUrl.value]?.username;
+
+  // True when we're actively in a call on this specific chat channel
+  const inCallHere = isChatChannel && voice.currentChannel === ch?.name;
+
+  const handleCallBtn = () => {
+    if (!ch) return;
+    if (inCallHere) {
+      voiceManager.leaveChannel();
+    } else {
+      voiceManager.joinChannel(ch.name, myUsername, ch.type);
+    }
+  };
 
   // Sum pings across all servers + DM unreads
   const serverPingTotal = Object.values(serverPingsByServer.value).reduce(
@@ -76,12 +111,22 @@ export function Header() {
         </div>
       </div>
       <div className="header-actions">
+        {isChatChannel && (
+          <button
+            className={`header-btn ${inCallHere ? "active" : ""}`}
+            onClick={handleCallBtn}
+            aria-label={inCallHere ? "Open call" : "Start call"}
+            title={inCallHere ? "Open call" : "Start call"}
+          >
+            <Icon name={inCallHere ? "PhoneCall" : "Phone"} />
+          </button>
+        )}
         <button
           className={`header-btn ${rightPanelView.value === "search" && mobilePanelOpen.value ? "active" : ""}`}
           onClick={() => toggleRightPanel("search")}
           aria-label="Search"
         >
-          <Icon name="Search" />
+          <Icon name="Pin" />
         </button>
         <button
           className={`header-btn ${rightPanelView.value === "pinned" && mobilePanelOpen.value ? "active" : ""}`}

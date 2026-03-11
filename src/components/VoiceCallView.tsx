@@ -4,7 +4,17 @@ import { voiceState, voiceManager } from "../voice";
 import { Icon } from "./Icon";
 import { avatarUrl } from "../utils";
 
-export function VoiceCallView() {
+interface VoiceCallViewProps {
+  /**
+   * When true the component renders in its embedded "split" mode inside the
+   * message area.  The minimize button is replaced by a fullscreen-expand
+   * button that sets showVoiceCallView = true to promote it to fullscreen.
+   * When false (default) it renders as the fullscreen takeover view.
+   */
+  embedded?: boolean;
+}
+
+export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
   const state = voiceState.value;
 
   const myUsername =
@@ -31,8 +41,12 @@ export function VoiceCallView() {
 
   const selfPeerId = voiceManager.getMyPeerId();
 
+  const rootClass = embedded
+    ? "voice-call-view voice-call-view--embedded"
+    : "voice-call-view";
+
   return (
-    <div className="voice-call-view">
+    <div className={rootClass}>
       <div className="voice-call-header">
         <div className="voice-call-header-left">
           <Icon name="Mic" size={20} />
@@ -42,13 +56,25 @@ export function VoiceCallView() {
             {participants.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <button
-          className="voice-call-minimize-btn"
-          onClick={() => (showVoiceCallView.value = false)}
-          title="Minimize"
-        >
-          <Icon name="Minimize2" size={18} />
-        </button>
+        {embedded ? (
+          // In embedded mode: expand to fullscreen
+          <button
+            className="voice-call-minimize-btn"
+            onClick={() => (showVoiceCallView.value = true)}
+            title="Expand to fullscreen"
+          >
+            <Icon name="Maximize2" size={18} />
+          </button>
+        ) : (
+          // In fullscreen mode: minimize back to embedded
+          <button
+            className="voice-call-minimize-btn"
+            onClick={() => (showVoiceCallView.value = false)}
+            title="Minimize"
+          >
+            <Icon name="Minimize2" size={18} />
+          </button>
+        )}
       </div>
 
       {hasVideoStreams && (
