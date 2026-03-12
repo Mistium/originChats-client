@@ -7,6 +7,13 @@
     "icon": "https://github.com/originOSL.png"
   },
   {
+    "url": "originchats.0stormy.xyz",
+    "name": "StormyHQ",
+    "owner": "Stormy",
+    "created_at": 1770685656688,
+    "icon": "https://avatars.rotur.dev/Stormy"
+  },
+  {
     "url": "fries.aerioncloud.is-local.org",
     "name": "Saltychat",
     "owner": "fries",
