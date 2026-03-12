@@ -51,7 +51,18 @@ self.addEventListener("push", (event: PushEvent) => {
     renotify: true,
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Don't show a push notification if the user already has a focused tab open
+        const hasFocusedTab = clientList.some(
+          (client) => (client as WindowClient).focused,
+        );
+        if (hasFocusedTab) return;
+        return self.registration.showNotification(title, options);
+      }),
+  );
 });
 
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
