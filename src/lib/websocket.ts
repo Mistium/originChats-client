@@ -409,6 +409,11 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
     reachedOldestByServer[sUrl].clear();
   }
 
+  // Clear any in-flight fetch state so channels aren't permanently locked
+  // after a mid-fetch disconnect.
+  delete pendingMessageFetchesByServer[sUrl];
+  delete pendingReplyFetchesByServer[sUrl];
+
   if (wsConnections[sUrl]) {
     const existing = wsConnections[sUrl];
     if (existing.socket) {
@@ -469,6 +474,9 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
       clearTimeout(timeout);
       if (!resolved) {
         resolved = true;
+        // Remove the pre-open listeners so we don't end up with duplicates.
+        ws.removeEventListener("error", errorHandler);
+        ws.removeEventListener("close", closeHandler);
         wsConnections[sUrl] = {
           socket: ws,
           status: "connected",
@@ -578,6 +586,11 @@ export function connectToServer(sUrl: string, manual = false): void {
   if (reachedOldestByServer[sUrl]) {
     reachedOldestByServer[sUrl].clear();
   }
+
+  // Clear any in-flight fetch state so channels aren't permanently locked
+  // after a mid-fetch disconnect.
+  delete pendingMessageFetchesByServer[sUrl];
+  delete pendingReplyFetchesByServer[sUrl];
 
   if (wsConnections[sUrl]) {
     const existing = wsConnections[sUrl];
