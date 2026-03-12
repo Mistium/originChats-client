@@ -78,9 +78,11 @@ import { VoiceCallView } from "./components/VoiceCallView";
 import { GlobalContextMenu } from "./components/ContextMenu";
 import { DiscoveryPage } from "./components/DiscoveryPage";
 import { OfflineScreen } from "./components/OfflineScreen";
+import { useFavicon } from "./lib/useFavicon";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  useFavicon();
 
   const boot = async () => {
     isOffline.value = false;
@@ -150,7 +152,7 @@ function App() {
           (data.following || []).map((u: string) => u.toLowerCase()),
         );
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // Seed own custom status — non-blocking
     getStatus(meData.username)
@@ -162,7 +164,7 @@ function App() {
           };
         }
       })
-      .catch(() => { });
+      .catch(() => {});
 
     const originFS = new OriginFSClientClass(token.value!);
     setOriginFS(originFS);
