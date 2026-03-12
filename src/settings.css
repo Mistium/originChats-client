@@ -3039,7 +3039,7 @@ body.hide-edited-indicator .edited-indicator {
 
 .message-image,
 img.tenor-gif {
-  max-width: var(--max-inline-image-width, 400px);
+  max-width: min(100%, var(--max-inline-image-width, 400px));
 }
 
 /* ── Custom Status (Profile tab) ─────────────────────────────────────────── */
