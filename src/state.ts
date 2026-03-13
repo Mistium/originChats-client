@@ -92,6 +92,13 @@ export const wsStatus: Record<
   "connecting" | "connected" | "disconnected" | "error"
 > = {};
 export const serverValidatorKeys: Record<string, string> = {};
+
+/**
+ * Capabilities advertised by each server in their handshake payload.
+ * Servers that don't send a capabilities array are stored as an empty array,
+ * so callers can treat missing capabilities as "not supported".
+ */
+export const serverCapabilitiesByServer = signal<Record<string, string[]>>({});
 export const authRetries: Record<string, number> = {};
 export const authRetryTimeouts: Record<string, number> = {};
 export const reconnectAttempts: Record<string, number> = {};
@@ -134,6 +141,23 @@ export const currentServer = computed(() =>
 export const slashCommands = computed(
   () => slashCommandsByServer.value[serverUrl.value] || [],
 );
+
+/**
+ * Capabilities for the currently viewed server.
+ * Returns an empty array if the server hasn't sent (or doesn't support) capabilities.
+ */
+export const serverCapabilities = computed(
+  () => serverCapabilitiesByServer.value[serverUrl.value] ?? [],
+);
+
+/**
+ * Check whether the currently viewed server advertises a capability.
+ * If the server sent an empty capabilities array or no capabilities at all,
+ * this returns false — UI features should be hidden/disabled accordingly.
+ */
+export function hasCapability(cap: string): boolean {
+  return serverCapabilities.value.includes(cap);
+}
 
 export function setChannelsForServer(url: string, ch: Channel[]) {
   channelsByServer.value = { ...channelsByServer.value, [url]: ch };

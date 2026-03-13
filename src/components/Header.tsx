@@ -8,6 +8,7 @@ import {
   DM_SERVER_URL,
   dmServers,
   serverUrl,
+  serverCapabilities,
 } from "../state";
 import { Icon } from "./Icon";
 import {
@@ -23,18 +24,26 @@ export function Header() {
   const [, forceUpdate] = useReducer((n) => n + 1, 0);
   useSignalEffect(() => {
     // Subscribe to every signal read inside this component so it re-renders
-    // whenever the current channel, voice state, or ping counts change.
+    // whenever the current channel, voice state, ping counts, or server capabilities change.
     currentChannel.value;
     serverPingsByServer.value;
     unreadByChannel.value;
     serverUrl.value;
     showVoiceCallView.value;
+    serverCapabilities.value;
     forceUpdate(undefined);
   });
   const isDM = serverUrl.value === DM_SERVER_URL;
   const ch = currentChannel.value;
   // Call button only shown for channels explicitly typed as "chat"
   const isChatChannel = ch !== null && ch.type === "chat";
+
+  // Server capability flags
+  const caps = serverCapabilities.value;
+  const canPin =
+    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canSearch = caps.includes("messages_search");
+  const canInbox = caps.includes("pings_get");
 
   // Sum pings across all servers + DM unreads
   const serverPingTotal = Object.values(serverPingsByServer.value).reduce(

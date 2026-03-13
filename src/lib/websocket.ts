@@ -36,6 +36,7 @@ import {
   getChannelNotifLevel,
   offlinePushServers,
   pushSubscriptionsByServer,
+  serverCapabilitiesByServer,
 } from "../state";
 
 const DM_SERVER_URL = "dms.mistium.com";
@@ -48,6 +49,8 @@ import {
   dismissBanner,
   upsertBanner,
 } from "./ui-signals";
+
+import { reloadServerIcon } from "../utils";
 
 import { readTimes as dbReadTimes } from "./db";
 
@@ -683,14 +686,54 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       if (!usersByServer.value[sUrl])
         usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
       serverValidatorKeys[sUrl] = msg.val.validator_key;
-      if (msg.val.server?.icon) {
+      // Store the server's advertised capabilities.
+      // If the server sends no capabilities array, fall back to a baseline set
+      // that all legacy servers are assumed to support.
+      const DEFAULT_CAPABILITIES = [
+        "auth",
+        "channels_get",
+        "message_delete",
+        "message_edit",
+        "message_get",
+        "message_new",
+        "message_react_add",
+        "message_react_remove",
+        "messages_get",
+        "typing",
+        "user_leave",
+        "users_list",
+        "users_online",
+        "voice_join",
+        "voice_leave",
+        "voice_mute",
+        "voice_state",
+      ];
+      serverCapabilitiesByServer.value = {
+        ...serverCapabilitiesByServer.value,
+        [sUrl]: Array.isArray(msg.val.capabilities)
+          ? msg.val.capabilities
+          : DEFAULT_CAPABILITIES,
+      };
+      // Always apply the authoritative icon and name from the handshake so
+      // the local cache never gets out of sync with what the server reports.
+      if (msg.val.server) {
+        const { icon, name } = msg.val.server;
         const existing = servers.value.find((s) => s.url === sUrl);
-        if (existing && existing.icon !== msg.val.server.icon) {
-          servers.value = servers.value.map((s) =>
-            s.url === sUrl ? { ...s, icon: msg.val.server.icon } : s,
-          );
-          const { saveServers } = await import("./persistence");
-          saveServers().catch(() => {});
+        if (existing) {
+          const iconChanged = icon && existing.icon !== icon;
+          const nameChanged = name && existing.name !== name;
+          if (iconChanged || nameChanged) {
+            servers.value = servers.value.map((s) =>
+              s.url === sUrl
+                ? { ...s, ...(icon ? { icon } : {}), ...(name ? { name } : {}) }
+                : s,
+            );
+            const { saveServers } = await import("./persistence");
+            saveServers().catch(() => {});
+          }
+          // Always bust the icon cache on handshake so the <img> re-fetches
+          // the latest version even if the URL string hasn't changed.
+          if (icon) reloadServerIcon(sUrl);
         }
       }
       renderGuildSidebarSignal.value++;
@@ -714,20 +757,22 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       renderMembersSignal.value++;
       break;
     case "auth_success": {
+      const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
+      const serverHas = (cap: string) => caps.includes(cap);
       wsSend({ cmd: "channels_get" }, sUrl);
       wsSend({ cmd: "users_list" }, sUrl);
       wsSend({ cmd: "users_online" }, sUrl);
-      wsSend({ cmd: "roles_list" }, sUrl);
+      if (serverHas("roles_list")) wsSend({ cmd: "roles_list" }, sUrl);
       // Request slash commands — not all servers support this, so we send
       // it opportunistically and handle it only if the server responds.
-      wsSend({ cmd: "slash_list" }, sUrl);
+      if (serverHas("slash_list")) wsSend({ cmd: "slash_list" }, sUrl);
       // Request pings since the earliest unread read-time for this server.
       // We use the minimum read-time across all known channels so we don't
       // miss pings in channels that haven't been opened in a while. Channels
       // with no read-time entry default to 0 (beginning of time) but we only
       // include them if the server has channel data; the response handler
       // filters each ping against its channel's specific read-time.
-      if (sUrl !== DM_SERVER_URL) {
+      if (sUrl !== DM_SERVER_URL && serverHas("pings_get")) {
         const channelReadTimes = readTimesByServer.value[sUrl] || {};
         const readValues = Object.values(channelReadTimes);
         // Use the minimum (oldest) read-time so we catch pings in all

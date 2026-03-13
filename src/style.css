@@ -980,6 +980,18 @@ p {
   text-align: center;
 }
 
+.right-panel-unsupported {
+  align-items: center;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
 .right-panel-message {
   border-radius: var(--radius-sm);
   cursor: pointer;

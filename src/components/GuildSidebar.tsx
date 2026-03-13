@@ -1,5 +1,4 @@
 import { useState, useRef } from "preact/hooks";
-import { useSignalEffect } from "@preact/signals";
 import {
   serverUrl,
   currentChannel,
@@ -38,9 +37,11 @@ import { avatarUrl, reloadServerIcon } from "../utils";
 import { saveNotifSettings } from "../lib/persistence";
 
 export function GuildSidebar() {
-  useSignalEffect(() => {
-    renderGuildSidebarSignal.value;
-  });
+  // Reading the signal directly in the render body ensures Preact re-renders
+  // this component whenever renderGuildSidebarSignal changes (e.g. wsStatus
+  // updates). useSignalEffect only runs a side-effect and does not cause a
+  // re-render on its own.
+  void renderGuildSidebarSignal.value;
 
   const dragIndexRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);

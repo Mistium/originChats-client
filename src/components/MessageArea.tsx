@@ -26,6 +26,7 @@ import {
   pingsInboxOffset,
   PINGS_INBOX_LIMIT,
   reachedOldestByServer,
+  serverCapabilities,
 } from "../state";
 
 import {
@@ -269,6 +270,12 @@ function RightPanel() {
   const panelOpen = mobilePanelOpen.value;
   const panelClass = `right-panel${panelOpen ? " open" : ""}`;
 
+  const caps = serverCapabilities.value;
+  const canPin =
+    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canSearch = caps.includes("messages_search");
+  const canInbox = caps.includes("pings_get");
+
   // Derive the DM recipient username from the current channel's display_name
   let dmUser: string | null = null;
   if (isDMServer) {
@@ -330,7 +337,14 @@ function RightPanel() {
           </button>
         </div>
         <div className="right-panel-content">
-          {loading ? (
+          {!canPin ? (
+            <div className="right-panel-unsupported">
+              <Icon name="Pin" size={32} />
+              <span>
+                This feature doesn't seem to be supported on this server.
+              </span>
+            </div>
+          ) : loading ? (
             <div className="right-panel-empty">
               <div className="loading-throbber" />
             </div>
@@ -353,7 +367,7 @@ function RightPanel() {
 
     const performSearch = () => {
       const query = searchQuery.trim();
-      if (!query || !currentChannel.value) return;
+      if (!query || !currentChannel.value || !canSearch) return;
       searchLoading.value = true;
       searchResults.value = [];
       wsSend({
@@ -396,7 +410,14 @@ function RightPanel() {
           </button>
         </div>
         <div className="right-panel-content">
-          {loading ? (
+          {!canSearch ? (
+            <div className="right-panel-unsupported">
+              <Icon name="Search" size={32} />
+              <span>
+                This feature doesn't seem to be supported on this server.
+              </span>
+            </div>
+          ) : loading ? (
             <div className="right-panel-empty">
               <div className="loading-throbber" />
             </div>
@@ -428,6 +449,7 @@ function RightPanel() {
     const hasMore = offset + msgs.length < total;
 
     const loadMore = () => {
+      if (!canInbox) return;
       const nextOffset = offset + PINGS_INBOX_LIMIT;
       pingsInboxLoading.value = true;
       wsSend({
@@ -473,7 +495,14 @@ function RightPanel() {
           </button>
         </div>
         <div className="right-panel-content">
-          {loading && msgs.length === 0 ? (
+          {!canInbox ? (
+            <div className="right-panel-unsupported">
+              <Icon name="Bell" size={32} />
+              <span>
+                This feature doesn't seem to be supported on this server.
+              </span>
+            </div>
+          ) : loading && msgs.length === 0 ? (
             <div className="right-panel-empty">
               <div className="loading-throbber" />
             </div>
@@ -639,6 +668,7 @@ const SPRING_FRICTION = 1000;
 interface SwipeableMessageProps {
   children: ComponentChildren;
   canEdit: boolean;
+  canReply: boolean;
   onReply: () => void;
   onEdit: () => void;
 }
@@ -646,6 +676,7 @@ interface SwipeableMessageProps {
 function SwipeableMessage({
   children,
   canEdit,
+  canReply,
   onReply,
   onEdit,
 }: SwipeableMessageProps) {
@@ -739,7 +770,7 @@ function SwipeableMessage({
     e.preventDefault();
 
     // Determine direction semantics
-    const dir = dx > 0 ? "reply" : canEdit ? "edit" : null;
+    const dir = dx > 0 ? (canReply ? "reply" : null) : canEdit ? "edit" : null;
     if (!dir) {
       // No action for this direction — allow very small rubber band then stop
       const clamped = dx < 0 ? Math.max(dx * 0.15, -16) : 0;
@@ -1437,27 +1468,31 @@ export function MessageArea() {
         }
       },
     });
-    menuItems.push({
-      label: "React",
-      icon: "Smile",
-      fn: () => {
-        setReactingToMessage(msg);
-        setPickerTab("emoji");
-        setShowPicker(true);
-      },
-    });
-    menuItems.push({
-      label: msg.pinned ? "Unpin" : "Pin",
-      icon: msg.pinned ? "PinOff" : "Pin",
-      fn: () => {
-        wsSend({
-          cmd: "pin_message",
-          id: msg.id,
-          channel: currentChannel.value?.name,
-          pinned: !msg.pinned,
-        });
-      },
-    });
+    if (canReact) {
+      menuItems.push({
+        label: "React",
+        icon: "Smile",
+        fn: () => {
+          setReactingToMessage(msg);
+          setPickerTab("emoji");
+          setShowPicker(true);
+        },
+      });
+    }
+    if (canPin) {
+      menuItems.push({
+        label: msg.pinned ? "Unpin" : "Pin",
+        icon: msg.pinned ? "PinOff" : "Pin",
+        fn: () => {
+          wsSend({
+            cmd: "pin_message",
+            id: msg.id,
+            channel: currentChannel.value?.name,
+            pinned: !msg.pinned,
+          });
+        },
+      });
+    }
 
     menuItems.push({ separator: true });
     menuItems.push({
@@ -1574,7 +1609,7 @@ export function MessageArea() {
       const interaction = msg.interaction;
       const groupClass =
         isHead || interaction
-          ? replyTo || interaction
+          ? (replyTo && canReply) || interaction
             ? "message-group has-reply"
             : "message-group"
           : "message-single";
@@ -1583,6 +1618,7 @@ export function MessageArea() {
         <SwipeableMessage
           key={msg.id || msg.timestamp}
           canEdit={isOwn}
+          canReply={canReply}
           onReply={() => startReply(msg)}
           onEdit={() => startEdit(msg)}
         >
@@ -1591,7 +1627,7 @@ export function MessageArea() {
             data-msg-id={msg.id}
             onContextMenu={(e: any) => handleMessageContextMenu(e, msg)}
           >
-            {replyTo && (
+            {replyTo && canReply && (
               <div
                 className="message-reply"
                 onClick={(e) => {
@@ -1742,6 +1778,7 @@ export function MessageArea() {
     msg: Message,
     reactions: Record<string, string[]>,
   ) => {
+    if (!canReact) return null;
     if (Object.entries(reactions).length === 0) return null;
     return (
       <div className="message-reactions">
@@ -1807,7 +1844,12 @@ export function MessageArea() {
       rightPanelView.value = null;
     } else {
       rightPanelView.value = panel;
-      if (panel === "pinned") {
+      const caps = serverCapabilities.value;
+      if (
+        panel === "pinned" &&
+        caps.includes("message_pin") &&
+        caps.includes("messages_pinned")
+      ) {
         pinnedLoading.value = true;
         pinnedMessages.value = [];
         wsSend({
@@ -1815,7 +1857,7 @@ export function MessageArea() {
           channel: currentChannel.value?.name,
         });
       }
-      if (panel === "inbox") {
+      if (panel === "inbox" && caps.includes("pings_get")) {
         pingsInboxLoading.value = true;
         pingsInboxMessages.value = [];
         pingsInboxOffset.value = 0;
@@ -1825,6 +1867,16 @@ export function MessageArea() {
   };
 
   const isDM = serverUrl.value === DM_SERVER_URL;
+
+  // ── Server capability flags ────────────────────────────────────────────────
+  const caps = serverCapabilities.value;
+  const canPin =
+    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canSearch = caps.includes("messages_search");
+  const canInbox = caps.includes("pings_get");
+  const canReply = caps.includes("message_replies");
+  const canReact =
+    caps.includes("message_react_add") && caps.includes("message_react_remove");
 
   // ── Call button / embedded voice logic ────────────────────────────────────
   const ch = currentChannel.value;
