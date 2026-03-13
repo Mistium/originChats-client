@@ -62,7 +62,7 @@ import {
   getStatus,
 } from "./lib/rotur-api";
 
-import { Header } from "./components/Header";
+import { Header } from "./components/Header/index";
 import { GuildSidebar } from "./components/GuildSidebar";
 import { ChannelList } from "./components/ChannelList";
 import { MessageArea, ReplyBar } from "./components/MessageArea";
@@ -316,7 +316,6 @@ function App() {
 
   return (
     <div id="chat-screen" className="active">
-      <Header />
       <div
         className={`overlay${mobileSidebarOpen.value || mobilePanelOpen.value ? " active" : ""}`}
         onClick={closeMobileNav}

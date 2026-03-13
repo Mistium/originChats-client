@@ -71,6 +71,7 @@ import { ErrorBannerStack } from "./ErrorBanner";
 import { createGift, ROTUR_GIFT_URL } from "../lib/rotur-api";
 import { VoiceCallView } from "./VoiceCallView";
 import { CallButton } from "./buttons/CallButton";
+import { Header } from "./Header";
 
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
@@ -1843,33 +1844,6 @@ export function MessageArea() {
     );
   };
 
-  const togglePanel = (panel: "members" | "pinned" | "search" | "inbox") => {
-    if (rightPanelView.value === panel) {
-      rightPanelView.value = null;
-    } else {
-      rightPanelView.value = panel;
-      const caps = serverCapabilities.value;
-      if (
-        panel === "pinned" &&
-        caps.includes("message_pin") &&
-        caps.includes("messages_pinned")
-      ) {
-        pinnedLoading.value = true;
-        pinnedMessages.value = [];
-        wsSend({
-          cmd: "messages_pinned",
-          channel: currentChannel.value?.name,
-        });
-      }
-      if (panel === "inbox" && caps.includes("pings_get")) {
-        pingsInboxLoading.value = true;
-        pingsInboxMessages.value = [];
-        pingsInboxOffset.value = 0;
-        wsSend({ cmd: "pings_get", limit: PINGS_INBOX_LIMIT, offset: 0 });
-      }
-    }
-  };
-
   const isDM = serverUrl.value === DM_SERVER_URL;
 
   // ── Server capability flags ────────────────────────────────────────────────
@@ -1891,68 +1865,7 @@ export function MessageArea() {
 
   return (
     <div className="main-content-wrapper">
-      <div className="main-messages-header">
-        <div className="main-header-left">
-          <Icon name="Hash" size={24} />
-          <span className="main-header-channel-name">
-            {currentChannel.value?.display_name ||
-              currentChannel.value?.name ||
-              "home"}
-          </span>
-        </div>
-        <div className="main-header-right">
-          {isChatChannel && (
-            <CallButton className="header-icon-btn" iconSize={20} />
-          )}
-          <button
-            className={`header-icon-btn ${rightPanelView.value === "inbox" ? "active" : ""}`}
-            onClick={() => togglePanel("inbox")}
-            title="Inbox"
-          >
-            <Icon name="Bell" size={20} />
-          </button>
-          <button
-            className={`header-icon-btn ${rightPanelView.value === "pinned" ? "active" : ""}`}
-            onClick={() => togglePanel("pinned")}
-            title="Pinned Messages"
-          >
-            <Icon name="Pin" size={20} />
-          </button>
-          <button
-            className={`header-icon-btn ${rightPanelView.value === "search" ? "active" : ""}`}
-            onClick={() => togglePanel("search")}
-            title="Search"
-          >
-            <Icon name="Search" size={20} />
-          </button>
-          {!isDM && (
-            <button
-              className={`header-icon-btn ${rightPanelView.value === "members" ? "active" : ""}`}
-              onClick={() => togglePanel("members")}
-              title="Members"
-            >
-              <Icon name="Users" size={20} />
-            </button>
-          )}
-          {isDM &&
-            currentChannel.value?.name &&
-            !SPECIAL_CHANNELS.has(currentChannel.value.name) &&
-            (() => {
-              const is1on1 =
-                currentChannel.value?.icon ===
-                avatarUrl(currentChannel.value?.display_name);
-              return (
-                <button
-                  className={`header-icon-btn ${rightPanelView.value === "members" ? "active" : ""}`}
-                  onClick={() => togglePanel("members")}
-                  title={is1on1 ? "User Profile" : "Members"}
-                >
-                  <Icon name={is1on1 ? "User" : "Users"} size={20} />
-                </button>
-              );
-            })()}
-        </div>
-      </div>
+      <Header />
       <ErrorBannerStack />
       {inCallHere && !showVoiceCallView.value && <VoiceCallView embedded />}
       <div className="main-content-area">

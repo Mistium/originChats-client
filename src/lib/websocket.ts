@@ -1,5 +1,4 @@
 import {
-  token,
   serverUrl,
   currentChannel,
   channelsByServer,
@@ -40,6 +39,8 @@ import {
   SPECIAL_CHANNELS,
 } from "../state";
 
+import { Channel, VoiceUser, Message, DMServer, Role } from "../types";
+
 const DM_SERVER_URL = "dms.mistium.com";
 import {
   renderGuildSidebarSignal,
@@ -68,8 +69,18 @@ const _readTimeFlushTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 /** Stable banner IDs keyed by server URL so we can upsert them. */
 const reconnectBannerIds: Record<string, string> = {};
 
-import type { VoiceUser } from "../types";
 import { generateValidator as generateValidatorApi } from "./rotur-api";
+import {
+  MessageDelete,
+  MessageEdit,
+  MessageGet,
+  MessageNew,
+  MessagePin,
+  MessagesGet,
+  Typing,
+  UserConnect,
+  UserDisconnect,
+} from "@/msgTypes";
 
 let audioCtx: AudioContext | null = null;
 
@@ -81,9 +92,9 @@ function _vcUpdateChannelState(
 ): void {
   const chList = channelsByServer.value[sUrl];
   if (!chList) return;
-  const idx = chList.findIndex((c: any) => c.name === channelName);
+  const idx = chList.findIndex((c: Channel) => c.name === channelName);
   if (idx === -1) return;
-  const prev: VoiceUser[] = (chList[idx] as any).voice_state || [];
+  const prev: VoiceUser[] = (chList[idx] as Channel).voice_state || [];
   const next = updater(prev);
   const updatedList = [...chList];
   updatedList[idx] = { ...updatedList[idx], voice_state: next };
@@ -303,10 +314,6 @@ const pendingMessageFetchesByServer: Record<
   Record<string, boolean>
 > = {};
 
-function isFetchingMessages(sUrl: string, channelName: string): boolean {
-  return pendingMessageFetchesByServer[sUrl]?.[channelName] || false;
-}
-
 export function startMessageFetch(sUrl: string, channelName: string): void {
   if (!pendingMessageFetchesByServer[sUrl]) {
     pendingMessageFetchesByServer[sUrl] = {};
@@ -385,12 +392,6 @@ export function closeWebSocket(url: string): void {
 }
 
 export { authenticateServer };
-
-function getServerStatus(
-  sUrl: string,
-): "connecting" | "connected" | "disconnected" | "error" {
-  return wsConnections[sUrl]?.status || "error";
-}
 
 export async function reconnectServer(sUrl: string): Promise<boolean> {
   // Cancel any pending auto-reconnect timer
@@ -576,7 +577,7 @@ function scheduleReconnect(sUrl: string): void {
   }, delay);
 }
 
-export function connectToServer(sUrl: string, manual = false): void {
+export function connectToServer(sUrl: string, _manual = false): void {
   if (reconnectTimeouts[sUrl]) {
     clearTimeout(reconnectTimeouts[sUrl]);
     reconnectTimeouts[sUrl] = 0;
@@ -833,27 +834,30 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       // pre-populate the cache because selectChannel() uses the loaded state
       // to decide whether to fetch — if we wrote here, opening the channel
       // would not load the history that precedes these new messages.
+
+      const msgNew = msg as MessageNew;
+
       const channelIsLoaded =
-        loadedChannelsByServer[sUrl]?.has(msg.channel) ?? false;
+        loadedChannelsByServer[sUrl]?.has(msgNew.channel) ?? false;
       if (channelIsLoaded) {
         if (!messagesByServer.value[sUrl])
           messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
-        if (!messagesByServer.value[sUrl][msg.channel]) {
+        if (!messagesByServer.value[sUrl][msgNew.channel]) {
           messagesByServer.value = {
             ...messagesByServer.value,
-            [sUrl]: { ...messagesByServer.value[sUrl], [msg.channel]: [] },
+            [sUrl]: { ...messagesByServer.value[sUrl], [msgNew.channel]: [] },
           };
         }
-        const channelMsgs = messagesByServer.value[sUrl][msg.channel];
+        const channelMsgs = messagesByServer.value[sUrl][msgNew.channel];
         const alreadyExists = channelMsgs.some(
-          (m: any) => m.id === msg.message.id,
+          (m: Message) => m.id === msgNew.message.id,
         );
         if (!alreadyExists) {
           messagesByServer.value = {
             ...messagesByServer.value,
             [sUrl]: {
               ...messagesByServer.value[sUrl],
-              [msg.channel]: [...channelMsgs, msg.message],
+              [msgNew.channel]: [...channelMsgs, msgNew.message],
             },
           };
         }
@@ -861,12 +865,12 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
 
       const chList = channelsByServer.value[sUrl];
       if (chList) {
-        const idx = chList.findIndex((c: any) => c.name === msg.channel);
-        if (idx !== -1 && msg.message.timestamp) {
+        const idx = chList.findIndex((c: Channel) => c.name === msgNew.channel);
+        if (idx !== -1 && msgNew.message.timestamp) {
           const updatedList = [...chList];
           updatedList[idx] = {
             ...updatedList[idx],
-            last_message: msg.message.timestamp,
+            last_message: msgNew.message.timestamp,
           };
           channelsByServer.value = {
             ...channelsByServer.value,
@@ -879,11 +883,12 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       }
 
       const isCurrentView =
-        serverUrl.value === sUrl && msg.channel === currentChannel.value?.name;
+        serverUrl.value === sUrl &&
+        msgNew.channel === currentChannel.value?.name;
 
-      const notifLevel = getChannelNotifLevel(sUrl, msg.channel);
+      const notifLevel = getChannelNotifLevel(sUrl, msgNew.channel);
       const isMuted = notifLevel === "none";
-      const channelKey = `${sUrl}:${msg.channel}`;
+      const channelKey = `${sUrl}:${msgNew.channel}`;
 
       if (!isCurrentView && !isMuted) {
         unreadByChannel.value = {
@@ -893,7 +898,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
 
         if (
           sUrl === DM_SERVER_URL &&
-          msg.message.user !== currentUserByServer.value[sUrl]?.username &&
+          msgNew.message.user !== currentUserByServer.value[sUrl]?.username &&
           dmMessageSound.value
         ) {
           playPingSound();
@@ -902,7 +907,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         // "all" mode: treat every incoming message as a ping
         if (notifLevel === "all") {
           const myUsername = currentUserByServer.value[sUrl]?.username;
-          if (msg.message.user !== myUsername) {
+          if (msgNew.message.user !== myUsername) {
             unreadPings.value = {
               ...unreadPings.value,
               [channelKey]: (unreadPings.value[channelKey] || 0) + 1,
@@ -912,7 +917,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
               [sUrl]: (serverPingsByServer.value[sUrl] || 0) + 1,
             };
             playPingSound();
-            const cleanContent = (msg.message.content || "").replace(
+            const cleanContent = (msgNew.message.content || "").replace(
               /<[^>]*>/g,
               "",
             );
@@ -921,9 +926,9 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
                 ? cleanContent.substring(0, 100) + "..."
                 : cleanContent;
             showNotification(
-              `${msg.message.user} in #${msg.channel}`,
+              `${msgNew.message.user} in #${msgNew.channel}`,
               notifBody,
-              msg.channel,
+              msgNew.channel,
             );
             if (serverUrl.value === sUrl) renderChannelsSignal.value++;
             renderGuildSidebarSignal.value++;
@@ -934,17 +939,17 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         // sender appears with an unread badge without needing a dm_list event.
         if (sUrl === DM_SERVER_URL) {
           const alreadyListed = dmServers.value.some(
-            (d: any) => d.channel === msg.channel,
+            (d: DMServer) => d.channel === msgNew.channel,
           );
           if (!alreadyListed) {
-            const senderUsername = msg.message.user as string;
+            const senderUsername = msgNew.message.user as string;
             dmServers.value = [
               ...dmServers.value,
               {
-                channel: msg.channel,
+                channel: msgNew.channel,
                 name: senderUsername,
                 username: senderUsername,
-                last_message: msg.message.timestamp,
+                last_message: msgNew.message.timestamp,
               },
             ];
           }
@@ -953,16 +958,13 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         if (serverUrl.value === sUrl) renderChannelsSignal.value++;
         renderGuildSidebarSignal.value++;
       } else if (isCurrentView) {
-        const msgTimestamp =
-          typeof msg.message.timestamp === "number"
-            ? msg.message.timestamp
-            : Date.now() / 1000;
+        const msgTimestamp = msgNew.message.timestamp;
 
         readTimesByServer.value = {
           ...readTimesByServer.value,
           [sUrl]: {
             ...(readTimesByServer.value[sUrl] ?? {}),
-            [msg.channel]: msgTimestamp,
+            [msgNew.channel]: msgTimestamp,
           },
         };
 
@@ -981,10 +983,10 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         // Still update DM sidebar presence even when muted, but no badge.
         if (sUrl === DM_SERVER_URL) {
           const alreadyListed = dmServers.value.some(
-            (d: any) => d.channel === msg.channel,
+            (d: DMServer) => d.channel === msgNew.channel,
           );
           if (!alreadyListed) {
-            const senderUsername = msg.message.user as string;
+            const senderUsername = msgNew.message.user;
             dmServers.value = [
               ...dmServers.value,
               {
@@ -1003,11 +1005,11 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       // ("all" already counted every message as a ping above).
       if (
         myUsername &&
-        msg.message.user !== myUsername &&
+        msgNew.message.user !== myUsername &&
         !isMuted &&
         notifLevel !== "all"
       ) {
-        const content = (msg.message.content || "").toLowerCase();
+        const content = (msgNew.message.content || "").toLowerCase();
         const matches = content.match(pingRegex);
         if (matches) {
           const pings = matches.filter(
@@ -1023,7 +1025,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
               if (serverUrl.value === sUrl) renderChannelsSignal.value++;
             }
             playPingSound();
-            const cleanContent = (msg.message.content || "").replace(
+            const cleanContent = (msgNew.message.content || "").replace(
               /<[^>]*>/g,
               "",
             );
@@ -1032,7 +1034,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
                 ? cleanContent.substring(0, 100) + "..."
                 : cleanContent;
             showNotification(
-              `${msg.message.user} mentioned you in #${msg.channel}`,
+              `${msgNew.message.user} mentioned you in #${msg.channel}`,
               notifBody,
               msg.channel,
             );
@@ -1045,12 +1047,12 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         }
 
         if (
-          msg.message.reply_to &&
-          msg.message.ping !== false &&
-          messagesByServer.value[sUrl]?.[msg.channel]
+          msgNew.message.reply_to &&
+          msgNew.message.ping !== false &&
+          messagesByServer.value[sUrl]?.[msgNew.channel]
         ) {
-          const originalMsg = messagesByServer.value[sUrl][msg.channel].find(
-            (m: any) => m.id === msg.message.reply_to?.id,
+          const originalMsg = messagesByServer.value[sUrl][msgNew.channel].find(
+            (m: Message) => m.id === msgNew.message.reply_to?.id,
           );
           if (originalMsg && originalMsg.user === myUsername) {
             if (!isCurrentView) {
@@ -1061,7 +1063,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
               if (serverUrl.value === sUrl) renderChannelsSignal.value++;
             }
             playPingSound();
-            const cleanContent = (msg.message.content || "").replace(
+            const cleanContent = (msgNew.message.content || "").replace(
               /<[^>]*>/g,
               "",
             );
@@ -1070,19 +1072,19 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
                 ? cleanContent.substring(0, 100) + "..."
                 : cleanContent;
             showNotification(
-              `${msg.message.user} replied to your message in #${msg.channel}`,
+              `${msgNew.message.user} replied to your message in #${msgNew.channel}`,
               notifBody,
-              msg.channel,
+              msgNew.channel,
             );
           }
         }
       }
 
       const typingServer = typingUsersByServer.value[sUrl];
-      if (typingServer && typingServer[msg.channel]) {
-        const typing = typingServer[msg.channel] as Map<string, number>;
-        if (typing.has(msg.message.user)) {
-          typing.delete(msg.message.user);
+      if (typingServer && typingServer[msgNew.channel]) {
+        const typing = typingServer[msgNew.channel] as Map<string, number>;
+        if (typing.has(msgNew.message.user)) {
+          typing.delete(msgNew.message.user);
         }
       }
 
@@ -1090,10 +1092,12 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       break;
     }
     case "messages_get": {
+      const msgGet = msg as MessagesGet;
+
       if (!messagesByServer.value[sUrl])
         messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
 
-      const channel = msg.channel;
+      const channel = msgGet.channel;
 
       finishMessageFetch(sUrl, channel);
 
@@ -1104,25 +1108,17 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
 
       const existingMsgs = messagesByServer.value[sUrl][channel] || [];
 
-      const newMessages = (msg.messages || []).map((m: any) => {
-        if (m.reactions && typeof m.reactions === "object") {
-          const normalised: Record<string, string[]> = {};
+      const newMessages = (msgGet.messages || []).map((m) => {
+        const normalised: Record<string, string[]> = {};
+        if (m.reactions && typeof m.reactions === "object")
           for (const [emoji, reactors] of Object.entries(m.reactions)) {
-            normalised[emoji] = (reactors as any[]).map((u) =>
-              typeof u === "object" && u !== null
-                ? (u.username ?? String(u))
-                : String(u),
-            );
+            normalised[emoji] = reactors;
           }
-          return { ...m, reactions: normalised };
-        }
-        return m;
+        return { ...m, reactions: normalised };
       });
 
-      const existingIds = new Set(existingMsgs.map((m: any) => m.id));
-      const deduplicatedNew = newMessages.filter(
-        (m: any) => !existingIds.has(m.id),
-      );
+      const existingIds = new Set(existingMsgs.map((m) => m.id));
+      const deduplicatedNew = newMessages.filter((m) => !existingIds.has(m.id));
       const mergedMsgs = [...deduplicatedNew, ...existingMsgs];
 
       // If this was a pagination (scroll-up) fetch and the server returned fewer
@@ -1162,8 +1158,9 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
     }
     case "message_get": {
       if (!messagesByServer.value[sUrl]) break;
-      const channel = msg.channel;
-      const message = msg.message;
+      const msgGet = msg as MessageGet;
+      const channel = msgGet.channel;
+      const message = msgGet.message;
       if (!channel || !message) break;
       pendingReplyFetchesByServer[sUrl]?.delete(message.id);
       if (!messagesByServer.value[sUrl][channel]) {
@@ -1173,10 +1170,10 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         };
       }
       const existingMsgs = messagesByServer.value[sUrl][channel];
-      const alreadyExists = existingMsgs.some((m: any) => m.id === message.id);
+      const alreadyExists = existingMsgs.some((m) => m.id === message.id);
       if (!alreadyExists) {
         const insertIdx = existingMsgs.findIndex(
-          (m: any) => m.timestamp > message.timestamp,
+          (m) => m.timestamp > message.timestamp,
         );
         const newMsgs =
           insertIdx === -1
@@ -1195,34 +1192,43 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       break;
     }
     case "message_edit": {
-      if (!messagesByServer.value[sUrl]?.[msg.channel]) break;
-      const editedMsgs = messagesByServer.value[sUrl][msg.channel].map((m) =>
-        m.id === msg.id ? { ...m, content: msg.content, edited: true } : m,
-      );
-      messagesByServer.value = {
-        ...messagesByServer.value,
-        [sUrl]: { ...messagesByServer.value[sUrl], [msg.channel]: editedMsgs },
-      };
-      renderMessagesSignal.value++;
-      break;
-    }
-    case "message_delete": {
-      if (!messagesByServer.value[sUrl]?.[msg.channel]) break;
-      const filteredMsgs = messagesByServer.value[sUrl][msg.channel].filter(
-        (m) => m.id !== msg.id,
+      const msgEdit = msg as MessageEdit;
+      if (!messagesByServer.value[sUrl]?.[msgEdit.channel]) break;
+      const editedMsgs = messagesByServer.value[sUrl][msgEdit.channel].map(
+        (m) =>
+          m.id === msg.id
+            ? { ...m, content: msgEdit.content, edited: true }
+            : m,
       );
       messagesByServer.value = {
         ...messagesByServer.value,
         [sUrl]: {
           ...messagesByServer.value[sUrl],
-          [msg.channel]: filteredMsgs,
+          [msgEdit.channel]: editedMsgs,
+        },
+      };
+      renderMessagesSignal.value++;
+      break;
+    }
+    case "message_delete": {
+      const msgDel = msg as MessageDelete;
+      if (!messagesByServer.value[sUrl]?.[msgDel.channel]) break;
+      const filteredMsgs = messagesByServer.value[sUrl][msgDel.channel].filter(
+        (m) => m.id !== msgDel.id,
+      );
+      messagesByServer.value = {
+        ...messagesByServer.value,
+        [sUrl]: {
+          ...messagesByServer.value[sUrl],
+          [msgDel.channel]: filteredMsgs,
         },
       };
       renderMessagesSignal.value++;
       break;
     }
     case "typing": {
-      const { channel, user } = msg;
+      const msgTyping = msg as Typing;
+      const { channel, user } = msgTyping;
       if (!typingUsersByServer.value[sUrl])
         typingUsersByServer.value = {
           ...typingUsersByServer.value,
@@ -1238,27 +1244,8 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
     }
     case "roles_list": {
       // msg.roles is an object keyed by role name e.g. { owner: { color, description, ... }, ... }
-      const roles: Record<string, any> = msg.roles || {};
+      const roles: Record<string, Role> = msg.roles || {};
       rolesByServer.value = { ...rolesByServer.value, [sUrl]: roles };
-      break;
-    }
-    case "dm_list":
-    case "dms_list": {
-      if (msg.dms && Array.isArray(msg.dms)) {
-        dmServers.value = msg.dms;
-        renderGuildSidebarSignal.value++;
-      }
-      break;
-    }
-    case "friends_list": {
-      const {
-        friends: friendsList,
-        friendRequests: requestsList,
-        blockedUsers: blockedList,
-      } = await import("../state");
-      if (msg.friends) friendsList.value = msg.friends;
-      if (msg.requests) requestsList.value = msg.requests;
-      if (msg.blocked) blockedList.value = msg.blocked;
       break;
     }
     case "message_react_add":
@@ -1300,14 +1287,14 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       renderMessagesSignal.value++;
       break;
     }
-    case "pin_message":
     case "message_pin": {
-      if (!messagesByServer.value[sUrl]?.[msg.channel]) break;
+      const msgPin = msg as MessagePin;
+      if (!messagesByServer.value[sUrl]?.[msgPin.channel]) break;
       const pinMsg = messagesByServer.value[sUrl][msg.channel].find(
-        (m: any) => m.id === msg.id,
+        (m) => m.id === msgPin.id,
       );
       if (pinMsg) {
-        pinMsg.pinned = msg.pinned !== undefined ? msg.pinned : true;
+        pinMsg.pinned = pinMsg.pinned === true;
       }
       renderMessagesSignal.value++;
       break;
@@ -1387,10 +1374,11 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       break;
     }
     case "user_connect": {
+      const userConnect = msg as UserConnect;
       if (!usersByServer.value[sUrl]) {
         usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
       }
-      const key = msg.user.username?.toLowerCase();
+      const key = userConnect.user.username?.toLowerCase();
       if (key) {
         usersByServer.value = {
           ...usersByServer.value,
@@ -1398,7 +1386,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
             ...usersByServer.value[sUrl],
             [key]: {
               ...usersByServer.value[sUrl][key],
-              ...msg.user,
+              ...userConnect.user,
               status: "online",
             },
           },
@@ -1422,7 +1410,8 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       break;
     }
     case "user_disconnect": {
-      const uKey = msg.username?.toLowerCase();
+      const userDisconnect = msg as UserDisconnect;
+      const uKey = userDisconnect.user.toLowerCase();
       if (usersByServer.value[sUrl]?.[uKey]) {
         usersByServer.value = {
           ...usersByServer.value,
