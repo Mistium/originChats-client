@@ -1,7 +1,8 @@
-import { h } from "preact";
+import { h, ComponentChildren } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
-import { Icon } from "./Icon";
-import { globalContextMenu, closeContextMenu } from "../lib/ui-signals";
+import { Icon } from "../Icon";
+import { globalContextMenu, closeContextMenu } from "../../lib/ui-signals";
+import "./ContextMenu.css";
 
 export interface ContextMenuItem {
   label: string;
@@ -18,6 +19,7 @@ export interface ContextMenuProps {
   y: number;
   items: ContextMenuItem[];
   onClose: () => void;
+  header?: ComponentChildren;
 }
 
 const PAD = 6;
@@ -36,6 +38,7 @@ interface SubMenuPanelProps {
     preferLeft: boolean,
   ) => void;
   openChildIdx: number | null;
+  header?: ComponentChildren;
 }
 
 function SubMenuPanel({
@@ -45,6 +48,7 @@ function SubMenuPanel({
   preferLeft,
   onOpenChild,
   openChildIdx,
+  header,
 }: SubMenuPanelProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
@@ -84,6 +88,7 @@ function SubMenuPanel({
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {header && <div className="context-menu-header">{header}</div>}
       {items.map((item, idx) => {
         if (item.separator)
           return <div key={idx} className="context-menu-separator" />;
@@ -128,7 +133,13 @@ function SubMenuPanel({
 // Renders the root menu + all open submenu levels as *siblings* in a zero-size
 // wrapper, so no submenu is ever a DOM descendant of a backdrop-filter element.
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+export function ContextMenu({
+  x,
+  y,
+  items,
+  onClose,
+  header,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   const preferLeftRef = useRef(false);
@@ -209,6 +220,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}
       >
+        {header && <div className="context-menu-header">{header}</div>}
         {items.map((item, idx) => {
           if (item.separator)
             return <div key={idx} className="context-menu-separator" />;

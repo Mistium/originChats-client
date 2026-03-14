@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "preact/hooks";
+import { useState } from "preact/hooks";
 import { friends, friendRequests, blockedUsers, currentUser } from "../state";
 import {
   openDMWith,
@@ -10,6 +10,7 @@ import {
   unblockUser,
 } from "../lib/actions";
 import { showAccountModal } from "../lib/ui-signals";
+import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { Icon } from "./Icon";
 import { avatarUrl, reloadAvatar } from "../utils";
 
@@ -26,192 +27,108 @@ export function UserContextMenu({
   y,
   onClose,
 }: UserContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
   const isSelf = username === currentUser.value?.username;
   const isFriend = friends.value.includes(username);
   const isBlocked = blockedUsers.value.includes(username);
   const hasPendingRequest = friendRequests.value.includes(username);
 
-  useEffect(() => {
-    const menu = menuRef.current;
-    if (!menu) return;
-    const padding = 6;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let finalX = x;
-    let finalY = y;
+  const items: ContextMenuItem[] = [
+    {
+      label: "View Profile",
+      icon: "User",
+      fn: () => {
+        showAccountModal.value = username;
+      },
+    },
+    {
+      label: "Reload Avatar",
+      icon: "RefreshCw",
+      fn: () => {
+        reloadAvatar(username);
+      },
+    },
+  ];
 
-    if (finalX + menu.offsetWidth > vw - padding)
-      finalX = vw - menu.offsetWidth - padding;
-    if (finalY + menu.offsetHeight > vh - padding)
-      finalY = vh - menu.offsetHeight - padding;
-    if (finalX < padding) finalX = padding;
-    if (finalY < padding) finalY = padding;
+  if (!isSelf) {
+    items.push({
+      label: "Message",
+      icon: "MessageCircle",
+      fn: () => openDMWith(username),
+    });
 
-    menu.style.left = `${finalX}px`;
-    menu.style.top = `${finalY}px`;
-    menu.style.visibility = "visible";
-  }, [x, y]);
+    items.push({ label: "", separator: true, fn: () => {} });
 
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [onClose]);
+    if (hasPendingRequest) {
+      items.push(
+        {
+          label: "Accept Friend Request",
+          icon: "Check",
+          fn: () => acceptFriend(username),
+        },
+        {
+          label: "Deny Friend Request",
+          icon: "X",
+          danger: true,
+          fn: () => denyFriend(username),
+        },
+      );
+    } else if (isFriend) {
+      items.push({
+        label: "Remove Friend",
+        icon: "UserX",
+        danger: true,
+        fn: () => removeFriend(username),
+      });
+    } else if (!isBlocked) {
+      items.push({
+        label: "Send Friend Request",
+        icon: "UserPlus",
+        fn: () => sendFriendRequest(username),
+      });
+    }
 
-  const openProfile = () => {
-    showAccountModal.value = username;
-    onClose();
-  };
+    if (isBlocked) {
+      items.push({
+        label: "Unblock",
+        icon: "ShieldOff",
+        fn: () => unblockUser(username),
+      });
+    } else {
+      items.push({
+        label: "Block",
+        icon: "ShieldOff",
+        danger: true,
+        fn: () => blockUser(username),
+      });
+    }
+  }
 
-  const sendMessage = async () => {
-    await openDMWith(username);
-    onClose();
-  };
-
-  const handleSendFriendRequest = () => {
-    sendFriendRequest(username);
-    onClose();
-  };
-
-  const handleRemoveFriend = () => {
-    removeFriend(username);
-    onClose();
-  };
-
-  const handleAcceptFriend = () => {
-    acceptFriend(username);
-    onClose();
-  };
-
-  const handleDenyFriend = () => {
-    denyFriend(username);
-    onClose();
-  };
-
-  const handleBlockUser = () => {
-    blockUser(username);
-    onClose();
-  };
-
-  const handleUnblockUser = () => {
-    unblockUser(username);
-    onClose();
-  };
+  const header = (
+    <>
+      <img
+        src={avatarUrl(username)}
+        className="context-menu-avatar"
+        alt={username}
+      />
+      <div className="context-menu-info">
+        <span className="context-menu-name">{username}</span>
+        <span className="context-menu-status">
+          {isSelf
+            ? "You"
+            : isFriend
+              ? "Friend"
+              : hasPendingRequest
+                ? "Pending Request"
+                : isBlocked
+                  ? "Blocked"
+                  : ""}
+        </span>
+      </div>
+    </>
+  );
 
   return (
-    <div
-      ref={menuRef}
-      className="user-context-menu"
-      style={{ position: "fixed", visibility: "hidden" }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <div className="user-context-header" onClick={openProfile}>
-        <img
-          src={avatarUrl(username)}
-          className="user-context-avatar"
-          alt={username}
-        />
-        <div className="user-context-info">
-          <span className="user-context-name">{username}</span>
-          <span className="user-context-status">
-            {isSelf
-              ? "You"
-              : isFriend
-                ? "Friend"
-                : hasPendingRequest
-                  ? "Pending Request"
-                  : isBlocked
-                    ? "Blocked"
-                    : ""}
-          </span>
-        </div>
-      </div>
-
-      <div className="user-context-separator" />
-
-      <div className="user-context-item" onClick={openProfile}>
-        <Icon name="User" size={16} />
-        <span>View Profile</span>
-      </div>
-
-      <div
-        className="user-context-item"
-        onClick={() => {
-          reloadAvatar(username);
-          onClose();
-        }}
-      >
-        <Icon name="RefreshCw" size={16} />
-        <span>Reload Avatar</span>
-      </div>
-
-      {!isSelf && (
-        <>
-          <div className="user-context-item" onClick={sendMessage}>
-            <Icon name="MessageCircle" size={16} />
-            <span>Message</span>
-          </div>
-
-          <div className="user-context-separator" />
-
-          {hasPendingRequest ? (
-            <>
-              <div className="user-context-item" onClick={handleAcceptFriend}>
-                <Icon name="Check" size={16} />
-                <span>Accept Friend Request</span>
-              </div>
-              <div
-                className="user-context-item danger"
-                onClick={handleDenyFriend}
-              >
-                <Icon name="X" size={16} />
-                <span>Deny Friend Request</span>
-              </div>
-            </>
-          ) : isFriend ? (
-            <div
-              className="user-context-item danger"
-              onClick={handleRemoveFriend}
-            >
-              <Icon name="UserX" size={16} />
-              <span>Remove Friend</span>
-            </div>
-          ) : !isBlocked ? (
-            <div
-              className="user-context-item"
-              onClick={handleSendFriendRequest}
-            >
-              <Icon name="UserPlus" size={16} />
-              <span>Send Friend Request</span>
-            </div>
-          ) : null}
-
-          {isBlocked ? (
-            <div className="user-context-item" onClick={handleUnblockUser}>
-              <Icon name="ShieldOff" size={16} />
-              <span>Unblock</span>
-            </div>
-          ) : (
-            <div className="user-context-item danger" onClick={handleBlockUser}>
-              <Icon name="ShieldOff" size={16} />
-              <span>Block</span>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />
   );
 }
 

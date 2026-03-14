@@ -234,6 +234,10 @@ function scrollToMessage(id: string): void {
 }
 
 function RightPanelMessageCard({ msg }: { msg: any }) {
+  const caps = serverCapabilities.value;
+  const canPin =
+    caps.includes("message_pin") && caps.includes("messages_pinned");
+
   return (
     <div
       key={msg.id}
@@ -265,8 +269,30 @@ function RightPanelMessageCard({ msg }: { msg: any }) {
           authorUsername={msg.user}
         />
       </div>
-      <div className="right-panel-message-action">
-        <Icon name="ExternalLink" size={14} />
+      <div className="right-panel-message-actions">
+        {canPin && (
+          <button
+            className="right-panel-unpin-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              wsSend({
+                cmd: "message_pin",
+                id: msg.id,
+                channel: currentChannel.value?.name,
+                pinned: false,
+              });
+              pinnedMessages.value = pinnedMessages.value.filter(
+                (m) => m.id !== msg.id,
+              );
+            }}
+            title="Unpin"
+          >
+            <Icon name="PinOff" size={14} />
+          </button>
+        )}
+        <div className="right-panel-message-action">
+          <Icon name="ExternalLink" size={14} />
+        </div>
       </div>
     </div>
   );
@@ -329,6 +355,7 @@ function RightPanel() {
   if (panelView === "pinned") {
     const msgs = pinnedMessages.value;
     const loading = pinnedLoading.value;
+    const pinnedGroups = groupMessages(msgs);
 
     return (
       <div id="members-list" className={panelClass}>
@@ -363,7 +390,86 @@ function RightPanel() {
               <span>No pinned messages</span>
             </div>
           ) : (
-            msgs.map((msg) => <RightPanelMessageCard key={msg.id} msg={msg} />)
+            pinnedGroups.map((group) => (
+              <div key={group.head.id} className="message-group">
+                <img
+                  src={avatarUrl(group.head.user)}
+                  className="avatar clickable"
+                  alt={group.head.user}
+                  onClick={(e: any) => openUserPopout(e, group.head.user)}
+                />
+                <div className="message-group-content">
+                  <div className="message-header">
+                    <span
+                      className="username clickable"
+                      style={{
+                        color:
+                          users.value[group.head.user?.toLowerCase()]?.color ||
+                          undefined,
+                      }}
+                      onClick={(e: any) => openUserPopout(e, group.head.user)}
+                    >
+                      {group.head.user}
+                    </span>
+                    <span className="timestamp">
+                      {formatRelativeTime(group.head.timestamp)}
+                    </span>
+                  </div>
+                  <div className="message-body">
+                    <MessageContent
+                      content={group.head.content}
+                      currentUsername={currentUser.value?.username}
+                      authorUsername={group.head.user}
+                    />
+                  </div>
+                  {group.following.length > 0 && (
+                    <div className="message-group-following">
+                      {group.following.map((msg) => (
+                        <div key={msg.id} className="message-single">
+                          <span className="timestamp">
+                            {formatRelativeTime(msg.timestamp)}
+                          </span>
+                          <MessageContent
+                            content={msg.content}
+                            currentUsername={currentUser.value?.username}
+                            authorUsername={msg.user}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="right-panel-message-actions">
+                  {canPin && (
+                    <button
+                      className="right-panel-unpin-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        wsSend({
+                          cmd: "message_pin",
+                          id: group.head.id,
+                          channel: currentChannel.value?.name,
+                          pinned: false,
+                        });
+                        pinnedMessages.value = pinnedMessages.value.filter(
+                          (m) => m.id !== group.head.id,
+                        );
+                      }}
+                      title="Unpin"
+                    >
+                      <Icon name="PinOff" size={14} />
+                    </button>
+                  )}
+                  <button
+                    className="right-panel-message-action"
+                    onClick={() => scrollToMessage(group.head.id)}
+                    title="Go to message"
+                  >
+                    <Icon name="ExternalLink" size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -1508,7 +1614,7 @@ export function MessageArea() {
         icon: msg.pinned ? "PinOff" : "Pin",
         fn: () => {
           wsSend({
-            cmd: "pin_message",
+            cmd: "message_pin",
             id: msg.id,
             channel: currentChannel.value?.name,
             pinned: !msg.pinned,

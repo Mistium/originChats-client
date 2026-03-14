@@ -883,6 +883,26 @@ p {
   word-break: break-word;
 }
 
+.right-panel-message-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.right-panel-unpin-btn {
+  align-items: center;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+  transition: color var(--anim-fast) ease;
+}
+
+.right-panel-unpin-btn:hover {
+  color: var(--text);
+}
+
 .highlight-message {
   animation: highlightFade 2s ease-out;
 }

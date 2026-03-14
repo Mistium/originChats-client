@@ -1,14 +1,9 @@
-import { useState, useEffect, useRef } from "preact/hooks";
-import {
-  serverUrl,
-  currentUserByServer,
-  currentThread,
-  threadsByServer,
-  users,
-} from "../state";
+import { useState } from "preact/hooks";
+import { serverUrl, currentUserByServer, users } from "../state";
 import { selectThread, deleteThread, getThread } from "../lib/actions";
 import { wsSend } from "../lib/websocket";
 import { updateThreadInChannel } from "../state";
+import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { Icon } from "./Icon";
 import type { Thread } from "../types";
 
@@ -25,7 +20,6 @@ export function ThreadContextMenu({
   y,
   onClose,
 }: ThreadContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
   const myRoles = users.value[myUsername?.toLowerCase() || ""]?.roles || [];
   const canManage =
@@ -33,134 +27,90 @@ export function ThreadContextMenu({
     myUsername === "admin" ||
     myRoles.includes("owner");
 
-  useEffect(() => {
-    const menu = menuRef.current;
-    if (!menu) return;
-    const padding = 6;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let finalX = x;
-    let finalY = y;
+  const items: ContextMenuItem[] = [
+    {
+      label: "Open Thread",
+      icon: "ExternalLink",
+      fn: () => {
+        selectThread(thread);
+        getThread(thread.id);
+        wsSend(
+          { cmd: "thread_messages", thread_id: thread.id },
+          serverUrl.value,
+        );
+      },
+    },
+    {
+      label: "Copy Link",
+      icon: "Link",
+      fn: () => {
+        const link = `${window.location.origin}/app/${serverUrl.value}/projects/${thread.id}`;
+        navigator.clipboard.writeText(link);
+      },
+    },
+  ];
 
-    if (finalX + menu.offsetWidth > vw - padding)
-      finalX = vw - menu.offsetWidth - padding;
-    if (finalY + menu.offsetHeight > vh - padding)
-      finalY = vh - menu.offsetHeight - padding;
-    if (finalX < padding) finalX = padding;
-    if (finalY < padding) finalY = padding;
+  if (canManage) {
+    items.push({ label: "", separator: true, fn: () => {} });
 
-    menu.style.left = `${finalX}px`;
-    menu.style.top = `${finalY}px`;
-    menu.style.visibility = "visible";
-  }, [x, y]);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [onClose]);
-
-  const handleOpenThread = () => {
-    selectThread(thread);
-    getThread(thread.id);
-    wsSend({ cmd: "thread_messages", thread_id: thread.id }, serverUrl.value);
-    onClose();
-  };
-
-  const handleCopyLink = () => {
-    const link = `${window.location.origin}/app/${serverUrl.value}/projects/${thread.id}`;
-    navigator.clipboard.writeText(link);
-    onClose();
-  };
-
-  const handleToggleLock = () => {
-    const newLocked = !thread.locked;
-    updateThreadInChannel(serverUrl.value, thread.parent_channel, thread.id, {
-      locked: newLocked,
+    items.push({
+      label: thread.locked ? "Unlock Thread" : "Lock Thread",
+      icon: thread.locked ? "Unlock" : "Lock",
+      fn: () => {
+        updateThreadInChannel(
+          serverUrl.value,
+          thread.parent_channel,
+          thread.id,
+          {
+            locked: !thread.locked,
+          },
+        );
+      },
     });
-    onClose();
-  };
 
-  const handleToggleArchive = () => {
-    const newArchived = !thread.archived;
-    updateThreadInChannel(serverUrl.value, thread.parent_channel, thread.id, {
-      archived: newArchived,
+    items.push({
+      label: thread.archived ? "Unarchive Thread" : "Archive Thread",
+      icon: "Archive",
+      fn: () => {
+        updateThreadInChannel(
+          serverUrl.value,
+          thread.parent_channel,
+          thread.id,
+          {
+            archived: !thread.archived,
+          },
+        );
+      },
     });
-    onClose();
-  };
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this thread?")) {
-      deleteThread(thread.id);
-    }
-    onClose();
-  };
+    items.push({ label: "", separator: true, fn: () => {} });
+
+    items.push({
+      label: "Delete Thread",
+      icon: "Trash2",
+      danger: true,
+      fn: () => {
+        if (confirm("Are you sure you want to delete this thread?")) {
+          deleteThread(thread.id);
+        }
+      },
+    });
+  }
+
+  const header = (
+    <>
+      <div className="context-menu-icon">
+        <Icon name="MessageSquare" size={20} />
+      </div>
+      <div className="context-menu-info">
+        <span className="context-menu-name">{thread.name}</span>
+        <span className="context-menu-status">by {thread.created_by}</span>
+      </div>
+    </>
+  );
 
   return (
-    <div
-      ref={menuRef}
-      className="user-context-menu"
-      style={{ position: "fixed", visibility: "hidden" }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <div className="user-context-header">
-        <div className="user-context-icon">
-          <Icon name="MessageSquare" size={20} />
-        </div>
-        <div className="user-context-info">
-          <span className="user-context-name">{thread.name}</span>
-          <span className="user-context-status">by {thread.created_by}</span>
-        </div>
-      </div>
-
-      <div className="user-context-separator" />
-
-      <div className="user-context-item" onClick={handleOpenThread}>
-        <Icon name="ExternalLink" size={16} />
-        <span>Open Thread</span>
-      </div>
-
-      <div className="user-context-item" onClick={handleCopyLink}>
-        <Icon name="Link" size={16} />
-        <span>Copy Link</span>
-      </div>
-
-      {canManage && (
-        <>
-          <div className="user-context-separator" />
-
-          <div className="user-context-item" onClick={handleToggleLock}>
-            <Icon name={thread.locked ? "Unlock" : "Lock"} size={16} />
-            <span>{thread.locked ? "Unlock Thread" : "Lock Thread"}</span>
-          </div>
-
-          <div className="user-context-item" onClick={handleToggleArchive}>
-            <Icon name="Archive" size={16} />
-            <span>
-              {thread.archived ? "Unarchive Thread" : "Archive Thread"}
-            </span>
-          </div>
-
-          <div className="user-context-separator" />
-
-          <div className="user-context-item danger" onClick={handleDelete}>
-            <Icon name="Trash2" size={16} />
-            <span>Delete Thread</span>
-          </div>
-        </>
-      )}
-    </div>
+    <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />
   );
 }
 
