@@ -2023,6 +2023,7 @@ p {
   flex-direction: column;
   min-width: 0;
   position: relative;
+  margin: var(--space-2);
 }
 
 .main-content-area > .messages-container {
@@ -2068,6 +2069,7 @@ p {
   overscroll-behavior-y: contain;
   padding: 0;
   position: relative;
+  margin: var(--space-2);
 }
 
 .messages::before {
@@ -12535,7 +12537,6 @@ body,
   display: flex;
   flex-shrink: 0;
   gap: 4px;
-  margin: 0 8px 8px;
   padding: 6px 6px 6px 8px;
 }
 
