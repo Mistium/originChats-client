@@ -833,11 +833,8 @@ effect(() => {
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set(
-      "notificationPromptDismissed",
-      String(notificationPromptDismissed.value),
-    );
+  const v = notificationPromptDismissed.value;
+  if (_settingsLoaded) dbSettings.set("notificationPromptDismissed", String(v));
 });
 
 effect(() => {
