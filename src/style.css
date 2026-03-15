@@ -2235,8 +2235,10 @@ p {
 }
 
 .message-text.emoji-only {
+  display: flex;
   font-size: 48px;
   line-height: 1.2;
+  align-items: center;
 }
 
 .message-text.emoji-only .emoji {
@@ -13238,12 +13240,61 @@ body,
   margin-top: auto;
 }
 
+.thread-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.thread-card-participants {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
 .thread-card-replies {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   font-size: 0.75rem;
   color: var(--text-dim);
+}
+
+.thread-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--anim-fast);
+}
+
+.thread-card:hover .thread-card-actions {
+  opacity: 1;
+}
+
+.thread-card-join,
+.thread-card-leave {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  transition: all var(--anim-fast);
+}
+
+.thread-card-join:hover {
+  color: var(--success);
+  background: rgba(59, 165, 92, 0.1);
+}
+
+.thread-card-leave:hover {
+  color: var(--warning);
+  background: rgba(250, 166, 26, 0.1);
 }
 
 .thread-card-delete {
@@ -13383,10 +13434,62 @@ body,
 }
 
 .thread-view-title {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-weight: 600;
+  min-width: 0;
+}
+
+.thread-view-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.thread-view-participants {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-light);
+  border-radius: var(--radius-sm);
+}
+
+.thread-view-join,
+.thread-view-leave {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--anim-fast);
+}
+
+.thread-view-join {
+  background: var(--success);
+  color: #fff;
+}
+
+.thread-view-join:hover {
+  background: #2d8049;
+}
+
+.thread-view-leave {
+  background: var(--surface-light);
+  color: var(--text-dim);
+}
+
+.thread-view-leave:hover {
+  background: var(--surface-hover);
+  color: var(--text);
 }
 
 .thread-view-content {
