@@ -13,6 +13,8 @@ import type {
   Thread,
 } from "./types";
 import { settings as dbSettings } from "./lib/db";
+export { unreadState, messageState } from "./lib/state";
+export type { UnreadState, MessageState } from "./lib/state";
 
 export const token = signal<string | null>(null);
 export const DM_SERVER_URL = "dms.mistium.com";
@@ -46,12 +48,8 @@ export const threadMessagesByServer = signal<
 export const messagesByServer = signal<
   Record<string, Record<string, Message[]>>
 >({});
-// Tracks which channels have had at least one successful messages_get response.
-// message_new events for channels not in this set are not stored in messagesByServer
-// so that opening the channel always triggers a fresh messages_get fetch.
+
 export const loadedChannelsByServer: Record<string, Set<string>> = {};
-// Tracks channels where all historical messages have been loaded (server returned
-// fewer messages than the pagination limit, meaning the beginning has been reached).
 export const reachedOldestByServer: Record<string, Set<string>> = {};
 export const usersByServer = signal<Record<string, Record<string, ServerUser>>>(
   {},
@@ -63,62 +61,39 @@ export const readTimesByServer = signal<Record<string, Record<string, number>>>(
   {},
 );
 export const lastChannelByServer = signal<Record<string, string>>({});
-export const unreadByChannel = signal<Record<string, number>>({});
-export const unreadPings = signal<Record<string, number>>({});
+
+import { unreadState } from "./lib/state";
+export const unreadByChannel = unreadState.unreads;
+export const unreadPings = unreadState.pings;
 export const typingUsersByServer = signal<
   Record<string, Record<string, Map<string, number>>>
 >({});
 
 export function getServerPingCount(sUrl: string): number {
-  return Object.entries(unreadPings.value)
-    .filter(([key]) => key.startsWith(`${sUrl}:`))
-    .reduce((sum, [, count]) => sum + count, 0);
+  return unreadState.getServerPingCount(sUrl);
 }
 
 export function getServerUnreadCount(sUrl: string): number {
-  return Object.entries(unreadByChannel.value)
-    .filter(([key]) => key.startsWith(`${sUrl}:`))
-    .reduce((sum, [, count]) => sum + count, 0);
+  return unreadState.getServerUnreadCount(sUrl);
 }
 
 export function getChannelPingCount(sUrl: string, channelName: string): number {
-  return unreadPings.value[`${sUrl}:${channelName}`] || 0;
+  return unreadState.getChannelPingCount(sUrl, channelName);
 }
 
 export function getChannelUnreadCount(
   sUrl: string,
   channelName: string,
 ): number {
-  return unreadByChannel.value[`${sUrl}:${channelName}`] || 0;
+  return unreadState.getChannelUnreadCount(sUrl, channelName);
 }
 
 export function clearChannelPings(sUrl: string, channelName: string): void {
-  const key = `${sUrl}:${channelName}`;
-  if (unreadPings.value[key] !== undefined) {
-    const newPings = { ...unreadPings.value };
-    delete newPings[key];
-    unreadPings.value = newPings;
-  }
-  if (unreadByChannel.value[key] !== undefined) {
-    const newUnreads = { ...unreadByChannel.value };
-    delete newUnreads[key];
-    unreadByChannel.value = newUnreads;
-  }
+  unreadState.clearChannel(sUrl, channelName);
 }
 
 export function clearServerPings(sUrl: string): void {
-  const newPings = { ...unreadPings.value };
-  const newUnreads = { ...unreadByChannel.value };
-
-  Object.keys(newPings).forEach((key) => {
-    if (key.startsWith(`${sUrl}:`)) delete newPings[key];
-  });
-  Object.keys(newUnreads).forEach((key) => {
-    if (key.startsWith(`${sUrl}:`)) delete newUnreads[key];
-  });
-
-  unreadPings.value = newPings;
-  unreadByChannel.value = newUnreads;
+  unreadState.clearServer(sUrl);
 }
 
 export interface PingMessage {
