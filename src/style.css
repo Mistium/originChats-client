@@ -2023,6 +2023,7 @@ p {
   flex-direction: column;
   min-width: 0;
   position: relative;
+  margin: var(--space-4);
 }
 
 .main-content-area > .messages-container {
@@ -2068,6 +2069,7 @@ p {
   overscroll-behavior-y: contain;
   padding: 0;
   position: relative;
+  margin: var(--space-2);
 }
 
 .messages::before {
@@ -6581,7 +6583,7 @@ a {
 .message-group,
 .message-single {
   position: relative;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .message-group:hover,
@@ -9904,81 +9906,6 @@ body,
   color: var(--primary);
 }
 
-.emoji-popup {
-  animation: slideUpFade 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--surface, #0a0a0c);
-  border-radius: 12px;
-  bottom: calc(100% + 10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  display: none;
-  left: 12px;
-  max-height: 300px;
-  min-width: 280px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  position: absolute;
-  z-index: 10000;
-}
-
-.emoji-popup.active {
-  display: block;
-}
-
-.emoji-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px;
-}
-
-.emoji-item {
-  align-items: center;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  gap: 12px;
-  margin: 2px 4px;
-  padding: 8px 12px;
-  position: relative;
-  transition: all 0.12s ease;
-}
-
-.emoji-item:hover,
-.emoji-item.selected {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.emoji-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.emoji-item.selected {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.emoji-preview {
-  align-items: center;
-  display: flex;
-  flex-shrink: 0;
-  font-size: 24px;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
-}
-
-.emoji-info {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.emoji-shortcode {
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 500;
-}
-
 @media (max-width: 768px) {
   .mention-popup {
     left: 10px;
@@ -10012,43 +9939,7 @@ body,
     font-size: 16px;
   }
 
-  .emoji-popup {
-    bottom: 80px;
-    left: 50%;
-    max-height: 300px;
-    max-width: 400px;
-    position: fixed;
-    transform: translateX(-50%);
-    width: 90%;
-  }
-
-  .emoji-item {
-    padding: 12px;
-  }
-
-  .emoji-preview {
-    font-size: 24px;
-    margin-right: 12px;
-  }
-
-  .emoji-shortcode {
-    font-size: 16px;
-  }
-
-  /* Mobile GIF Picker - Full Screen */
-  .gif-picker {
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border-radius: 20px 20px 0 0;
-    bottom: 0;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
-    height: 70vh;
-    left: 0;
-    max-height: 500px;
-    position: fixed;
-    right: 0;
-    top: auto;
-    width: 100%;
-  }
+/* for fucks sake delete the useless css*/
 
   @keyframes slideUp {
     from {
@@ -10058,67 +9949,6 @@ body,
     to {
       transform: translateY(0);
     }
-  }
-
-  .gif-picker-header {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 20px 16px;
-    position: relative;
-  }
-
-  .gif-picker-header::before {
-    background: var(--border);
-    border-radius: 2px;
-    content: "";
-    height: 4px;
-    left: 50%;
-    position: absolute;
-    top: 8px;
-    transform: translateX(-50%);
-    width: 36px;
-  }
-
-  .gif-picker-close {
-    display: flex;
-    margin-left: auto;
-    padding: 10px;
-  }
-
-  .gif-picker-close svg {
-    height: 24px;
-    width: 24px;
-  }
-
-  .gif-tabs {
-    flex: 1;
-    gap: 8px;
-    justify-content: flex-start;
-  }
-
-  .gif-tab {
-    font-size: 15px;
-    padding: 10px 20px;
-  }
-
-  .gif-search-bar {
-    padding: 16px 20px;
-  }
-
-  .gif-search-bar input {
-    border-radius: 10px;
-    font-size: 16px;
-    padding: 12px 16px;
-  }
-
-  .gif-results {
-    column-count: 2;
-    column-gap: 12px;
-    padding: 16px 12px;
-  }
-
-  .gif-item-wrapper,
-  .gif-result {
-    border-radius: 10px;
   }
 
   .gif-star-btn {
@@ -12811,7 +12641,6 @@ body,
   display: flex;
   flex-shrink: 0;
   gap: 4px;
-  margin: 0 8px 8px;
   padding: 6px 6px 6px 8px;
 }
 
