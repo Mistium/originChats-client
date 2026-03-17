@@ -3,6 +3,7 @@ import { Fragment, type h, type ComponentChildren } from "preact";
 import { useSignalEffect } from "@preact/signals";
 import { parseEmojisInContainer, emojiImgUrl } from "../../lib/emoji";
 import styles from "./MessageArea.module.css";
+import messageActionButtonsStyles from "../MessageActionButtons/MessageActionButtons.module.css";
 import {
   currentChannel,
   currentThread,

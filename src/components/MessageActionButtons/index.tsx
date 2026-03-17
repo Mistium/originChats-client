@@ -31,7 +31,7 @@ export function MessageActionButtons({
   };
 
   return (
-    <div className={styles.messageActionButtons}>
+    <div className={`messageActionButtons ${styles.messageActionButtons}`}>
       {canReact &&
         QUICK_REACTIONS.map((emoji) => (
           <button

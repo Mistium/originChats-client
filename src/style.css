@@ -1966,6 +1966,11 @@ p {
   cursor: default;
 }
 
+.message-group:hover .messageActionButtons,
+.message-single:hover .messageActionButtons {
+  opacity: 1;
+}
+
 .message-text a {
   color: var(--link, #00a8fc);
   text-decoration: none;
@@ -5698,87 +5703,6 @@ a {
   margin-top: 0;
 }
 
-.message-actions-bar {
-  align-items: center;
-  background: var(--surface, #0a0a0c);
-  border-radius: 12px;
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  padding: 4px;
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  transition: opacity var(--anim-fast) var(--ease-standard);
-  z-index: 5;
-}
-
-.message-group:hover .message-actions-bar,
-.message-single:hover .message-actions-bar {
-  opacity: 1;
-}
-
-.message-actions-bar .action-btn {
-  align-items: center;
-  background: none;
-  border: none;
-  border-radius: 12px;
-  color: var(--text-dim);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: 14px;
-  height: 28px;
-  justify-content: center;
-  outline: none;
-  transition:
-    color 0.15s ease,
-    opacity 0.15s ease;
-  width: 28px;
-}
-
-.message-actions-bar .action-btn:hover {
-  color: var(--text);
-  opacity: 1;
-}
-
-.message-action-buttons {
-  align-items: center;
-  background: var(--surface, #0a0a0c);
-  border-radius: 12px;
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  padding: 4px;
-  position: absolute;
-  right: 8px;
-  top: -12px;
-  transition: opacity var(--anim-fast) var(--ease-standard);
-  z-index: 5;
-  box-shadow: var(--shadow-1);
-}
-
-.message-group:hover .message-action-buttons,
-.message-single:hover .message-action-buttons {
-  opacity: 1;
-}
-
-.message-action-buttons .action-btn {
-  align-items: center;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  color: var(--text-dim);
-  cursor: pointer;
-  display: inline-flex;
-  height: 28px;
-  justify-content: center;
-  outline: none;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-  width: 28px;
-}
-
 .message-action-buttons .action-btn:hover {
   background: var(--surface-hover);
   color: var(--text);
@@ -8624,10 +8548,6 @@ body,
     max-height: 300px;
   }
 
-  .message-actions-bar {
-    display: none;
-  }
-
   .embed-container {
     position: static;
   }
@@ -9096,10 +9016,6 @@ body,
     font-size: 11px;
   }
 
-  .members-list .message-actions-bar {
-    display: none;
-  }
-
   .members-list .message-reply {
     font-size: 12px;
     padding: 4px 8px;
@@ -9127,7 +9043,7 @@ body,
   .voice-name {
     font-size: 13px;
   }
-  
+
   .members-header-mobile {
     align-items: center;
     border-bottom: 1px solid var(--border);
