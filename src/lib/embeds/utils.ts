@@ -119,10 +119,18 @@ export async function detectEmbedType(url: string) {
 
   try {
     const urlObj = new URL(url);
-    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
+    // Skip HEAD request for invalid/unsupported protocols
+    if (
+      !["http:", "https:"].includes(urlObj.protocol) ||
+      urlObj.hostname === "localhost" ||
+      urlObj.hostname === "127.0.0.1"
+    ) {
       return { type: "unknown", url };
     }
-  } catch {}
+  } catch {
+    // Invalid URL structure, return unknown
+    return { type: "unknown", url };
+  }
 
   try {
     const controller = new AbortController();
