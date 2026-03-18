@@ -59,6 +59,7 @@ export function GuildSidebar() {
   };
 
   const handleServerMouseDown = (index: number, url: string, e: MouseEvent) => {
+    if (e.button === 2) return;
     e.preventDefault();
     if (!listRef.current) return;
 
