@@ -14,17 +14,6 @@ interface DiscoveryServer {
   description?: string;
 }
 
-const ALL_TAGS = [
-  "all",
-  "official",
-  "community",
-  "tech",
-  "gaming",
-  "creative",
-  "music",
-  "chat",
-];
-
 function timeAgo(ms: number): string {
   const diff = Date.now() - ms;
   const days = Math.floor(diff / 86400000);
@@ -95,11 +84,8 @@ export function DiscoveryPage() {
     return matchesTag && matchesSearch;
   });
 
-  // Only show tags that have at least one server
-  const availableTags = ALL_TAGS.filter((tag) => {
-    if (tag === "all") return true;
-    return (serverList ?? []).some((s) => s.tags.includes(tag));
-  });
+  const uniqueTags = new Set((serverList ?? []).flatMap((s) => s.tags));
+  const availableTags = ["all", ...Array.from(uniqueTags).sort()];
 
   return (
     <div className="discovery-page">
