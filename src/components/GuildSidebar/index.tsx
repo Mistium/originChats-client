@@ -25,6 +25,7 @@ import {
   mobileSidebarOpen,
   showContextMenu,
   renderGuildSidebarSignal,
+  showInfo,
 } from "../../lib/ui-signals";
 import { Icon, ServerIcon } from "../Icon";
 import { avatarUrl, reloadServerIcon } from "../../utils";
@@ -191,7 +192,11 @@ export function GuildSidebar() {
           [server.url]: level,
         };
       }
-      saveNotifSettings().catch(() => {});
+      saveNotifSettings()
+        .catch(console.error)
+        .then(() =>
+          showInfo("Notification settings saved", { autoDismissMs: 2000 }),
+        );
     };
 
     showContextMenu(

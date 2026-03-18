@@ -51,7 +51,7 @@ import {
 import { Icon, ServerIcon } from "../Icon";
 import { Checkbox } from "../Checkbox";
 import { LoadingButton } from "../LoadingButton";
-import { handleError } from "../../lib/ui-signals";
+import { handleError, showInfo } from "../../lib/ui-signals";
 import {
   switchServer,
   logout,
@@ -136,6 +136,7 @@ export function SettingsModal() {
         setSaveMsg(data.error);
       } else {
         setSaveMsg("Saved!");
+        showInfo("Profile saved successfully", { autoDismissMs: 2000 });
         setTimeout(() => setSaveMsg(""), 2000);
       }
     } catch (e: any) {
