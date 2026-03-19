@@ -44,6 +44,7 @@ import {
   removeThreadFromChannel,
   updateThreadInChannel,
   setThreadMessagesForServer,
+  myStatus,
 } from "../state";
 
 import { Channel, VoiceUser, Message, DMServer, Role, Thread } from "../types";
@@ -802,7 +803,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       }
       break;
     }
-    case "ready":
+    case "ready": {
       currentUserByServer.value = {
         ...currentUserByServer.value,
         [sUrl]: msg.user,
@@ -813,11 +814,26 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
         ...usersByServer.value,
         [sUrl]: {
           ...usersByServer.value[sUrl],
-          [msg.user.username?.toLowerCase()]: msg.user,
+          [msg.user.username?.toLowerCase()]: {
+            ...msg.user,
+            status: msg.user.status,
+          },
         },
       };
+      const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
+      if (caps.includes("status_set") && myStatus.value.status) {
+        wsSend(
+          {
+            cmd: "status_set",
+            status: myStatus.value.status,
+            text: myStatus.value.text,
+          },
+          sUrl,
+        );
+      }
       renderMembersSignal.value++;
       break;
+    }
     case "auth_success": {
       const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
       const serverHas = (cap: string) => caps.includes(cap);
@@ -999,25 +1015,67 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       for (const user of msg.users) {
         const key = user.username?.toLowerCase();
         if (!key) continue;
-        // Merge: incoming fields win, but preserve any client-side fields
-        // (e.g. status set by users_online) that the server didn't send.
-        next[key] = { ...existing[key], ...user };
+        const statusObj = user.status;
+        const normalizedUser = {
+          ...existing[key],
+          ...user,
+          status:
+            typeof statusObj === "object"
+              ? statusObj
+              : { status: statusObj || "offline", text: "" },
+        };
+        next[key] = normalizedUser;
       }
       usersByServer.value = { ...usersByServer.value, [sUrl]: next };
       renderMembersSignal.value++;
       break;
     }
-    case "users_online":
+    case "users_online": {
       if (!usersByServer.value[sUrl])
         usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
+      const onlineUsernames = new Set<string>();
       for (const user of msg.users) {
-        if (usersByServer.value[sUrl]?.[user.username?.toLowerCase()]) {
-          usersByServer.value[sUrl][user.username?.toLowerCase()].status =
-            "online";
+        const key = user.username?.toLowerCase();
+        if (!key) continue;
+        onlineUsernames.add(key);
+        const statusObj = user.status;
+        const newStatus =
+          typeof statusObj === "object"
+            ? statusObj
+            : { status: "online", text: "" };
+        if (usersByServer.value[sUrl]?.[key]) {
+          usersByServer.value[sUrl][key].status = newStatus;
+        }
+      }
+      for (const key of Object.keys(usersByServer.value[sUrl] || {})) {
+        if (!onlineUsernames.has(key)) {
+          usersByServer.value[sUrl][key].status = {
+            status: "offline",
+            text: "",
+          };
         }
       }
       renderMembersSignal.value++;
       break;
+    }
+    case "status_get": {
+      const username = msg.username?.toLowerCase();
+      if (!username) break;
+      if (usersByServer.value[sUrl]?.[username]) {
+        usersByServer.value = {
+          ...usersByServer.value,
+          [sUrl]: {
+            ...usersByServer.value[sUrl],
+            [username]: {
+              ...usersByServer.value[sUrl][username],
+              status: msg.status,
+            },
+          },
+        };
+      }
+      renderMembersSignal.value++;
+      break;
+    }
     case "message_new": {
       // Only append to the message store if this channel has already been
       // loaded via messages_get. If not, the user hasn't opened it yet and
@@ -1681,7 +1739,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
             [key]: {
               ...usersByServer.value[sUrl][key],
               ...userConnect.user,
-              status: "online",
+              status: { status: "online", text: "" },
             },
           },
         };
@@ -1713,7 +1771,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
             ...usersByServer.value[sUrl],
             [uKey]: {
               ...usersByServer.value[sUrl][uKey],
-              status: "offline",
+              status: { status: "offline", text: "" },
             },
           },
         };

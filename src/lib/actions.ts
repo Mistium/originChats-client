@@ -26,6 +26,8 @@ import {
   friendRequests,
   clearChannelPings,
   clearServerPings,
+  myStatus,
+  serverCapabilitiesByServer,
 } from "../state";
 import {
   renderGuildSidebarSignal,
@@ -522,5 +524,18 @@ export function selectThread(
       } as any;
     }
     updateUrlFromState();
+  }
+}
+
+export function setStatus(
+  status: "online" | "idle" | "dnd" | "offline",
+  text?: string,
+): void {
+  myStatus.value = { status: status as "online" | "idle" | "dnd", text };
+  for (const sUrl of Object.keys(wsConnections)) {
+    const caps = serverCapabilitiesByServer.value[sUrl] || [];
+    if (caps.includes("status_set")) {
+      wsSend({ cmd: "status_set", status, text }, sUrl);
+    }
   }
 }

@@ -107,9 +107,42 @@
   width: 14px;
 }
 
+.memberStatusIndicator.idle {
+  background: var(--warning, #faa61a);
+}
+
+.memberStatusIndicator.dnd {
+  background: var(--danger, #ed4245);
+}
+
+.memberStatusText {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .member .name {
   color: #fff;
   font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.statusText {
+  color: var(--text-dim);
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

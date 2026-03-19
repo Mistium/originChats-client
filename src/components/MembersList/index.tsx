@@ -8,6 +8,7 @@ import {
   messages,
   rolesByServer,
   DM_SERVER_URL,
+  hasCapability,
 } from "../../state";
 import { renderMembersSignal, mobilePanelOpen } from "../../lib/ui-signals";
 import { Icon } from "../Icon";
@@ -28,7 +29,7 @@ function MembersListInner() {
   let memberList: Array<{
     username: string;
     nickname?: string;
-    status: string | undefined;
+    status: { status: string; text?: string };
     color: string;
     roles: string[];
   }>;
@@ -76,6 +77,8 @@ function MembersListInner() {
     .filter(([, role]) => role.hoisted === true)
     .map(([name, role]) => ({ name, color: role.color || null }));
 
+  const showStatus = hasCapability("status_get");
+
   const getHoistedRole = (
     member: (typeof memberList)[number],
   ): string | null => {
@@ -87,10 +90,13 @@ function MembersListInner() {
 
   const assignedToHoisted = new Set<string>();
 
+  const isOnline = (status: { status: string; text?: string } | undefined) =>
+    typeof status === "undefined" || status.status !== "offline";
+
   const hoistedSections = hoistedRoles
     .map(({ name, color }) => {
       const members = memberList
-        .filter((m) => m.status === "online" && getHoistedRole(m) === name)
+        .filter((m) => isOnline(m.status) && getHoistedRole(m) === name)
         .sort((a, b) => a.username.localeCompare(b.username));
       members.forEach((m) => assignedToHoisted.add(m.username));
       return { roleName: name, color, members };
@@ -101,10 +107,10 @@ function MembersListInner() {
     (m) => !assignedToHoisted.has(m.username),
   );
   const onlineRemainder = remainder
-    .filter((u) => u.status === "online")
+    .filter((u) => isOnline(u.status))
     .sort((a, b) => a.username.localeCompare(b.username));
   const offlineRemainder = remainder
-    .filter((u) => u.status !== "online")
+    .filter((u) => !isOnline(u.status))
     .sort((a, b) => a.username.localeCompare(b.username));
 
   const totalOnline =
@@ -142,8 +148,9 @@ function MembersListInner() {
                 <MemberItem
                   key={user.username}
                   user={user}
-                  offline={user.status !== "online"}
+                  offline={!isOnline(user.status)}
                   onContextMenu={showUserMenu}
+                  showStatus={showStatus}
                 />
               ))}
             </div>
@@ -157,6 +164,7 @@ function MembersListInner() {
                   key={user.username}
                   user={user}
                   onContextMenu={showUserMenu}
+                  showStatus={showStatus}
                 />
               ))}
             </>
@@ -170,6 +178,7 @@ function MembersListInner() {
                   user={user}
                   offline
                   onContextMenu={showUserMenu}
+                  showStatus={showStatus}
                 />
               ))}
             </>
@@ -193,13 +202,17 @@ function MemberItemInner({
   user,
   offline,
   onContextMenu,
+  showStatus,
 }: {
   user: any;
   offline?: boolean;
   onContextMenu: (e: MouseEvent, username: string) => void;
+  showStatus?: boolean;
 }) {
   const displayName = useDisplayName(user.username);
   const showName = user.nickname || displayName;
+  const statusClass = user.status?.status || "offline";
+  const statusText = user.status?.text;
   return (
     <div
       className={`${styles.member}${offline ? ` ${styles.offline}` : ""}`}
@@ -208,14 +221,23 @@ function MemberItemInner({
     >
       <div className={styles.memberAvatarWrapper}>
         <img src={avatarUrl(user.username)} alt={showName} />
-        {!offline && <div className={styles.memberStatusIndicator} />}
+        {showStatus && !offline && (
+          <div
+            className={`${styles.memberStatusIndicator} ${styles[statusClass]}`}
+          />
+        )}
       </div>
-      <span
-        className={styles.name}
-        style={user.color ? { color: user.color } : undefined}
-      >
-        {showName}
-      </span>
+      <div className={styles.memberInfo}>
+        <span
+          className={styles.name}
+          style={user.color ? { color: user.color } : undefined}
+        >
+          {showName}
+        </span>
+        {showStatus && statusText && !offline && (
+          <span className={styles.statusText}>{statusText}</span>
+        )}
+      </div>
     </div>
   );
 }

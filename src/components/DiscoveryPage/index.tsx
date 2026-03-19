@@ -61,7 +61,7 @@ export function DiscoveryPage() {
     const allUsers = Object.values(usersMap);
     const totalUsers = allUsers.length;
     const onlineUsers = allUsers.filter(
-      (u) => u.status && u.status !== "offline",
+      (u) => u.status && u.status.status !== "offline",
     ).length;
     return { totalUsers, onlineUsers };
   };

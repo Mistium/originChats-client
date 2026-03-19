@@ -355,6 +355,13 @@ export const sendTypingIndicators = signal<boolean>(true);
 
 export const dmMessageSound = signal<boolean>(true);
 
+export type UserStatus = "online" | "idle" | "dnd" | "offline";
+export interface MyStatus {
+  status: UserStatus;
+  text?: string;
+}
+export const myStatus = signal<MyStatus>({ status: "online" });
+
 // ─── Offline / Push notification settings ─────────────────────────────────────
 /**
  * True when the app shell has loaded but all network attempts (token

@@ -52,7 +52,6 @@ export interface RoturAccount {
   banner?: string;
   bio?: string;
   pronouns?: string;
-  status?: "online" | "idle" | "offline";
   created?: number;
   followers?: number;
   following?: number;
@@ -66,7 +65,10 @@ export interface ServerUser {
   nickname?: string;
   roles?: string[];
   color?: string | null;
-  status?: "online" | "idle" | "offline";
+  status?: {
+    status: "online" | "idle" | "dnd" | "offline";
+    text?: string;
+  };
   account?: RoturAccount;
 }
 

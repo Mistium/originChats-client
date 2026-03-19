@@ -99,6 +99,23 @@ interface ThreadGet {
   thread: Thread;
 }
 
+interface StatusSet {
+  cmd: "status_set";
+  status: {
+    status: "online" | "idle" | "dnd" | "offline";
+    text?: string;
+  };
+}
+
+interface StatusGet {
+  cmd: "status_get";
+  username: string;
+  status: {
+    status: "online" | "idle" | "dnd" | "offline";
+    text?: string;
+  };
+}
+
 export type {
   UserConnect,
   UserDisconnect,
@@ -115,4 +132,6 @@ export type {
   ThreadCreate,
   ThreadDelete,
   ThreadGet,
+  StatusSet,
+  StatusGet,
 };

@@ -115,7 +115,7 @@ export function getUserStatus(username: string): string {
   const lower = username.toLowerCase();
   for (const [key, u] of Object.entries(usersMap)) {
     if (key.toLowerCase() === lower) {
-      return u.status || "offline";
+      return u.status?.status || "offline";
     }
   }
   return "offline";

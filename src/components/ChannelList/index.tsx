@@ -26,6 +26,8 @@ import {
   getChannelPingCount,
   getChannelUnreadCount,
   users,
+  myStatus,
+  serverCapabilitiesByServer,
   type NotificationLevel,
 } from "../../state";
 import {
@@ -58,6 +60,7 @@ import { updateStatus, clearStatus } from "../../lib/rotur-api";
 import { saveNotifSettings } from "../../lib/persistence";
 import { ThreadContextMenu, useThreadContextMenu } from "../ThreadContextMenu";
 import { wsSend } from "../../lib/websocket";
+import { StatusSelector } from "../StatusSelector";
 import styles from "./ChannelList.module.css";
 
 function isChannelUnread(
@@ -635,27 +638,62 @@ function UserPanel() {
   const sUrl = serverUrl.value;
   const username = currentUserByServer.value[sUrl]?.username;
   const displayName = useDisplayName(username || "");
+  const [showStatusSelector, setShowStatusSelector] = useState(false);
 
   if (!username) return null;
 
+  const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
+  const supportsStatus = caps.includes("status_set");
+
+  const statusColorMap: Record<string, string> = {
+    online: "#23a55a",
+    idle: "#f0b232",
+    dnd: "#f23f43",
+    offline: "#80848e",
+  };
+
+  const statusColor =
+    statusColorMap[myStatus.value.status] || statusColorMap.online;
+
   return (
-    <div className={styles.channelUserPanel}>
-      <div className={styles.channelUserPanelIdentity}>
-        <div className={styles.channelUserPanelAvatar}>
-          <img src={avatarUrl(username)} alt={displayName} />
+    <>
+      <div className={styles.channelUserPanel}>
+        <div
+          className={styles.channelUserPanelIdentity}
+          onClick={() => setShowStatusSelector(!showStatusSelector)}
+        >
+          <div className={styles.channelUserPanelAvatar}>
+            <img src={avatarUrl(username)} alt={displayName} />
+            {supportsStatus && (
+              <div
+                className={styles.channelUserPanelStatusDot}
+                style={{ background: statusColor }}
+              />
+            )}
+          </div>
+          <div className={styles.channelUserPanelInfo}>
+            <div className={styles.channelUserPanelName}>{displayName}</div>
+            {supportsStatus && myStatus.value.text && (
+              <div className={styles.channelUserPanelStatusText}>
+                {myStatus.value.text}
+              </div>
+            )}
+          </div>
         </div>
-        <div className={styles.channelUserPanelInfo}>
-          <div className={styles.channelUserPanelName}>{displayName}</div>
-        </div>
+        <button
+          className={styles.channelUserPanelBtn}
+          title="Open Settings"
+          onClick={() => (showSettingsModal.value = true)}
+        >
+          <Icon name="Settings" size={16} />
+        </button>
       </div>
-      <button
-        className={styles.channelUserPanelBtn}
-        title="Open Settings"
-        onClick={() => (showSettingsModal.value = true)}
-      >
-        <Icon name="Settings" size={16} />
-      </button>
-    </div>
+      {showStatusSelector && (
+        <div className={styles.statusSelectorPanel}>
+          <StatusSelector />
+        </div>
+      )}
+    </>
   );
 }
 
