@@ -74,6 +74,8 @@ import { uploadImage, getEnabledMediaServer } from "../../lib/media-uploader";
 import { MessageContent } from "../MessageContent";
 import { MessageGroupRow } from "../MessageGroupRow";
 import { MessageActionButtons } from "../MessageActionButtons";
+import { MessageEmbed } from "../MessageEmbed";
+import { WebhookBadge } from "../WebhookBadge";
 import { openUserPopout } from "../UserPopout";
 import { UserProfileCard } from "../UserProfile";
 import { InputAutocomplete, useInputAutocomplete } from "../InputAutocomplete";
@@ -1863,8 +1865,14 @@ export function MessageArea() {
       const isHead = idx === 0;
 
       const interaction = msg.interaction;
+      const webhook = msg.webhook;
+      const displayName =
+        webhook?.name ||
+        users.value[msg.user?.toLowerCase()]?.nickname ||
+        msg.user;
+      const displayAvatar = webhook?.avatar || avatarUrl(msg.user);
       const groupClass =
-        isHead || interaction
+        isHead || interaction || webhook
           ? (replyTo && canReply) || interaction
             ? "message-group has-reply"
             : "message-group"
@@ -1955,29 +1963,40 @@ export function MessageArea() {
                 </div>
               </div>
             )}
-            {(isHead || interaction) && (
+            {(isHead || interaction || webhook) && (
               <>
                 {replyTo || interaction ? (
                   <div className="message-group-body">
                     <img
-                      src={avatarUrl(msg.user)}
+                      src={displayAvatar}
                       className="avatar clickable"
-                      alt={msg.user}
-                      onClick={(e: any) => openUserPopout(e, msg.user)}
-                      onContextMenu={(e: any) => showUserMenu(e, msg.user)}
+                      alt={displayName}
+                      onClick={(e: any) =>
+                        !webhook && openUserPopout(e, msg.user)
+                      }
+                      onContextMenu={(e: any) =>
+                        !webhook && showUserMenu(e, msg.user)
+                      }
                     />
                     <div className="message-group-content">
                       <div className="message-header">
-                        <MessageUsername
-                          username={msg.user}
-                          color={getUserColor(msg.user)}
-                          serverNick={
-                            users.value[msg.user?.toLowerCase()]?.nickname
-                          }
+                        <span
                           className="username clickable"
-                          onClick={(e: any) => openUserPopout(e, msg.user)}
-                          onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                        />
+                          style={
+                            webhook
+                              ? undefined
+                              : { color: getUserColor(msg.user) }
+                          }
+                          onClick={(e: any) =>
+                            !webhook && openUserPopout(e, msg.user)
+                          }
+                          onContextMenu={(e: any) =>
+                            !webhook && showUserMenu(e, msg.user)
+                          }
+                        >
+                          {displayName}
+                        </span>
+                        {webhook && <WebhookBadge name={webhook.name} />}
                         <span className="timestamp">
                           {formatTimestamp(msg.timestamp)}
                         </span>
@@ -1986,6 +2005,7 @@ export function MessageArea() {
                         content={msg.content}
                         currentUsername={currentUser.value?.username}
                         authorUsername={msg.user}
+                        messageEmbeds={msg.embeds}
                       />
                       {msg.edited && (
                         <span className="edited-indicator">(edited)</span>
@@ -1996,24 +2016,35 @@ export function MessageArea() {
                 ) : (
                   <>
                     <img
-                      src={avatarUrl(msg.user)}
+                      src={displayAvatar}
                       className="avatar clickable"
-                      alt={msg.user}
-                      onClick={(e: any) => openUserPopout(e, msg.user)}
-                      onContextMenu={(e: any) => showUserMenu(e, msg.user)}
+                      alt={displayName}
+                      onClick={(e: any) =>
+                        !webhook && openUserPopout(e, msg.user)
+                      }
+                      onContextMenu={(e: any) =>
+                        !webhook && showUserMenu(e, msg.user)
+                      }
                     />
                     <div className="message-group-content">
                       <div className="message-header">
-                        <MessageUsername
-                          username={msg.user}
-                          color={getUserColor(msg.user)}
-                          serverNick={
-                            users.value[msg.user?.toLowerCase()]?.nickname
-                          }
+                        <span
                           className="username clickable"
-                          onClick={(e: any) => openUserPopout(e, msg.user)}
-                          onContextMenu={(e: any) => showUserMenu(e, msg.user)}
-                        />
+                          style={
+                            webhook
+                              ? undefined
+                              : { color: getUserColor(msg.user) }
+                          }
+                          onClick={(e: any) =>
+                            !webhook && openUserPopout(e, msg.user)
+                          }
+                          onContextMenu={(e: any) =>
+                            !webhook && showUserMenu(e, msg.user)
+                          }
+                        >
+                          {displayName}
+                        </span>
+                        {webhook && <WebhookBadge name={webhook.name} />}
                         <span className="timestamp">
                           {formatTimestamp(msg.timestamp)}
                         </span>
@@ -2023,6 +2054,7 @@ export function MessageArea() {
                         currentUsername={currentUser.value?.username}
                         authorUsername={msg.user}
                         pings={msg.pings}
+                        messageEmbeds={msg.embeds}
                       />
                       {msg.edited && (
                         <span className="edited-indicator">(edited)</span>
@@ -2033,7 +2065,7 @@ export function MessageArea() {
                 )}
               </>
             )}
-            {!isHead && !interaction && (
+            {!isHead && !interaction && !webhook && (
               <div className="message-group-content">
                 <MessageContent
                   content={msg.content}

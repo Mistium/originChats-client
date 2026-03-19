@@ -194,6 +194,18 @@ export function parseMarkdown(
     return placeholder;
   });
 
+  // Extract markdown links [name](url) BEFORE URLs so the URL doesn't get double-processed
+  const markdownLinks: Array<{
+    placeholder: string;
+    name: string;
+    url: string;
+  }> = [];
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, name, url) => {
+    const placeholder = `§MDLINK_${markdownLinks.length}§${Math.random().toString(36).substring(2, 11)}§`;
+    markdownLinks.push({ placeholder, name, url });
+    return placeholder;
+  });
+
   // Extract URLs before HTML escaping so & doesn't become &amp; in URLs
   const urlPlaceholders: Array<{ placeholder: string; url: string }> = [];
   text = text.replace(
@@ -271,6 +283,32 @@ export function parseMarkdown(
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
     text = text.replace(placeholder, `<code>${escapedCode}</code>`);
+  }
+
+  // Helper to restore inline code placeholders in a string
+  const restoreInlineCode = (str: string): string => {
+    return str.replace(/§INLINECODE_(\d+)§[a-z0-9]+§/g, (_, idx) => {
+      const block = inlineCodeBlocks[parseInt(idx)];
+      if (block) {
+        const escapedCode = block.code
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return `<code>${escapedCode}</code>`;
+      }
+      return "";
+    });
+  };
+
+  // Restore markdown links [name](url)
+  for (const { placeholder, name, url } of markdownLinks) {
+    embedLinks.push(url);
+    const safeUrl = escapeAttribute(url);
+    const safeName = restoreInlineCode(escapeHtml(name));
+    text = text.replace(
+      placeholder,
+      `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>`,
+    );
   }
 
   // Restore URLs and process them

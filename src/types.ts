@@ -66,6 +66,42 @@ export interface ServerUser {
   account?: RoturAccount;
 }
 
+export interface MessageEmbedField {
+  name: string;
+  value: string;
+  inline?: boolean;
+}
+
+export interface MessageEmbedAuthor {
+  name: string;
+  url?: string;
+  icon_url?: string;
+}
+
+export interface MessageEmbedFooter {
+  text: string;
+  icon_url?: string;
+}
+
+export interface MessageEmbed {
+  title?: string;
+  description?: string;
+  url?: string;
+  color?: number;
+  timestamp?: string;
+  author?: MessageEmbedAuthor;
+  footer?: MessageEmbedFooter;
+  fields?: MessageEmbedField[];
+  image?: { url: string };
+  thumbnail?: { url: string };
+}
+
+export interface WebhookInfo {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
 export interface Message {
   id?: string;
   user: string;
@@ -82,6 +118,8 @@ export interface Message {
     roles: string[];
     replies: string[];
   };
+  webhook?: WebhookInfo;
+  embeds?: MessageEmbed[];
 }
 
 export interface Server {

@@ -11,6 +11,8 @@ import {
 } from "../../lib/embeds/utils";
 import { Embed } from "../../lib/embeds/index";
 import type { EmbedInfo } from "../../lib/embeds/types";
+import { MessageEmbed } from "../MessageEmbed";
+import type { MessageEmbed as MessageEmbedType } from "../../types";
 import { users, channels, rolesByServer, serverUrl } from "../../state";
 import {
   getCachedImage,
@@ -55,6 +57,7 @@ interface MessageContentProps {
     roles: string[];
     replies: string[];
   };
+  messageEmbeds?: MessageEmbedType[];
 }
 
 const SINGLE_EMOJI_RE =
@@ -71,6 +74,7 @@ function MessageContentInner({
   currentUsername,
   authorUsername,
   pings,
+  messageEmbeds,
 }: MessageContentProps) {
   const [embeds, setEmbeds] = useState<EmbedInfo[]>([]);
   const [inlineImages, setInlineImages] = useState<string[]>([]);
@@ -284,6 +288,13 @@ function MessageContentInner({
         <div className={styles.messageEmbeds}>
           {embeds.map((info, i) => (
             <Embed key={`${info.url}-${i}`} info={info} />
+          ))}
+        </div>
+      )}
+      {messageEmbeds && messageEmbeds.length > 0 && (
+        <div className={styles.messageEmbeds}>
+          {messageEmbeds.map((embed, i) => (
+            <MessageEmbed key={i} embed={embed} />
           ))}
         </div>
       )}

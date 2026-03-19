@@ -85,7 +85,3 @@
   margin-left: calc(-1 * var(--space-2));
   padding-left: var(--space-2);
 }
-
-.messageEmbeds {
-  margin-top: 8px;
-}
