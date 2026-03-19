@@ -283,15 +283,23 @@ export function ChannelList() {
             <Icon name="Share2" size={16} />
           </button>
         )}
-        {!isDM && (
-          <button
-            className={styles.channelHeaderSettings}
-            onClick={() => (showServerSettingsModal.value = true)}
-            title="Server Settings"
-          >
-            <Icon name="Settings" size={16} />
-          </button>
-        )}
+        {!isDM &&
+          (() => {
+            const myServerUser =
+              users.value[currentUser.value?.username?.toLowerCase() || ""];
+            const isOwner = myServerUser?.roles?.includes("owner");
+            return (
+              isOwner && (
+                <button
+                  className={styles.channelHeaderSettings}
+                  onClick={() => (showServerSettingsModal.value = true)}
+                  title="Server Settings"
+                >
+                  <Icon name="Settings" size={16} />
+                </button>
+              )
+            );
+          })()}
         <button
           className={styles.channelHeaderClose}
           onClick={closeMobileNav}
