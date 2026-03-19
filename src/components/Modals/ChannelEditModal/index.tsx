@@ -184,8 +184,8 @@ export function ChannelEditModal() {
     setShowRegenerateConfirm("");
   };
 
-  const copyWebhookUrl = (token: string) => {
-    const url = `https://${sUrl}/webhooks?token=${token}`;
+  const copyWebhookUrl = (webhook: Webhook) => {
+    const url = `https://${sUrl}/webhooks?token=${webhook.token}`;
     navigator.clipboard.writeText(url);
     showInfo("Webhook URL copied to clipboard");
   };
@@ -405,9 +405,7 @@ export function ChannelEditModal() {
                             </div>
                             <button
                               className="settings-icon-btn"
-                              onClick={() =>
-                                copyWebhookUrl((webhook as any).token)
-                              }
+                              onClick={() => copyWebhookUrl(webhook)}
                               title="Copy URL"
                             >
                               <Icon name="Copy" size={14} />
@@ -425,16 +423,7 @@ export function ChannelEditModal() {
                         </button>
                         <button
                           className="settings-icon-btn"
-                          onClick={() => {
-                            const token = webhooksByServer.value[sUrl]?.find(
-                              (w: Webhook) => w.id === webhook.id,
-                            )?.token;
-                            if (!token) {
-                              showError("Webhook URL not available");
-                            } else {
-                              copyWebhookUrl(token);
-                            }
-                          }}
+                          onClick={() => copyWebhookUrl(webhook)}
                           title="Copy URL"
                         >
                           <Icon name="Link" size={14} />
