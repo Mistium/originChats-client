@@ -1,6 +1,7 @@
 import { signal } from "@preact/signals";
 import type { Message } from "../types";
 import type { ContextMenuItem } from "../components/ContextMenu";
+import type { Webhook } from "../types";
 
 export type BannerKind = "error" | "warning" | "info";
 
@@ -169,3 +170,7 @@ export function closeContextMenu() {
 export const showNotificationPrompt = signal(false);
 
 export const channelListWidth = signal(340);
+
+export const showChannelEditModal = signal<string | null>(null);
+export const webhooksByServer = signal<Record<string, Webhook[]>>({});
+export const webhooksLoading = signal<Record<string, boolean>>({});

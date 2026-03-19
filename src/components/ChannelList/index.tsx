@@ -18,6 +18,7 @@ import {
   unreadPings,
   currentServer,
   currentUserByServer,
+  currentUser,
   DM_SERVER_URL,
   roturStatuses,
   channelNotifSettings,
@@ -39,6 +40,7 @@ import {
   renderChannelsSignal,
   showSettingsModal,
   showServerSettingsModal,
+  showChannelEditModal,
   showVoiceCallView,
   mobileSidebarOpen,
   closeMobileNav,
@@ -123,6 +125,10 @@ export function ChannelList() {
     const channelKey = `${sUrl}:${channel.name}`;
     const currentLevel = getChannelNotifLevel(sUrl, channel.name);
 
+    const myUsername = currentUser.value?.username?.toLowerCase();
+    const myServerUser = users.value[myUsername || ""];
+    const isOwner = myServerUser?.roles?.includes("owner");
+
     const setChannelNotif = (level: NotificationLevel) => {
       if (level === "mentions") {
         const next = { ...channelNotifSettings.value };
@@ -137,7 +143,7 @@ export function ChannelList() {
       saveNotifSettings().catch(() => {});
     };
 
-    showContextMenu(e, [
+    const menuItems: any[] = [
       {
         label: "Mark as Read",
         icon: "CheckCircle",
@@ -166,6 +172,22 @@ export function ChannelList() {
           },
         ],
       },
+    ];
+
+    if (isOwner) {
+      menuItems.push(
+        { separator: true, label: "", fn: () => {} },
+        {
+          label: "Edit Channel",
+          icon: "Edit3",
+          fn: () => {
+            showChannelEditModal.value = channel.name;
+          },
+        },
+      );
+    }
+
+    menuItems.push(
       { separator: true, label: "", fn: () => {} },
       {
         label: "Copy Channel Link",
@@ -182,7 +204,9 @@ export function ChannelList() {
           navigator.clipboard.writeText(channel.name);
         },
       },
-    ]);
+    );
+
+    showContextMenu(e, menuItems);
   };
 
   const resizeRef = useRef<HTMLDivElement>(null);

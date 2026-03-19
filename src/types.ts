@@ -3,11 +3,26 @@ export interface Channel {
   type: string;
   display_name?: string;
   icon?: string;
-  permissions?: { view?: string[]; send?: string[]; create_thread?: string[] };
+  permissions?: {
+    view?: string[];
+    send?: string[];
+    create_thread?: string[];
+    delete?: string[];
+  };
   voice_state?: VoiceUser[];
   last_message?: number;
   size?: number;
   threads?: Thread[];
+}
+
+export interface Webhook {
+  id: string;
+  channel: string;
+  name: string;
+  created_by: string;
+  created_at: number;
+  avatar?: string | null;
+  token?: string;
 }
 
 export interface Thread {

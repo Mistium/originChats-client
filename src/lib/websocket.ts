@@ -1867,7 +1867,141 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       }
       break;
     }
-
+    case "channel_update": {
+      if (msg.channel) {
+        const chList = channelsByServer.value[sUrl];
+        if (chList) {
+          const currentName = msg.current_name || msg.channel.name;
+          const idx = chList.findIndex((c: any) => c.name === currentName);
+          if (idx !== -1) {
+            const updatedList = [...chList];
+            updatedList[idx] = msg.channel;
+            channelsByServer.value = {
+              ...channelsByServer.value,
+              [sUrl]: updatedList,
+            };
+            if (currentChannel.value?.name === currentName) {
+              currentChannel.value = msg.channel;
+            }
+            renderChannelsSignal.value++;
+          }
+        }
+      } else if (msg.updated === false) {
+        const { showError } = await import("./ui-signals");
+        showError(msg.val || "Failed to update channel");
+      }
+      break;
+    }
+    case "webhook_create": {
+      const { webhooksByServer, showInfo } = await import("./ui-signals");
+      if (msg.webhook) {
+        const currentWebhooks = webhooksByServer.value[sUrl] || [];
+        webhooksByServer.value = {
+          ...webhooksByServer.value,
+          [sUrl]: [...currentWebhooks, msg.webhook],
+        };
+        if (msg.webhook.token) {
+          showInfo(
+            `Webhook "${msg.webhook.name}" created. Token: ${msg.webhook.token}`,
+          );
+        }
+      } else {
+        const { showError } = await import("./ui-signals");
+        showError(msg.val || "Failed to create webhook");
+      }
+      break;
+    }
+    case "webhook_list": {
+      const { webhooksByServer, webhooksLoading } =
+        await import("./ui-signals");
+      webhooksByServer.value = {
+        ...webhooksByServer.value,
+        [sUrl]: msg.webhooks || [],
+      };
+      webhooksLoading.value = { ...webhooksLoading.value, [sUrl]: false };
+      break;
+    }
+    case "webhook_get": {
+      const { webhooksByServer } = await import("./ui-signals");
+      if (msg.webhook) {
+        const currentWebhooks = webhooksByServer.value[sUrl] || [];
+        const idx = currentWebhooks.findIndex(
+          (w: any) => w.id === msg.webhook.id,
+        );
+        if (idx !== -1) {
+          const updatedList = [...currentWebhooks];
+          updatedList[idx] = msg.webhook;
+          webhooksByServer.value = {
+            ...webhooksByServer.value,
+            [sUrl]: updatedList,
+          };
+        } else {
+          webhooksByServer.value = {
+            ...webhooksByServer.value,
+            [sUrl]: [...currentWebhooks, msg.webhook],
+          };
+        }
+      }
+      break;
+    }
+    case "webhook_update": {
+      const { webhooksByServer } = await import("./ui-signals");
+      const currentWebhooks = webhooksByServer.value[sUrl] || [];
+      const idx = currentWebhooks.findIndex(
+        (w: any) => w.id === msg.webhook.id,
+      );
+      if (idx !== -1 && msg.webhook) {
+        const updatedList = [...currentWebhooks];
+        updatedList[idx] = msg.webhook;
+        webhooksByServer.value = {
+          ...webhooksByServer.value,
+          [sUrl]: updatedList,
+        };
+      } else if (msg.updated === false) {
+        const { showError } = await import("./ui-signals");
+        showError(msg.val || "Failed to update webhook");
+      }
+      break;
+    }
+    case "webhook_regenerate": {
+      const { webhooksByServer, showInfo } = await import("./ui-signals");
+      const currentWebhooks = webhooksByServer.value[sUrl] || [];
+      const idx = currentWebhooks.findIndex(
+        (w: any) => w.id === msg.webhook.id,
+      );
+      if (idx !== -1 && msg.webhook) {
+        const updatedList = [...currentWebhooks];
+        updatedList[idx] = msg.webhook;
+        webhooksByServer.value = {
+          ...webhooksByServer.value,
+          [sUrl]: updatedList,
+        };
+        if (msg.webhook.token) {
+          showInfo(
+            `Webhook token regenerated. New token: ${msg.webhook.token}`,
+          );
+        }
+      } else if (msg.updated === false) {
+        const { showError } = await import("./ui-signals");
+        showError(msg.val || "Failed to regenerate webhook token");
+      }
+      break;
+    }
+    case "webhook_delete": {
+      const { webhooksByServer, showInfo } = await import("./ui-signals");
+      const currentWebhooks = webhooksByServer.value[sUrl] || [];
+      if (msg.deleted) {
+        webhooksByServer.value = {
+          ...webhooksByServer.value,
+          [sUrl]: currentWebhooks.filter((w: any) => w.id !== msg.id),
+        };
+        showInfo("Webhook deleted successfully");
+      } else {
+        const { showError } = await import("./ui-signals");
+        showError(msg.val || "Failed to delete webhook");
+      }
+      break;
+    }
     case "error":
     case "err": {
       // Server-sent error — surface as a dismissible error banner.

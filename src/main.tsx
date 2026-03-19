@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { signal } from "@preact/signals";
 import "./style.css";
 import "./settings.css";
+import "./components/Modals/ChannelEditModal/ChannelEditModal.css";
 
 import {
   token,
@@ -39,6 +40,7 @@ import {
   showAccountModal,
   showDiscoveryModal,
   showServerSettingsModal,
+  showChannelEditModal,
   showVoiceCallView,
   mobileSidebarOpen,
   mobilePanelOpen,
@@ -84,6 +86,7 @@ import {
   NotificationPromptModal,
 } from "./components/Modals";
 import { ServerSettingsModal } from "./components/ServerSettings";
+import { ChannelEditModal } from "./components/Modals/ChannelEditModal";
 import { UserPopout } from "./components/UserPopout";
 import { DMFriendsTab } from "./components/DMFriendsTab";
 import { DMHomeTab } from "./components/DMHomeTab";
@@ -399,6 +402,7 @@ function App() {
       )}
       {showDiscoveryModal.value && <DiscoveryModal />}
       {showServerSettingsModal.value && <ServerSettingsModal />}
+      {showChannelEditModal.value && <ChannelEditModal />}
       <NotificationPromptModal />
       <UserPopout />
       <GlobalContextMenu />
