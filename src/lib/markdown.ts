@@ -347,8 +347,8 @@ export function parseMarkdown(
           }
         }
         const displayText = isCurrentServer
-          ? threadName || "unknown thread"
-          : `${serverDisplay}: ${threadName || "unknown thread"}`;
+          ? `#${threadName || "unknown thread"}`
+          : `${serverDisplay}: #${threadName || "unknown thread"}`;
         text = text.replace(
           placeholder,
           `<span class="channel-mention" data-channel="${escapeAttribute(linkChannelName || "")}" data-server="${escapeAttribute(linkServerUrl)}" data-thread="${escapeAttribute(linkThreadId)}">${escapeHtml(displayText)}</span>`,
