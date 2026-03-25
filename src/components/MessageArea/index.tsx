@@ -844,21 +844,31 @@ export function MessageArea() {
     isLoadingOlder: loadingOlder,
     onOlderLoaded: () => setLoadingOlder(false),
     onLoadOlder: () => {
-      const ch =
-        currentChannel.value?.type === "thread" && currentThread.value
-          ? currentThread.value.id
-          : currentChannel.value?.name;
+      const isThread =
+        currentChannel.value?.type === "thread" && currentThread.value;
+      const threadId = isThread ? currentThread.value!.id : null;
+      const ch = isThread
+        ? (currentChannel.value as any).parent_channel
+        : currentChannel.value?.name;
+      const messageKey = threadId || ch;
       const sUrl = serverUrl.value;
       if (!ch || !sUrl) return;
-      if (SPECIAL_CHANNELS.has(ch)) return;
+      if (!isThread && SPECIAL_CHANNELS.has(ch)) return;
       // Stop if we already know we've reached the beginning of history
-      if (reachedOldestByServer[sUrl]?.has(ch)) return;
-      const msgs = messages.value[ch] || [];
+      if (reachedOldestByServer[sUrl]?.has(messageKey)) return;
+      const msgs = messages.value[messageKey] || [];
       if (msgs.length === 0) return;
       beginLoadOlder();
       setLoadingOlder(true);
       wsSend(
-        { cmd: "messages_get", channel: ch, start: msgs.length, limit: 20 },
+        threadId
+          ? {
+              cmd: "messages_get",
+              thread_id: threadId,
+              start: msgs.length,
+              limit: 20,
+            }
+          : { cmd: "messages_get", channel: ch, start: msgs.length, limit: 20 },
         sUrl,
       );
     },
