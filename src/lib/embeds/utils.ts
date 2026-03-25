@@ -1,3 +1,5 @@
+import { fetchLinkMetadata } from "./fetch-meta";
+
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/;
 const IMAGE_EXTENSIONS = [
@@ -60,6 +62,17 @@ export async function detectEmbedType(url: string) {
       owner: commitMatch[1],
       repo: commitMatch[2],
       sha: commitMatch[3],
+    };
+  }
+
+  const prMatch = url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/i);
+  if (prMatch) {
+    return {
+      type: "github_pr",
+      url,
+      owner: prMatch[1],
+      repo: prMatch[2],
+      prNumber: parseInt(prMatch[3], 10),
     };
   }
 
@@ -148,6 +161,19 @@ export async function detectEmbedType(url: string) {
     }
   } catch (err) {
     console.debug("HEAD request failed for", url, err);
+  }
+
+  const metadata = await fetchLinkMetadata(url);
+  if (metadata) {
+    return {
+      type: "link_preview",
+      url,
+      title: metadata.title,
+      description: metadata.description,
+      image: metadata.image,
+      siteName: metadata.siteName,
+      favicon: metadata.favicon,
+    };
   }
 
   return { type: "unknown", url };

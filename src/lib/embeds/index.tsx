@@ -1,10 +1,12 @@
 export * from "./types";
 export * from "./utils";
+export * from "./fetch-meta";
 export { YouTubeEmbed } from "./youtube";
 export { TenorEmbed } from "./tenor";
 export { GitHubUserEmbed } from "./github-user";
 export { GitHubRepoEmbed } from "./github-repo";
 export { GitHubCommitEmbed } from "./github-commit";
+export { GitHubPREmbed } from "./github-pr";
 export { VideoEmbed } from "./video";
 export { ImageEmbed } from "./image";
 export { GiftEmbed } from "./gift";
@@ -12,6 +14,7 @@ export { WikipediaEmbed } from "./wikipedia";
 export { SpotifyEmbed } from "./spotify";
 export { SteamEmbed } from "./steam";
 export { MistWarpEmbed } from "./mistwarp";
+export { LinkPreviewEmbed } from "./link-preview";
 
 import { type EmbedInfo } from "./types";
 import { YouTubeEmbed } from "./youtube";
@@ -19,6 +22,7 @@ import { TenorEmbed } from "./tenor";
 import { GitHubUserEmbed } from "./github-user";
 import { GitHubRepoEmbed } from "./github-repo";
 import { GitHubCommitEmbed } from "./github-commit";
+import { GitHubPREmbed } from "./github-pr";
 import { VideoEmbed } from "./video";
 import { ImageEmbed } from "./image";
 import { GiftEmbed } from "./gift";
@@ -26,6 +30,7 @@ import { WikipediaEmbed } from "./wikipedia";
 import { SpotifyEmbed } from "./spotify";
 import { SteamEmbed } from "./steam";
 import { MistWarpEmbed } from "./mistwarp";
+import { LinkPreviewEmbed } from "./link-preview";
 
 interface EmbedProps {
   info: EmbedInfo;
@@ -61,6 +66,15 @@ export function Embed({ info }: EmbedProps) {
           originalUrl={info.url}
         />
       );
+    case "github_pr":
+      return (
+        <GitHubPREmbed
+          owner={info.owner!}
+          repo={info.repo!}
+          prNumber={info.prNumber!}
+          originalUrl={info.url}
+        />
+      );
     case "video":
       return <VideoEmbed url={info.url} />;
     case "image":
@@ -84,6 +98,17 @@ export function Embed({ info }: EmbedProps) {
     case "mistwarp":
       return (
         <MistWarpEmbed projectId={info.mistWarpId!} originalUrl={info.url} />
+      );
+    case "link_preview":
+      return (
+        <LinkPreviewEmbed
+          originalUrl={info.url}
+          title={info.title!}
+          description={info.description}
+          image={info.image}
+          siteName={info.siteName}
+          favicon={info.favicon}
+        />
       );
     default:
       return (
