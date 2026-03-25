@@ -38,7 +38,8 @@
     "icon": "https://raw.githubusercontent.com/cloudlink-delta/branding/refs/heads/main/icon.svg",
     "url": "cl.mikedev101.cc/chats",
     "tags": ["community"]
-  },   {
+  },
+  {
     "url": "chats.sdisk.us",
     "name": "boxedlang place",
     "owner": "sandisk",
