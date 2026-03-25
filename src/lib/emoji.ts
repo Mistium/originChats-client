@@ -19,6 +19,26 @@ import { useSystemEmojis } from "../state";
 const TWEMOJI_CDN_BASE =
   "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg";
 
+const dataUriCache = new Map<string, string>();
+const inflightRequests = new Map<string, Promise<void>>();
+
+function ensureCached(hexcode: string): void {
+  if (dataUriCache.has(hexcode) || inflightRequests.has(hexcode)) return;
+
+  const promise = fetch(`${TWEMOJI_CDN_BASE}/${hexcode}.svg`)
+    .then((r) => r.text())
+    .then((svg) => {
+      const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+      dataUriCache.set(hexcode, dataUri);
+      inflightRequests.delete(hexcode);
+    })
+    .catch(() => {
+      inflightRequests.delete(hexcode);
+    });
+
+  inflightRequests.set(hexcode, promise);
+}
+
 let pendingParse: {
   container: HTMLElement;
   timeout: ReturnType<typeof setTimeout> | null;
@@ -32,6 +52,10 @@ function flushPendingParse() {
       className: "emoji",
       folder: "svg",
       ext: ".svg",
+      callback: (icon: string) => {
+        ensureCached(icon);
+        return dataUriCache.get(icon) || `${TWEMOJI_CDN_BASE}/${icon}.svg`;
+      },
     });
   }
 }
