@@ -47,6 +47,7 @@ import {
   setThreadMessagesForServer,
   myStatus,
   customEmojisByServer,
+  autoIdleOnUnfocus,
 } from "../state";
 import { statusState } from "./state";
 
@@ -2274,11 +2275,66 @@ export function refreshCurrentChannel(): void {
 }
 
 let visibilityHandlerAdded = false;
+let autoIdleActive = false;
+let autoIdleSavedText: string | undefined;
+let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const IDLE_DEBOUNCE_MS = 500;
+
 export function setupVisibilityHandler(): void {
   if (visibilityHandlerAdded) return;
   visibilityHandlerAdded = true;
 
   document.addEventListener("visibilitychange", () => {
+    if (autoIdleOnUnfocus.value) {
+      if (document.hidden) {
+        if (idleDebounceTimer) clearTimeout(idleDebounceTimer);
+        idleDebounceTimer = setTimeout(() => {
+          if (!autoIdleOnUnfocus.value) return;
+          if (!document.hidden) return;
+          if (myStatus.value.status === "online") {
+            autoIdleActive = true;
+            autoIdleSavedText = myStatus.value.text;
+            myStatus.value = { status: "idle", text: myStatus.value.text };
+            for (const sUrl of Object.keys(wsConnections)) {
+              const caps = serverCapabilitiesByServer.value[sUrl] || [];
+              if (caps.includes("status_set")) {
+                wsSend(
+                  {
+                    cmd: "status_set",
+                    status: "idle",
+                    text: myStatus.value.text,
+                  },
+                  sUrl,
+                );
+              }
+            }
+          }
+          idleDebounceTimer = null;
+        }, IDLE_DEBOUNCE_MS);
+      } else {
+        if (idleDebounceTimer) {
+          clearTimeout(idleDebounceTimer);
+          idleDebounceTimer = null;
+        }
+        if (autoIdleActive && myStatus.value.status === "idle") {
+          autoIdleActive = false;
+          myStatus.value = { status: "online", text: autoIdleSavedText };
+          for (const sUrl of Object.keys(wsConnections)) {
+            const caps = serverCapabilitiesByServer.value[sUrl] || [];
+            if (caps.includes("status_set")) {
+              wsSend(
+                {
+                  cmd: "status_set",
+                  status: "online",
+                  text: autoIdleSavedText,
+                },
+                sUrl,
+              );
+            }
+          }
+        }
+      }
+    }
     if (!document.hidden) {
       refreshCurrentChannel();
     }

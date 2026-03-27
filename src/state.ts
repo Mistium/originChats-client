@@ -405,6 +405,8 @@ export interface MyStatus {
 }
 export const myStatus = signal<MyStatus>({ status: "online" });
 
+export const autoIdleOnUnfocus = signal<boolean>(true);
+
 // ─── Offline / Push notification settings ─────────────────────────────────────
 /**
  * True when the app shell has loaded but all network attempts (token

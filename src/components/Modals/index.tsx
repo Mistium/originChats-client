@@ -47,6 +47,7 @@ import {
   type AppTheme,
   type AppFont,
   type AvatarShape,
+  autoIdleOnUnfocus,
 } from "../../state";
 import { Icon, ServerIcon } from "../Icon";
 import { Checkbox } from "../Checkbox";
@@ -636,6 +637,20 @@ export function SettingsModal() {
                     icon="Keyboard"
                     label="Send typing indicators"
                     description="Let others see when you are typing a message"
+                  />
+                </div>
+              </div>
+              <div className="settings-field">
+                <label>Status</label>
+                <div className="appearance-toggles">
+                  <Checkbox
+                    checked={autoIdleOnUnfocus.value}
+                    onChange={(v) => {
+                      autoIdleOnUnfocus.value = v;
+                    }}
+                    icon="Moon"
+                    label="Set status to idle when unfocused"
+                    description="Automatically switch to idle when you switch tabs, and back to online when you return"
                   />
                 </div>
               </div>

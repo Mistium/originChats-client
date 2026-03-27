@@ -1262,7 +1262,7 @@ export function ServerSettingsModal() {
                       <label>Status</label>
                       <div className="settings-value">
                         {users.value[userDetailModal.username.toLowerCase()]
-                          ?.status || "offline"}
+                          ?.status?.status || "offline"}
                       </div>
                     </div>
                   </div>

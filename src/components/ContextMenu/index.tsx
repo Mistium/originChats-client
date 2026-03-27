@@ -120,8 +120,10 @@ function SubMenuPanel({
               <Icon
                 name={item.icon as any}
                 size={16}
-                color={item.iconColor}
-                fill={item.iconColor ? "currentColor" : undefined}
+                color={item.danger ? "var(--danger)" : item.iconColor}
+                fill={
+                  item.danger || item.iconColor ? "currentColor" : undefined
+                }
               />
             )}
             <span>{item.label}</span>
@@ -260,8 +262,10 @@ export function ContextMenu({
                 <Icon
                   name={item.icon as any}
                   size={16}
-                  color={item.iconColor}
-                  fill={item.iconColor ? "currentColor" : undefined}
+                  color={item.danger ? "var(--danger)" : item.iconColor}
+                  fill={
+                    item.danger || item.iconColor ? "currentColor" : undefined
+                  }
                 />
               )}
               <span>{item.label}</span>
