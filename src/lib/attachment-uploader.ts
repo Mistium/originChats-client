@@ -110,7 +110,21 @@ export async function uploadAttachment(
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
-      } catch {}
+        if (response.status === 413) {
+          const maxBytesMatch = errorMessage.match(/\(max (\d+) bytes\)/);
+          const maxBytes = maxBytesMatch
+            ? parseInt(maxBytesMatch[1], 10)
+            : null;
+          const maxMB = maxBytes
+            ? (maxBytes / (1024 * 1024)).toFixed(1)
+            : "unknown";
+          throw new Error(`File too large (max ${maxMB} MB)`);
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.startsWith("File too large")) {
+          throw e;
+        }
+      }
       throw new Error(errorMessage);
     }
 

@@ -6913,6 +6913,18 @@ pre {
   fill: #ffd700;
 }
 
+.image-modal-expiry {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 18px;
+  color: #ff6b6b;
+  display: flex;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
 .image-error {
   align-items: center;
   color: rgba(255, 255, 255, 0.6);

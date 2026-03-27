@@ -11,10 +11,31 @@ interface ImageResult {
 export interface ImageViewerProps {
   isOpen: boolean;
   imageUrl: string;
+  expiresAt?: number | null;
   onClose: () => void;
 }
 
-export function ImageViewer({ isOpen, imageUrl, onClose }: ImageViewerProps) {
+function formatExpiry(expiresAt: number): string {
+  const now = Date.now() / 1000;
+  const secondsLeft = expiresAt - now;
+  if (secondsLeft <= 0) return "Expired";
+
+  const minutes = Math.floor(secondsLeft / 60);
+  const hours = Math.floor(secondsLeft / 3600);
+  const days = Math.floor(secondsLeft / 86400);
+
+  if (days > 0) return `${days}d left`;
+  if (hours > 0) return `${hours}h left`;
+  if (minutes > 0) return `${minutes}m left`;
+  return "<1m left";
+}
+
+export function ImageViewer({
+  isOpen,
+  imageUrl,
+  expiresAt,
+  onClose,
+}: ImageViewerProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState(false);
 
@@ -110,6 +131,9 @@ export function ImageViewer({ isOpen, imageUrl, onClose }: ImageViewerProps) {
         )}
       </div>
       <div className="image-modal-buttons">
+        {expiresAt && (
+          <div className="image-modal-expiry">{formatExpiry(expiresAt)}</div>
+        )}
         <button
           className={`modal-fav-btn${isFavorite ? " active" : ""}`}
           onClick={toggleFavorite}

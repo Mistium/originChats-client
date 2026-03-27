@@ -169,6 +169,12 @@ export function closeContextMenu() {
 
 export const showNotificationPrompt = signal(false);
 
+export interface ImageViewerState {
+  url: string;
+  expiresAt?: number | null;
+}
+export const imageViewerState = signal<ImageViewerState | null>(null);
+
 export const imageViewerUrl = signal<string>("");
 
 export const channelListWidth = signal(340);

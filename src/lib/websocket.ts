@@ -1552,6 +1552,21 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
       renderMessagesSignal.value++;
       break;
     }
+    case "attachment_deleted": {
+      const attDel = msg as {
+        cmd: string;
+        attachment_id: string;
+        deleted: boolean;
+      };
+      if (attDel.deleted) {
+        showBanner({
+          kind: "info",
+          message: "Attachment deleted successfully",
+          autoDismissMs: 3000,
+        });
+      }
+      break;
+    }
     case "typing": {
       const msgTyping = msg as Typing;
       const { channel, user } = msgTyping;

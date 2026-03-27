@@ -34,6 +34,7 @@ import {
   currentUserByServer,
   threadsByServer,
   attachmentConfigByServer,
+  rolesByServer,
 } from "../../state";
 
 import {
@@ -87,7 +88,7 @@ import { WebhookBadge } from "../WebhookBadge";
 import { AttachmentPreview } from "../AttachmentPreview";
 import { openUserPopout } from "../UserPopout";
 import { UserProfileCard } from "../UserProfile";
-import { imageViewerUrl } from "../../lib/ui-signals";
+import { imageViewerState } from "../../lib/ui-signals";
 import { InputAutocomplete, useInputAutocomplete } from "../InputAutocomplete";
 import { SlashCommandInput } from "../SlashCommandInput";
 import type { SlashCommandArgs } from "../SlashCommandInput";
@@ -322,7 +323,13 @@ function scrollToMessage(id: string): void {
   }, 100);
 }
 
-function RightPanelMessageCard({ msg }: { msg: any }) {
+function RightPanelMessageCard({
+  msg,
+  onAttachmentContextMenu,
+}: {
+  msg: any;
+  onAttachmentContextMenu?: (e: MouseEvent, att: { id: string }) => void;
+}) {
   const caps = serverCapabilities.value;
   const canPin =
     caps.includes("message_pin") && caps.includes("messages_pinned");
@@ -362,6 +369,7 @@ function RightPanelMessageCard({ msg }: { msg: any }) {
           <AttachmentPreview
             attachments={msg.attachments}
             hasContent={!!msg.content}
+            onContextMenu={onAttachmentContextMenu}
           />
         )}
       </div>
@@ -1558,7 +1566,7 @@ export function MessageArea() {
 
   const handleImageClick = (e: h.JSX.TargetedMouseEvent<HTMLImageElement>) => {
     const url = e.currentTarget.dataset.imageUrl || e.currentTarget.src;
-    imageViewerUrl.value = url;
+    imageViewerState.value = { url };
   };
 
   // Event delegation for image clicks and spoiler reveals within messages
@@ -1628,7 +1636,7 @@ export function MessageArea() {
       e.preventDefault();
       e.stopPropagation();
       const url = img.dataset.imageUrl || img.src;
-      if (url) imageViewerUrl.value = url;
+      if (url) imageViewerState.value = { url };
     }
   };
 
@@ -1739,6 +1747,54 @@ export function MessageArea() {
           },
         }),
     });
+
+    showContextMenu(e, menuItems);
+  };
+
+  const handleAttachmentContextMenu = (e: MouseEvent, att: { id: string }) => {
+    const sUrl = serverUrl.value;
+    const currentRoles = rolesByServer.value[sUrl] || {};
+    const myUsername = currentUser.value?.username?.toLowerCase();
+    const userRoles = users.value[myUsername || ""]?.roles || [];
+    const isAdminOrOwner = userRoles.some((roleName) => {
+      const role = currentRoles[roleName];
+      return (
+        role?.name === "admin" ||
+        role?.name === "owner" ||
+        (role?.permissions as string[] | undefined)?.includes("*")
+      );
+    });
+
+    const menuItems: any[] = [];
+    menuItems.push({
+      label: "Copy attachment ID",
+      icon: "Hash",
+      fn: () => {
+        navigator.clipboard.writeText(att.id);
+      },
+    });
+
+    if (isAdminOrOwner) {
+      menuItems.push({ separator: true });
+      menuItems.push({
+        label: "Delete",
+        icon: "Trash2",
+        danger: true,
+        fn: () =>
+          setConfirmDialog({
+            isOpen: true,
+            title: "Delete Attachment",
+            message:
+              "Are you sure you want to delete this attachment? This action cannot be undone.",
+            onConfirm: () => {
+              wsSend({
+                cmd: "attachment_delete",
+                attachment_id: att.id,
+              });
+            },
+          }),
+      });
+    }
 
     showContextMenu(e, menuItems);
   };
@@ -2052,7 +2108,10 @@ export function MessageArea() {
                   pings={msg.pings}
                 />
                 {msg.attachments && msg.attachments.length > 0 && (
-                  <AttachmentPreview attachments={msg.attachments} />
+                  <AttachmentPreview
+                    attachments={msg.attachments}
+                    onContextMenu={handleAttachmentContextMenu}
+                  />
                 )}
                 {msg.edited && (
                   <span className="edited-indicator">(edited)</span>
@@ -2282,7 +2341,7 @@ export function MessageArea() {
                     src={img.url}
                     className="pending-image-preview"
                     alt={img.fileName}
-                    onClick={() => (imageViewerUrl.value = img.url)}
+                    onClick={() => (imageViewerState.value = { url: img.url })}
                   />
                   <button
                     className="pending-image-remove"
@@ -2659,11 +2718,12 @@ export function MessageArea() {
           danger={true}
         />
       )}
-      {imageViewerUrl.value && (
+      {imageViewerState.value && (
         <ImageViewer
-          isOpen={!!imageViewerUrl.value}
-          imageUrl={imageViewerUrl.value}
-          onClose={() => (imageViewerUrl.value = "")}
+          isOpen={!!imageViewerState.value}
+          imageUrl={imageViewerState.value.url}
+          expiresAt={imageViewerState.value.expiresAt}
+          onClose={() => (imageViewerState.value = null)}
         />
       )}
       <UnifiedPicker

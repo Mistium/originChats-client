@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "preact/hooks";
 import { Icon } from "../Icon";
-import { imageViewerUrl } from "../../lib/ui-signals";
+import { imageViewerState } from "../../lib/ui-signals";
 
 interface Attachment {
   id: string;
@@ -15,10 +15,11 @@ interface Attachment {
 interface AttachmentPreviewProps {
   attachments: Attachment[];
   hasContent?: boolean;
+  onContextMenu?: (e: MouseEvent, att: Attachment) => void;
 }
 
-function openImage(url: string) {
-  imageViewerUrl.value = url;
+function openImage(url: string, expiresAt?: number | null) {
+  imageViewerState.value = { url, expiresAt };
 }
 
 function formatFileSize(bytes: number): string {
@@ -236,6 +237,7 @@ function AudioPlayer({ att }: { att: Attachment }) {
 export function AttachmentPreview({
   attachments,
   hasContent = true,
+  onContextMenu,
 }: AttachmentPreviewProps) {
   const [expandedImages, setExpandedImages] = useState<Set<string>>(new Set());
 
@@ -254,7 +256,15 @@ export function AttachmentPreview({
   };
 
   const handleImageClick = (att: Attachment) => {
-    openImage(att.url);
+    openImage(att.url, att.expires_at);
+  };
+
+  const handleContextMenu = (e: MouseEvent, att: Attachment) => {
+    e.stopPropagation();
+    if (onContextMenu) {
+      e.preventDefault();
+      onContextMenu(e, att);
+    }
   };
 
   const images = attachments.filter((a) => a.mime_type.startsWith("image/"));
@@ -273,14 +283,11 @@ export function AttachmentPreview({
         >
           {images.map((att) => {
             const isExpanded = expandedImages.has(att.id);
-            const showExpiry =
-              att.permanent === false &&
-              att.expires_at &&
-              att.expires_at * 1000 < Date.now() + 7 * 24 * 60 * 60 * 1000;
             return (
               <div
                 key={att.id}
                 className={`message-attachment ${isOnlyImagesOrVideos ? "no-bg" : ""}`}
+                onContextMenu={(e) => handleContextMenu(e, att)}
               >
                 <img
                   src={att.url}
@@ -289,24 +296,18 @@ export function AttachmentPreview({
                   loading="lazy"
                   onClick={() => handleImageClick(att)}
                 />
-                {showExpiry && (
-                  <div className="message-attachment-expiry">
-                    {formatExpiry(att.expires_at!)}
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       )}
       {videos.map((att) => {
-        const showExpiry =
-          att.expires_at &&
-          att.expires_at * 1000 < Date.now() + 7 * 24 * 60 * 60 * 1000;
+        const showExpiry = att.expires_at;
         return (
           <div
             key={att.id}
             className={`message-attachment ${isOnlyImagesOrVideos ? "no-bg" : ""}`}
+            onContextMenu={(e) => handleContextMenu(e, att)}
           >
             <video
               src={att.url}
@@ -325,12 +326,14 @@ export function AttachmentPreview({
       {others.map((att) => {
         const isAudio = att.mime_type.startsWith("audio/");
         const typeInfo = getFileTypeInfo(att.mime_type, att.name);
-        const showExpiry =
-          att.expires_at &&
-          att.expires_at * 1000 < Date.now() + 7 * 24 * 60 * 60 * 1000;
+        const showExpiry = att.expires_at;
 
         return (
-          <div key={att.id} className="message-attachment">
+          <div
+            key={att.id}
+            className="message-attachment"
+            onContextMenu={(e) => handleContextMenu(e, att)}
+          >
             {isAudio ? (
               <AudioPlayer att={att} />
             ) : (
