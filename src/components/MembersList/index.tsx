@@ -210,7 +210,6 @@ function MemberItemInner({
   showStatus?: boolean;
 }) {
   const displayName = useDisplayName(user.username);
-  const showName = user.nickname || displayName;
   const statusClass = user.status?.status || "offline";
   const statusText = user.status?.text;
   return (
@@ -220,7 +219,7 @@ function MemberItemInner({
       onContextMenu={(e: any) => onContextMenu(e, user.username)}
     >
       <div className={styles.memberAvatarWrapper}>
-        <img src={avatarUrl(user.username)} alt={showName} />
+        <img src={avatarUrl(user.username)} alt={displayName} />
         {showStatus && !offline && (
           <div
             className={`${styles.memberStatusIndicator} ${styles[statusClass]}`}
@@ -232,7 +231,7 @@ function MemberItemInner({
           className={styles.name}
           style={user.color ? { color: user.color } : undefined}
         >
-          {showName}
+          {displayName}
         </span>
         {showStatus && statusText && !offline && (
           <span className={styles.statusText}>{statusText}</span>

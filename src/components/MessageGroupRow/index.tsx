@@ -1,10 +1,11 @@
 import { memo } from "preact/compat";
 import { useMemo } from "preact/hooks";
-import { currentUser, users } from "../../state";
+import { currentUser } from "../../state";
 import { avatarUrl } from "../../utils";
 import { MessageContent } from "../MessageContent";
 import type { Message } from "../../types";
 import { openUserPopout } from "../UserPopout";
+import { useDisplayName, useUserColor } from "../../lib/useDisplayName";
 import styles from "./MessageGroupRow.module.css";
 
 export interface MessageGroup {
@@ -37,11 +38,8 @@ function MessageGroupRowInner({
   onContextMenu,
 }: MessageGroupRowProps) {
   const headUser = group.head.user;
-  const headUserLower = headUser?.toLowerCase();
-  const user = users.value[headUserLower];
-  const color = user?.color;
-  const nickname = user?.nickname;
-  const displayName = nickname || headUser;
+  const displayName = useDisplayName(headUser);
+  const color = useUserColor(headUser);
   const currentUsername = currentUser.value?.username;
 
   const followingMessages = useMemo(

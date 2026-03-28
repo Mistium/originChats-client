@@ -110,29 +110,23 @@ import type { SlashCommandArgs } from "../SlashCommandInput";
 import { useScrollLock } from "../UserProfile/useScrollLock";
 import type { Message, SlashCommand } from "../../types";
 import { avatarUrl } from "../../utils";
-import {
-  useDisplayName,
-  getDisplayNameWithServerNick,
-} from "../../lib/useDisplayName";
+import { useDisplayName, getDisplayName } from "../../lib/useDisplayName";
 import { SwipeableMessage } from "./SwipeableMessage";
 
 function MessageUsername({
   username,
   color,
-  serverNick,
   className = "username",
   onClick,
   onContextMenu,
 }: {
   username: string;
   color?: string;
-  serverNick?: string;
   className?: string;
   onClick?: (e: any) => void;
   onContextMenu?: (e: any) => void;
 }) {
   const displayName = useDisplayName(username);
-  const showName = serverNick || displayName;
   return (
     <span
       className={className}
@@ -140,7 +134,7 @@ function MessageUsername({
       onClick={onClick}
       onContextMenu={onContextMenu}
     >
-      {showName}
+      {displayName}
     </span>
   );
 }
@@ -364,9 +358,6 @@ function RightPanelMessageCard({
         <MessageUsername
           username={msg.user}
           color={users.value[msg.user?.toLowerCase()]?.color ?? undefined}
-          serverNick={
-            users.value[msg.user?.toLowerCase()]?.nickname ?? undefined
-          }
           className="right-panel-username"
         />
         <span className="right-panel-time">
@@ -807,10 +798,6 @@ function RightPanel() {
                               color={
                                 users.value[msg.user?.toLowerCase()]?.color ??
                                 undefined
-                              }
-                              serverNick={
-                                users.value[msg.user?.toLowerCase()]
-                                  ?.nickname ?? undefined
                               }
                               className="inbox-ping-card-username"
                             />
@@ -1910,10 +1897,7 @@ export function MessageArea() {
 
       const interaction = msg.interaction;
       const webhook = msg.webhook;
-      const displayName =
-        webhook?.name ||
-        users.value[msg.user?.toLowerCase()]?.nickname ||
-        msg.user;
+      const displayName = webhook?.name || getDisplayName(msg.user);
       const displayAvatar = webhook?.avatar || avatarUrl(msg.user);
       const groupClass =
         isHead || interaction || webhook
