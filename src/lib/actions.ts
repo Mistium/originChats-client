@@ -6,8 +6,6 @@ import {
   readTimesByServer,
   unreadByChannel,
   unreadPings,
-  channels,
-  currentUser,
   messagesByServer,
   loadedChannelsByServer,
   wsConnections,
@@ -22,7 +20,6 @@ import {
   setPendingDMAddUsername,
   blockedUsers,
   friends,
-  dmServers,
   friendRequests,
   clearChannelPings,
   clearServerPings,
@@ -35,13 +32,8 @@ import {
   renderChannelsSignal,
   renderMessagesSignal,
 } from "./ui-signals";
-import {
-  wsSend,
-  closeWebSocket,
-  startMessageFetch,
-  finishMessageFetch,
-} from "./websocket";
-import { fetchMyAccountData, saveServers, saveReadTimes } from "./persistence";
+import { wsSend, closeWebSocket, startMessageFetch } from "./websocket";
+import { saveServers, saveReadTimes } from "./persistence";
 import { session as dbSession, readTimes as dbReadTimes } from "./db";
 import {
   getAuthRedirectUrl,
@@ -52,6 +44,7 @@ import {
   blockUserApi,
   unblockUserApi,
 } from "./rotur-api";
+import { Channel, Thread } from "@/types";
 
 export function selectChannel(channel: {
   name: string;
@@ -91,7 +84,9 @@ export function selectChannel(channel: {
   };
   try {
     dbSession.set(`lastChannel_${sUrl}`, channel.name);
-  } catch {}
+  } catch {
+    /* empty */
+  }
 
   const hasLoaded = loadedChannelsByServer[sUrl]?.has(channel.name) ?? false;
   if (!hasLoaded) {
@@ -109,7 +104,7 @@ export function selectHomeChannel(): void {
     name: "home",
     type: "home",
     display_name: "Home",
-  } as any;
+  } as Channel;
   renderChannelsSignal.value++;
   updateUrlFromState();
 }
@@ -120,7 +115,7 @@ export function selectRelationshipsChannel(): void {
     name: "relationships",
     type: "relationships",
     display_name: "Friends",
-  } as any;
+  } as Channel;
   renderChannelsSignal.value++;
   updateUrlFromState();
 }
@@ -130,7 +125,7 @@ export function selectDiscoveryChannel(): void {
     name: "discovery",
     type: "discovery",
     display_name: "Discover",
-  } as any;
+  } as Channel;
   renderChannelsSignal.value++;
   updateUrlFromState();
 }
@@ -140,7 +135,7 @@ export function selectRolesChannel(): void {
     name: "roles",
     type: "roles",
     display_name: "Roles",
-  } as any;
+  } as Channel;
   renderChannelsSignal.value++;
   updateUrlFromState();
   wsSend({ cmd: "self_roles_list" }, serverUrl.value);
@@ -189,8 +184,7 @@ export async function switchServer(url: string): Promise<boolean> {
       const saved = await dbSession.get<string>(`lastChannel_${url}`, "");
       const chs = channelsByServer.value[url] || [];
       if (chs.length > 0) {
-        const target =
-          (saved && chs.find((c: any) => c.name === saved)) || chs[0];
+        const target = (saved && chs.find((c) => c.name === saved)) || chs[0];
         if (target) selectChannel(target);
       }
     }
@@ -334,7 +328,7 @@ export async function openDMWith(username: string): Promise<void> {
   }
   const dmChannels = channelsByServer.value[DM_SERVER_URL] || [];
   const existingChannel = dmChannels.find(
-    (ch: any) => ch.display_name?.toLowerCase() === username.toLowerCase(),
+    (ch) => ch.display_name?.toLowerCase() === username.toLowerCase(),
   );
   if (existingChannel) {
     selectChannel(existingChannel);
@@ -410,20 +404,15 @@ export function getThread(threadId: string): void {
 
 function updateUrlFromState(): void {
   const sUrl = serverUrl.value;
-  const channel = currentChannel.value as any;
+  const channel = currentChannel.value;
   const thread = currentThread.value;
 
   if (!sUrl) return;
 
-  const baseUrl = `${window.location.protocol}//${window.location.host}`;
   let newPath = `/app/${encodeURIComponent(sUrl)}`;
 
   if (channel) {
-    if (channel.type === "thread" && channel.parent_channel) {
-      newPath += `/${encodeURIComponent(channel.parent_channel)}`;
-    } else {
-      newPath += `/${encodeURIComponent(channel.name)}`;
-    }
+    newPath += `/${encodeURIComponent(channel.name)}`;
     if (thread) {
       newPath += `/${encodeURIComponent(thread.id)}`;
     }
@@ -485,10 +474,8 @@ function selectChannelFromUrl(
   }
 }
 
-export function selectThread(
-  thread: { id: string; name: string; parent_channel: string } | null,
-): void {
-  currentThread.value = thread as any;
+export function selectThread(thread: Thread | null): void {
+  currentThread.value = thread;
 
   if (thread) {
     currentChannel.value = {
@@ -496,7 +483,7 @@ export function selectThread(
       type: "thread",
       display_name: thread.name,
       parent_channel: thread.parent_channel,
-    } as any;
+    } as Channel;
 
     // Clear thread unread counts
     const sUrl = serverUrl.value;
@@ -524,16 +511,17 @@ export function selectThread(
     renderGuildSidebarSignal.value++;
     updateUrlFromState();
   } else {
-    const currentChannelValue = currentChannel.value as any;
+    const currentChannelValue = currentChannel.value;
+    const currentThreadValue = currentThread.value;
     if (
       currentChannelValue?.type === "thread" &&
-      currentChannelValue?.parent_channel
+      currentThreadValue?.parent_channel
     ) {
       currentChannel.value = {
-        name: currentChannelValue.parent_channel,
+        name: currentThreadValue.parent_channel,
         type: "forum",
-        display_name: currentChannelValue.parent_channel,
-      } as any;
+        display_name: currentThreadValue.parent_channel,
+      } as Channel;
     }
     updateUrlFromState();
   }

@@ -67,8 +67,10 @@ import { wsSend } from "../../lib/websocket";
 import { StatusSelector } from "../StatusSelector";
 import styles from "./ChannelList.module.css";
 
+import type { Channel } from "../../types";
+
 function isChannelUnread(
-  channel: { name: string; last_message?: number },
+  channel: Channel,
   sUrl: string,
 ): boolean {
   const serverReadTimes = readTimesByServer.value[sUrl];
@@ -96,8 +98,7 @@ export function ChannelList() {
   const rawChs = channels.value;
   const chs = isDM
     ? [...rawChs].sort(
-        (a, b) =>
-          ((b as any).last_message || 0) - ((a as any).last_message || 0),
+        (a, b) => (b.last_message || 0) - (a.last_message || 0),
       )
     : rawChs;
   let separatorIndex = 0;

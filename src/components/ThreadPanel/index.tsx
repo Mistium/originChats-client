@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useEffect, useRef } from "preact/hooks";
 import { useSignalEffect } from "@preact/signals";
 import {
   serverUrl,
@@ -27,7 +27,12 @@ import styles from "./ThreadPanel.module.css";
 
 export function ThreadPanel() {
   const [newThreadName, setNewThreadName] = useState("");
+  const [newThreadMessage, setNewThreadMessage] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [pendingThreadMessage, setPendingThreadMessage] = useState<{
+    channel: string;
+    content: string;
+  } | null>(null);
   const { showThreadMenu, closeThreadMenu, threadMenu } =
     useThreadContextMenu();
 
@@ -48,6 +53,43 @@ export function ThreadPanel() {
     }
   });
 
+  const prevThreadsRef = useRef<{
+    threads: Thread[];
+    pending: typeof pendingThreadMessage;
+  }>({
+    threads: [],
+    pending: null,
+  });
+
+  useEffect(() => {
+    if (
+      pendingThreadMessage &&
+      threads.length > prevThreadsRef.current.threads.length
+    ) {
+      const newThread = threads.find(
+        (t) => !prevThreadsRef.current.threads.some((pt) => pt.id === t.id),
+      );
+      if (newThread) {
+        wsSend(
+          {
+            cmd: "message_new",
+            channel: pendingThreadMessage.channel,
+            thread_id: newThread.id,
+            content: pendingThreadMessage.content,
+          },
+          serverUrl.value,
+        );
+        selectThread(newThread);
+        wsSend(
+          { cmd: "thread_messages", thread_id: newThread.id },
+          serverUrl.value,
+        );
+        setPendingThreadMessage(null);
+      }
+    }
+    prevThreadsRef.current = { threads, pending: pendingThreadMessage };
+  }, [threads, pendingThreadMessage]);
+
   if (!isForum) {
     return null;
   }
@@ -55,8 +97,13 @@ export function ThreadPanel() {
   const handleCreateThread = (e: Event) => {
     e.preventDefault();
     if (!newThreadName.trim() || !ch) return;
+    const messageContent = newThreadMessage.trim();
+    if (messageContent) {
+      setPendingThreadMessage({ channel: ch.name, content: messageContent });
+    }
     createThread(ch.name, newThreadName.trim());
     setNewThreadName("");
+    setNewThreadMessage("");
     setIsCreating(false);
   };
 
@@ -109,13 +156,74 @@ export function ThreadPanel() {
       <Header />
       <div className={styles.threadPanel}>
         <div className={styles.threadList}>
-          {threads.length === 0 ? (
+          {isCreating ? (
+            <form
+              onSubmit={handleCreateThread}
+              className={styles.threadCreateForm}
+            >
+              <input
+                type="text"
+                placeholder="Thread title..."
+                value={newThreadName}
+                onInput={(e) =>
+                  setNewThreadName((e.target as HTMLInputElement).value)
+                }
+                autoFocus
+                maxLength={100}
+                className={styles.threadCreateTitle}
+              />
+              <textarea
+                placeholder="Send the first message..."
+                value={newThreadMessage}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  setNewThreadMessage(target.value);
+                  target.style.height = "auto";
+                  target.style.height =
+                    Math.min(target.scrollHeight, 150) + "px";
+                }}
+                maxLength={2000}
+                className={styles.threadCreateMessage}
+                rows={3}
+              />
+              <div className={styles.threadCreateActions}>
+                <button
+                  type="button"
+                  className={styles.threadCreateCancel}
+                  onClick={() => {
+                    setIsCreating(false);
+                    setNewThreadName("");
+                    setNewThreadMessage("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.threadCreateSubmit}
+                  disabled={!newThreadName.trim()}
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              className={styles.threadCreateBtn}
+              onClick={() => setIsCreating(true)}
+            >
+              <Icon name="Plus" size={16} />
+              <span>New Thread</span>
+            </button>
+          )}
+
+          {threads.length === 0 && !isCreating ? (
             <div className={styles.threadEmpty}>
               <Icon name="MessageSquare" size={32} />
               <p>No threads yet</p>
               <p className={styles.threadEmptyHint}>Create the first thread!</p>
             </div>
-          ) : (
+          ) : threads.length > 0 ? (
             <div className={styles.threadGrid}>
               {threads.map((thread) => {
                 const isParticipant = thread.participants?.includes(
@@ -202,53 +310,17 @@ export function ThreadPanel() {
                 );
               })}
             </div>
-          )}
+          ) : null}
         </div>
-
-        <div className={styles.threadCreate}>
-          {isCreating ? (
-            <form
-              onSubmit={handleCreateThread}
-              className={styles.threadCreateForm}
-            >
-              <input
-                type="text"
-                placeholder="Thread name..."
-                value={newThreadName}
-                onInput={(e) =>
-                  setNewThreadName((e.target as HTMLInputElement).value)
-                }
-                autoFocus
-                maxLength={100}
-              />
-              <div className={styles.threadCreateActions}>
-                <button type="button" onClick={() => setIsCreating(false)}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={!newThreadName.trim()}>
-                  Create
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button
-              className={styles.threadCreateBtn}
-              onClick={() => setIsCreating(true)}
-            >
-              <Icon name="Plus" size={16} />
-              <span>New Thread</span>
-            </button>
-          )}
-        </div>
+        {threadMenu && (
+          <ThreadContextMenu
+            thread={threadMenu.thread}
+            x={threadMenu.x}
+            y={threadMenu.y}
+            onClose={closeThreadMenu}
+          />
+        )}
       </div>
-      {threadMenu && (
-        <ThreadContextMenu
-          thread={threadMenu.thread}
-          x={threadMenu.x}
-          y={threadMenu.y}
-          onClose={closeThreadMenu}
-        />
-      )}
     </div>
   );
 }

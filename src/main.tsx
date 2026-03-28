@@ -11,18 +11,11 @@ import {
   token,
   serverUrl,
   currentChannel,
-  currentThread,
   servers,
   serverFolders,
   channelsByServer,
-  messagesByServer,
-  usersByServer,
   readTimesByServer,
-  wsConnections,
-  reconnectAttempts,
-  reconnectTimeouts,
   setOriginFS,
-  DEFAULT_SERVERS,
   DM_SERVER_URL,
   friends,
   friendRequests,
@@ -31,7 +24,6 @@ import {
   roturFollowing,
   roturStatuses,
   isOffline,
-  offlinePushServers,
   serverNotifSettings,
   channelNotifSettings,
   notificationPromptDismissed,
@@ -47,7 +39,6 @@ import {
   mobileSidebarOpen,
   mobilePanelOpen,
   closeMobileNav,
-  showThreadPanel,
   showNotificationPrompt,
   handleError,
 } from "./lib/ui-signals";
@@ -77,10 +68,9 @@ import {
   getStatus,
 } from "./lib/rotur-api";
 
-import { Header } from "./components/Header/index";
 import { GuildSidebar } from "./components/GuildSidebar";
 import { ChannelList } from "./components/ChannelList";
-import { MessageArea, ReplyBar } from "./components/MessageArea";
+import { MessageArea } from "./components/MessageArea";
 import {
   SettingsModal,
   AccountModal,
@@ -100,8 +90,7 @@ import { GlobalContextMenu } from "./components/ContextMenu";
 import { DiscoveryPage } from "./components/DiscoveryPage";
 import { OfflineScreen } from "./components/OfflineScreen";
 import { LoadingScreen } from "./components/LoadingScreen";
-import { ThreadPanel, ThreadView } from "./components/ThreadPanel";
-import { MembersList } from "./components/MembersList";
+import { ThreadPanel } from "./components/ThreadPanel";
 import { useFavicon } from "./lib/useFavicon";
 import { UpdatePopup, updateAvailable } from "./components/UpdatePopup";
 

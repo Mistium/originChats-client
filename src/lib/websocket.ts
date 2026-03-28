@@ -123,9 +123,7 @@ function _vcUpdateChannelState(
 }
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    audioCtx = new window.AudioContext();
   }
   return audioCtx;
 }
@@ -890,7 +888,7 @@ async function handleMessage(msg: any, sUrl: string): Promise<void> {
     case "channels_get": {
       channelsByServer.value = { ...channelsByServer.value, [sUrl]: msg.val };
       // Extract threads from forum channels
-      const forumThreads: Record<string, any[]> = {};
+      const forumThreads: Record<string, Thread[]> = {};
       for (const channel of msg.val) {
         if (channel.type === "forum" && channel.threads) {
           forumThreads[channel.name] = channel.threads;

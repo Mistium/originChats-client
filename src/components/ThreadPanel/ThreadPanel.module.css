@@ -212,19 +212,13 @@
   background: rgba(var(--danger-rgb), 0.1);
 }
 
-.threadCreate {
-  padding: var(--space-3);
-  border-top: 1px solid var(--border);
-}
-
 .threadCreateBtn {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-3);
-  background: var(--surface-light);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -232,6 +226,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background var(--anim-fast);
+  margin-bottom: var(--space-2);
 }
 
 .threadCreateBtn:hover {
@@ -241,49 +236,97 @@
 .threadCreateForm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  background: var(--surface-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  overflow: hidden;
 }
 
-.threadCreateForm input {
+.threadCreateTitle {
   width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: var(--surface-light);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.threadCreateTitle:focus {
+  outline: none;
+}
+
+.threadCreateTitle::placeholder {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.threadCreateMessage {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
   color: var(--text);
   font-size: 0.875rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 80px;
+  max-height: 150px;
 }
 
-.threadCreateForm input:focus {
+.threadCreateMessage:focus {
   outline: none;
-  border-color: var(--primary);
+}
+
+.threadCreateMessage::placeholder {
+  color: var(--text-dim);
 }
 
 .threadCreateActions {
   display: flex;
   gap: var(--space-2);
   justify-content: flex-end;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-light);
 }
 
-.threadCreateActions button {
+.threadCreateCancel {
   padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--anim-fast);
+}
+
+.threadCreateCancel:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--surface-hover);
+}
+
+.threadCreateSubmit {
+  padding: var(--space-2) var(--space-4);
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.threadCreateActions button:first-child {
-  background: var(--surface-light);
-  color: var(--text);
-}
-
-.threadCreateActions button:last-child {
   background: var(--primary);
   color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--anim-fast);
 }
 
-.threadCreateActions button:disabled {
+.threadCreateSubmit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.threadCreateSubmit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
