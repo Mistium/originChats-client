@@ -1,20 +1,9 @@
 import { useEffect } from "preact/hooks";
-import { unreadPings, unreadByChannel } from "../state";
+import { unreadState } from "../state";
 
 const BASE_FAVICON = "/dms.png";
 const FAVICON_SIZE = 32;
 
-/**
- * Computes the sum of all values in a Record<string, number>.
- */
-function sumValues(record: Record<string, number>): number {
-  return Object.values(record).reduce((acc, v) => acc + v, 0);
-}
-
-/**
- * Draws a red badge with a count (or a dot when count === 0 but hasUnreads)
- * onto a 32x32 canvas over the base favicon image.
- */
 function drawFavicon(
   img: HTMLImageElement,
   pingCount: number,
@@ -88,12 +77,6 @@ function setFaviconHref(href: string) {
   link.href = href;
 }
 
-/**
- * Watches unreadPings and unreadByChannel signals and:
- * - Draws a red badge with the total ping count on the favicon
- * - Shows a grey dot for unreads-only (no pings)
- * - Updates document.title with "(N) originChats" when there are pings
- */
 export function useFavicon() {
   useEffect(() => {
     let destroyed = false;
@@ -107,10 +90,8 @@ export function useFavicon() {
     function update() {
       if (destroyed || !baseImg) return;
 
-      const pings = unreadPings.value;
-      const unreads = unreadByChannel.value;
-      const totalPings = sumValues(pings);
-      const totalUnreads = sumValues(unreads);
+      const totalPings = unreadState.getTotalPings();
+      const totalUnreads = unreadState.getTotalUnreads();
 
       // Update title
       if (totalPings > 0) {
@@ -125,8 +106,8 @@ export function useFavicon() {
     }
 
     // Subscribe to both signals
-    const unsubPings = unreadPings.subscribe(() => update());
-    const unsubUnreads = unreadByChannel.subscribe(() => update());
+    const unsubPings = unreadState.pings.subscribe(() => update());
+    const unsubUnreads = unreadState.unreads.subscribe(() => update());
 
     return () => {
       destroyed = true;

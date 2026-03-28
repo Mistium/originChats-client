@@ -13,9 +13,6 @@ import {
   currentThread,
   channels,
   threadsByServer,
-  readTimesByServer,
-  unreadByChannel,
-  unreadPings,
   currentServer,
   currentUserByServer,
   currentUser,
@@ -25,6 +22,7 @@ import {
   getChannelNotifLevel,
   getChannelPingCount,
   getChannelUnreadCount,
+  hasChannelUnreads,
   users,
   myStatus,
   serverCapabilitiesByServer,
@@ -69,18 +67,6 @@ import styles from "./ChannelList.module.css";
 
 import type { Channel } from "../../types";
 
-function isChannelUnread(
-  channel: Channel,
-  sUrl: string,
-): boolean {
-  const serverReadTimes = readTimesByServer.value[sUrl];
-  if (!serverReadTimes || Object.keys(serverReadTimes).length === 0) {
-    return false;
-  }
-  const readTime = serverReadTimes[channel.name] || 0;
-  return (channel.last_message || 0) > readTime;
-}
-
 export function ChannelList() {
   const [, forceUpdate] = useReducer((n) => n + 1, 0);
   const channelsListRef = useRef<HTMLDivElement>(null);
@@ -97,9 +83,7 @@ export function ChannelList() {
   const isDM = serverUrl.value === DM_SERVER_URL;
   const rawChs = channels.value;
   const chs = isDM
-    ? [...rawChs].sort(
-        (a, b) => (b.last_message || 0) - (a.last_message || 0),
-      )
+    ? [...rawChs].sort((a, b) => (b.last_message || 0) - (a.last_message || 0))
     : rawChs;
   let separatorIndex = 0;
 
@@ -276,10 +260,7 @@ export function ChannelList() {
       const channelName = item.getAttribute("data-channel-name");
       if (!channelName) return;
 
-      const key = `${serverUrl.value}:${channelName}`;
-      const hasUnreadState =
-        (unreadByChannel.value[key] || 0) > 0 ||
-        (unreadPings.value[key] || 0) > 0;
+      const hasUnreadState = hasChannelUnreads(serverUrl.value, channelName);
       const hasUnreadClass = item.classList.contains(styles.hasUnread);
 
       if (hasUnreadState || hasUnreadClass) {
@@ -312,8 +293,7 @@ export function ChannelList() {
   }, [checkForUnreadsOffscreen]);
 
   useSignalEffect(() => {
-    unreadByChannel.value;
-    unreadPings.value;
+    serverUrl.value;
     checkForUnreadsOffscreen();
   });
 
@@ -482,9 +462,7 @@ export function ChannelList() {
             const unreadCount = isMuted
               ? 0
               : getChannelUnreadCount(serverUrl.value, channel.name);
-            const hasUnread =
-              !isMuted &&
-              (isChannelUnread(channel, serverUrl.value) || unreadCount > 0);
+            const hasUnread = !isMuted && unreadCount > 0;
             const displayPingCount = isDM ? unreadCount : pingCount;
             const hasPing = displayPingCount > 0;
 
@@ -582,11 +560,14 @@ export function ChannelList() {
                     )}
                   </div>
                   {visibleThreads.map((thread: any) => {
-                    const threadPingKey = `${serverUrl.value}:thread:${thread.id}`;
-                    const threadPingCount =
-                      unreadPings.value[threadPingKey] || 0;
-                    const threadUnreadCount =
-                      unreadByChannel.value[threadPingKey] || 0;
+                    const threadPingCount = getChannelPingCount(
+                      serverUrl.value,
+                      `thread:${thread.id}`,
+                    );
+                    const threadUnreadCount = getChannelUnreadCount(
+                      serverUrl.value,
+                      `thread:${thread.id}`,
+                    );
                     const threadHasPing = threadPingCount > 0;
                     const threadHasUnread =
                       !threadHasPing && threadUnreadCount > 0;

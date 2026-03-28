@@ -1,113 +1,195 @@
 import { signal, computed } from "@preact/signals";
 
-type ChannelKey = string;
+type ChannelKey = `${string}:${string}`;
 
 export class UnreadState {
-  readonly pings = signal<Record<ChannelKey, number>>({});
-  readonly unreads = signal<Record<ChannelKey, number>>({});
+  private readonly _pings = signal<Record<ChannelKey, number>>({});
+  private readonly _unreads = signal<Record<ChannelKey, number>>({});
 
-  private makeKey(serverUrl: string, channel: string): ChannelKey {
+  readonly pings = this._pings;
+  readonly unreads = this._unreads;
+
+  private key(serverUrl: string, channel: string): ChannelKey {
     return `${serverUrl}:${channel}`;
   }
 
-  getServerPingCount(serverUrl: string): number {
-    const prefix = `${serverUrl}:`;
-    return Object.entries(this.pings.value)
-      .filter(([key]) => key.startsWith(prefix))
-      .reduce((sum, [, count]) => sum + count, 0);
+  private threadKey(serverUrl: string, threadId: string): ChannelKey {
+    return `${serverUrl}:thread:${threadId}`;
   }
 
-  getServerUnreadCount(serverUrl: string): number {
-    const prefix = `${serverUrl}:`;
-    return Object.entries(this.unreads.value)
-      .filter(([key]) => key.startsWith(prefix))
-      .reduce((sum, [, count]) => sum + count, 0);
+  private matchesPrefix(key: ChannelKey, prefix: string): boolean {
+    return key.startsWith(prefix);
   }
 
-  getChannelPingCount(serverUrl: string, channel: string): number {
-    return this.pings.value[this.makeKey(serverUrl, channel)] || 0;
-  }
-
-  getChannelUnreadCount(serverUrl: string, channel: string): number {
-    return this.unreads.value[this.makeKey(serverUrl, channel)] || 0;
-  }
-
-  increment(serverUrl: string, channel: string, isPing: boolean): void {
-    const key = this.makeKey(serverUrl, channel);
-    const target = isPing ? this.pings : this.unreads;
-    target.value = {
-      ...target.value,
-      [key]: (target.value[key] || 0) + 1,
+  getChannel(
+    serverUrl: string,
+    channel: string,
+  ): { pings: number; unreads: number } {
+    const k = this.key(serverUrl, channel);
+    return {
+      pings: this._pings.value[k] || 0,
+      unreads: this._unreads.value[k] || 0,
     };
   }
 
-  decrement(serverUrl: string, channel: string, isPing: boolean): void {
-    const key = this.makeKey(serverUrl, channel);
-    const target = isPing ? this.pings : this.unreads;
-    if (target.value[key] !== undefined && target.value[key] > 1) {
-      target.value = { ...target.value, [key]: target.value[key] - 1 };
-    } else if (target.value[key] !== undefined) {
-      const next = { ...target.value };
-      delete next[key];
-      target.value = next;
+  getChannelPing(serverUrl: string, channel: string): number {
+    return this._pings.value[this.key(serverUrl, channel)] || 0;
+  }
+
+  getChannelUnread(serverUrl: string, channel: string): number {
+    return this._unreads.value[this.key(serverUrl, channel)] || 0;
+  }
+
+  getServerPing(serverUrl: string): number {
+    const prefix = `${serverUrl}:`;
+    return Object.entries(this._pings.value)
+      .filter(([key]) => this.matchesPrefix(key as ChannelKey, prefix))
+      .reduce((sum, [, count]) => sum + count, 0);
+  }
+
+  getServerUnread(serverUrl: string): number {
+    const prefix = `${serverUrl}:`;
+    return Object.entries(this._unreads.value)
+      .filter(([key]) => this.matchesPrefix(key as ChannelKey, prefix))
+      .reduce((sum, [, count]) => sum + count, 0);
+  }
+
+  getServerTotals(serverUrl: string): { pings: number; unreads: number } {
+    return {
+      pings: this.getServerPing(serverUrl),
+      unreads: this.getServerUnread(serverUrl),
+    };
+  }
+
+  getTotalPings(): number {
+    return Object.values(this._pings.value).reduce((sum, n) => sum + n, 0);
+  }
+
+  getTotalUnreads(): number {
+    return Object.values(this._unreads.value).reduce((sum, n) => sum + n, 0);
+  }
+
+  hasUnreads(serverUrl: string, channel: string): boolean {
+    const k = this.key(serverUrl, channel);
+    return (this._pings.value[k] || 0) > 0 || (this._unreads.value[k] || 0) > 0;
+  }
+
+  hasServerUnreads(serverUrl: string): boolean {
+    const prefix = `${serverUrl}:`;
+    for (const key of Object.keys(this._pings.value)) {
+      if (
+        this.matchesPrefix(key as ChannelKey, prefix) &&
+        this._pings.value[key as ChannelKey] > 0
+      )
+        return true;
+    }
+    for (const key of Object.keys(this._unreads.value)) {
+      if (
+        this.matchesPrefix(key as ChannelKey, prefix) &&
+        this._unreads.value[key as ChannelKey] > 0
+      )
+        return true;
+    }
+    return false;
+  }
+
+  increment(serverUrl: string, channel: string, isPing: boolean): void {
+    const k = this.key(serverUrl, channel);
+    const target = isPing ? this._pings : this._unreads;
+    target.value = { ...target.value, [k]: (target.value[k] || 0) + 1 };
+  }
+
+  incrementPing(serverUrl: string, channel: string): void {
+    this.increment(serverUrl, channel, true);
+  }
+
+  incrementUnread(serverUrl: string, channel: string): void {
+    this.increment(serverUrl, channel, false);
+  }
+
+  setPing(serverUrl: string, channel: string, count: number): void {
+    const k = this.key(serverUrl, channel);
+    if (count > 0) {
+      this._pings.value = { ...this._pings.value, [k]: count };
+    } else {
+      this._clearKeyValue(k);
+    }
+  }
+
+  setUnread(serverUrl: string, channel: string, count: number): void {
+    const k = this.key(serverUrl, channel);
+    if (count > 0) {
+      this._unreads.value = { ...this._unreads.value, [k]: count };
+    } else {
+      this._clearKeyValue(k);
+    }
+  }
+
+  addPing(serverUrl: string, channel: string, delta: number): void {
+    const k = this.key(serverUrl, channel);
+    const current = this._pings.value[k] || 0;
+    const newCount = current + delta;
+    if (newCount > 0) {
+      this._pings.value = { ...this._pings.value, [k]: newCount };
+    } else {
+      this._clearKeyValue(k);
     }
   }
 
   clearChannel(serverUrl: string, channel: string): void {
-    const key = this.makeKey(serverUrl, channel);
-    this.clearKey(key);
+    const k = this.key(serverUrl, channel);
+    this._clearKeyValue(k);
   }
 
   clearThread(serverUrl: string, threadId: string): void {
-    const key = `${serverUrl}:thread:${threadId}`;
-    this.clearKey(key);
-  }
-
-  private clearKey(key: ChannelKey): void {
-    if (this.pings.value[key] !== undefined) {
-      const next = { ...this.pings.value };
-      delete next[key];
-      this.pings.value = next;
-    }
-    if (this.unreads.value[key] !== undefined) {
-      const next = { ...this.unreads.value };
-      delete next[key];
-      this.unreads.value = next;
-    }
+    const k = this.threadKey(serverUrl, threadId);
+    this._clearKeyValue(k);
   }
 
   clearServer(serverUrl: string): void {
     const prefix = `${serverUrl}:`;
-    this.pings.value = this.filterByPrefix(this.pings.value, prefix, true);
-    this.unreads.value = this.filterByPrefix(this.unreads.value, prefix, true);
+    this._pings.value = this._filterByPrefix(this._pings.value, prefix, true);
+    this._unreads.value = this._filterByPrefix(
+      this._unreads.value,
+      prefix,
+      true,
+    );
   }
 
-  clearAllForServer(serverUrl: string): void {
-    this.clearServer(serverUrl);
+  clearAll(): void {
+    this._pings.value = {};
+    this._unreads.value = {};
   }
 
-  totalPings(): number {
-    return Object.values(this.pings.value).reduce((sum, n) => sum + n, 0);
+  private _clearKeyValue(k: ChannelKey): void {
+    if (this._pings.value[k] !== undefined) {
+      const next = { ...this._pings.value };
+      delete next[k];
+      this._pings.value = next;
+    }
+    if (this._unreads.value[k] !== undefined) {
+      const next = { ...this._unreads.value };
+      delete next[k];
+      this._unreads.value = next;
+    }
   }
 
-  totalUnreads(): number {
-    return Object.values(this.unreads.value).reduce((sum, n) => sum + n, 0);
-  }
-
-  private filterByPrefix(
+  private _filterByPrefix(
     obj: Record<ChannelKey, number>,
     prefix: string,
     exclude: boolean,
   ): Record<ChannelKey, number> {
     return Object.fromEntries(
       Object.entries(obj).filter(([key]) =>
-        exclude ? !key.startsWith(prefix) : key.startsWith(prefix),
+        exclude
+          ? !this.matchesPrefix(key as ChannelKey, prefix)
+          : this.matchesPrefix(key as ChannelKey, prefix),
       ),
-    );
+    ) as Record<ChannelKey, number>;
   }
 }
 
 export const unreadState = new UnreadState();
 
-export const totalPings = computed(() => unreadState.totalPings());
-export const totalUnreads = computed(() => unreadState.totalUnreads());
+export const totalPings = computed(() => unreadState.getTotalPings());
+export const totalUnreads = computed(() => unreadState.getTotalUnreads());

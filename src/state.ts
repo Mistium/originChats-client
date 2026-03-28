@@ -85,22 +85,22 @@ export const typingUsersByServer = signal<
 >({});
 
 export function getServerPingCount(sUrl: string): number {
-  return unreadState.getServerPingCount(sUrl);
+  return unreadState.getServerPing(sUrl);
 }
 
 export function getServerUnreadCount(sUrl: string): number {
-  return unreadState.getServerUnreadCount(sUrl);
+  return unreadState.getServerUnread(sUrl);
 }
 
 export function getChannelPingCount(sUrl: string, channelName: string): number {
-  return unreadState.getChannelPingCount(sUrl, channelName);
+  return unreadState.getChannelPing(sUrl, channelName);
 }
 
 export function getChannelUnreadCount(
   sUrl: string,
   channelName: string,
 ): number {
-  return unreadState.getChannelUnreadCount(sUrl, channelName);
+  return unreadState.getChannelUnread(sUrl, channelName);
 }
 
 export function clearChannelPings(sUrl: string, channelName: string): void {
@@ -109,6 +109,10 @@ export function clearChannelPings(sUrl: string, channelName: string): void {
 
 export function clearServerPings(sUrl: string): void {
   unreadState.clearServer(sUrl);
+}
+
+export function hasChannelUnreads(sUrl: string, channelName: string): boolean {
+  return unreadState.hasUnreads(sUrl, channelName);
 }
 
 export interface PingMessage {
@@ -392,7 +396,7 @@ export function getCustomEmojiByName(
 ): { emoji: CustomEmoji; serverUrl: string } | null {
   const lowerName = name.toLowerCase();
   for (const [sUrl, emojis] of Object.entries(customEmojisByServer.value)) {
-    for (const [id, emoji] of Object.entries(emojis)) {
+    for (const [, emoji] of Object.entries(emojis)) {
       if (emoji.name.toLowerCase() === lowerName) {
         return { emoji, serverUrl: sUrl };
       }

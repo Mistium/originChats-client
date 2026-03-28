@@ -4,8 +4,6 @@ import {
   currentThread,
   channelsByServer,
   readTimesByServer,
-  unreadByChannel,
-  unreadPings,
   messagesByServer,
   loadedChannelsByServer,
   wsConnections,
@@ -26,6 +24,7 @@ import {
   myStatus,
   serverCapabilitiesByServer,
   savedStatusText,
+  unreadState,
 } from "../state";
 import {
   renderGuildSidebarSignal,
@@ -263,8 +262,6 @@ export function removeServer(sUrl: string): void {
     console.error("[removeServer] Failed to save servers:", err),
   );
 
-  const serverChannels = channelsByServer.value[sUrl] || [];
-
   const newChannels = { ...channelsByServer.value };
   delete newChannels[sUrl];
   channelsByServer.value = newChannels;
@@ -285,19 +282,7 @@ export function removeServer(sUrl: string): void {
   delete newReadTimes[sUrl];
   readTimesByServer.value = newReadTimes;
 
-  const newUnreads = { ...unreadByChannel.value };
-  Object.keys(newUnreads).forEach((key) => {
-    if (key.startsWith(`${sUrl}:`)) {
-      delete newUnreads[key];
-    }
-  });
-  unreadByChannel.value = newUnreads;
-
-  const newPings = { ...unreadPings.value };
-  serverChannels.forEach((channel) => {
-    delete newPings[`${sUrl}:${channel.name}`];
-  });
-  unreadPings.value = newPings;
+  unreadState.clearServer(sUrl);
 
   closeWebSocket(sUrl);
   delete wsStatus[sUrl];
@@ -487,17 +472,7 @@ export function selectThread(thread: Thread | null): void {
 
     // Clear thread unread counts
     const sUrl = serverUrl.value;
-    const threadKey = `${sUrl}:thread:${thread.id}`;
-    if (unreadByChannel.value[threadKey]) {
-      const newUnreads = { ...unreadByChannel.value };
-      delete newUnreads[threadKey];
-      unreadByChannel.value = newUnreads;
-    }
-    if (unreadPings.value[threadKey]) {
-      const newPings = { ...unreadPings.value };
-      delete newPings[threadKey];
-      unreadPings.value = newPings;
-    }
+    unreadState.clearThread(sUrl, thread.id);
 
     // Fetch thread messages
     const hasLoaded = loadedChannelsByServer[sUrl]?.has(thread.id) ?? false;

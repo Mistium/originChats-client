@@ -17,44 +17,21 @@ import {
   reconnectAttempts,
   reconnectTimeouts,
   serversAttempted,
-  unreadByChannel,
-  unreadPings,
   rolesByServer,
   slashCommandsByServer,
-  dmServers,
   pingSound,
   pingVolume,
   customPingSound,
-  dmMessageSound,
   servers,
-  pingsInboxMessages,
-  pingsInboxTotal,
-  pingsInboxLoading,
-  pingsInboxOffset,
   readTimesByServer,
-  pendingDMAddUsername,
-  setPendingDMAddUsername,
-  getChannelNotifLevel,
   offlinePushServers,
   pushSubscriptionsByServer,
   serverCapabilitiesByServer,
-  attachmentConfigByServer,
-  lastChannelByServer,
   SPECIAL_CHANNELS,
-  addThreadToChannel,
-  removeThreadFromChannel,
-  updateThreadInChannel,
-  setThreadMessagesForServer,
   myStatus,
-  customEmojisByServer,
   autoIdleOnUnfocus,
   savedStatusText,
 } from "../state";
-import { statusState } from "./state";
-
-import { Channel, VoiceUser, Message, DMServer, Role, Thread } from "../types";
-
-const DM_SERVER_URL = "dms.mistium.com";
 import {
   renderGuildSidebarSignal,
   renderChannelsSignal,
@@ -65,62 +42,78 @@ import {
   upsertBanner,
 } from "./ui-signals";
 
-import { reloadServerIcon } from "../utils";
-
-import { readTimes as dbReadTimes } from "./db";
-
 // ── Reconnect config ──────────────────────────────────────────────────────────
 const RECONNECT_BASE_DELAY_MS = 2000;
 const RECONNECT_MAX_DELAY_MS = 30000;
 const RECONNECT_MAX_ATTEMPTS = 5;
-
-/** Debounce timers for persisting read times to IDB when the user is
- *  actively viewing a channel and new messages arrive. Keyed by
- *  "serverUrl:channelName". Flushed at most once per second per channel. */
-const _readTimeFlushTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
 /** Stable banner IDs keyed by server URL so we can upsert them. */
 const reconnectBannerIds: Record<string, string> = {};
 
 import { generateValidator as generateValidatorApi } from "./rotur-api";
 import {
-  MessageDelete,
-  MessageEdit,
-  MessageGet,
-  MessageNew,
-  MessagePin,
-  MessagesGet,
-  ThreadCreate,
-  ThreadDelete,
-  ThreadGet,
-  Typing,
-  UserConnect,
-  UserDisconnect,
-} from "@/msgTypes";
+  handleHandshake,
+  handleReady,
+  handleAuthSuccess,
+  handleChannelsGet,
+  handleThreadCreate,
+  handleThreadDelete,
+  handleThreadGet,
+  handleThreadJoin,
+  handleThreadLeave,
+  handleThreadMessages,
+  handleUsersList,
+  handleUsersOnline,
+  handleStatusGet,
+  handleMessagesGet,
+  handleMessageGet,
+  handleMessageEdit,
+  handleMessageDelete,
+  handleAttachmentDeleted,
+  handleTyping,
+  handleRolesList,
+  handleRoleReorder,
+  handleUserRolesSet,
+  handleUserRolesGet,
+  handleUsersBannedList,
+  handleMessageReact,
+  handleMessagesSearch,
+  handlePingsGet,
+  handleMessagesPinned,
+  handleUserConnect,
+  handleUserJoin,
+  handleUserDisconnect,
+  handleUserLeave,
+  handleUserStatus,
+  handleNicknameUpdate,
+  handleNicknameRemove,
+  handleVoiceJoin,
+  handleVoiceUserJoined,
+  handleVoiceUserLeft,
+  handleVoiceUserUpdated,
+  handleVoiceLeave,
+  handleSlashList,
+  handleSlashAdd,
+  handleSlashRemove,
+  handleEmojiGetAll,
+  handleEmojiAdd,
+  handleEmojiDelete,
+  handleEmojiUpdate,
+  handlePushVapid,
+  handlePushSubscribed,
+  handleChannelUpdate,
+  handleWebhookCreate,
+  handleWebhookList,
+  handleWebhookGet,
+  handleWebhookUpdate,
+  handleWebhookRegenerate,
+  handleWebhookDelete,
+  handleError,
+  handleMessageNew,
+} from "./commands";
 
 let audioCtx: AudioContext | null = null;
 
-// Helper: get the message key (thread_id or channel) for storing/finding messages
-function getMessageKey(msg: { thread_id?: string; channel: string }): string {
-  return msg.thread_id || msg.channel;
-}
-
-// Helper: immutably update voice_state for a channel in channelsByServer
-function _vcUpdateChannelState(
-  sUrl: string,
-  channelName: string,
-  updater: (prev: VoiceUser[]) => VoiceUser[],
-): void {
-  const chList = channelsByServer.value[sUrl];
-  if (!chList) return;
-  const idx = chList.findIndex((c: Channel) => c.name === channelName);
-  if (idx === -1) return;
-  const prev: VoiceUser[] = (chList[idx] as Channel).voice_state || [];
-  const next = updater(prev);
-  const updatedList = [...chList];
-  updatedList[idx] = { ...updatedList[idx], voice_state: next };
-  channelsByServer.value = { ...channelsByServer.value, [sUrl]: updatedList };
-}
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
     audioCtx = new window.AudioContext();
@@ -183,16 +176,6 @@ export function playPingSound(): void {
     }
   } catch (e) {
     console.warn("[Notification] Failed to play ping sound:", e);
-  }
-}
-
-function showNotification(title: string, body: string, channel: string): void {
-  if ("Notification" in window && Notification.permission === "granted") {
-    const notification = new Notification(title, { body, tag: channel });
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
   }
 }
 
@@ -741,1542 +724,190 @@ export function connectToServer(sUrl: string, _manual = false): void {
   ws.addEventListener("close", closeHandler);
 }
 
-async function handleMessage(msg: any, sUrl: string): Promise<void> {
-  const { selectChannel } = await import("./actions");
-
+function handleMessage(msg: any, sUrl: string): void {
   switch (msg.cmd || msg.type) {
-    case "handshake": {
-      if (!channelsByServer.value[sUrl])
-        channelsByServer.value = { ...channelsByServer.value, [sUrl]: [] };
-      if (!messagesByServer.value[sUrl])
-        messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
-      if (!usersByServer.value[sUrl])
-        usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
-      serverValidatorKeys[sUrl] = msg.val.validator_key;
-      // Store the server's advertised capabilities.
-      // If the server sends no capabilities array, fall back to a baseline set
-      // that all legacy servers are assumed to support.
-      const DEFAULT_CAPABILITIES = [
-        "auth",
-        "channels_get",
-        "message_delete",
-        "message_edit",
-        "message_get",
-        "message_new",
-        "message_react_add",
-        "message_react_remove",
-        "messages_get",
-        "typing",
-        "user_leave",
-        "users_list",
-        "users_online",
-        "voice_join",
-        "voice_leave",
-        "voice_mute",
-        "voice_state",
-      ];
-      serverCapabilitiesByServer.value = {
-        ...serverCapabilitiesByServer.value,
-        [sUrl]: Array.isArray(msg.val.capabilities)
-          ? msg.val.capabilities
-          : DEFAULT_CAPABILITIES,
-      };
-      if (msg.val.attachments) {
-        attachmentConfigByServer.value = {
-          ...attachmentConfigByServer.value,
-          [sUrl]: msg.val.attachments,
-        };
-      }
-      // Always apply the authoritative icon and name from the handshake so
-      // the local cache never gets out of sync with what the server reports.
-      if (msg.val.server) {
-        const { icon, name } = msg.val.server;
-        const existing = servers.value.find((s) => s.url === sUrl);
-        if (existing) {
-          const iconChanged = icon && existing.icon !== icon;
-          const nameChanged = name && existing.name !== name;
-          if (iconChanged || nameChanged) {
-            servers.value = servers.value.map((s) =>
-              s.url === sUrl
-                ? { ...s, ...(icon ? { icon } : {}), ...(name ? { name } : {}) }
-                : s,
-            );
-            const { saveServers } = await import("./persistence");
-            saveServers().catch(() => {});
-          }
-          // Always bust the icon cache on handshake so the <img> re-fetches
-          // the latest version even if the URL string hasn't changed.
-          if (icon) reloadServerIcon(sUrl);
-        }
-      }
-      renderGuildSidebarSignal.value++;
-      await authenticateServer(sUrl);
-
-      if (Notification.permission === "granted") {
-        const { enablePushForServer } = await import("../lib/websocket");
-        if (!offlinePushServers.value[sUrl]) {
-          enablePushForServer(sUrl);
-        }
-      }
+    case "handshake":
+      handleHandshake(msg, sUrl);
       break;
-    }
-    case "ready": {
-      currentUserByServer.value = {
-        ...currentUserByServer.value,
-        [sUrl]: msg.user,
-      };
-      if (!usersByServer.value[sUrl])
-        usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
-      usersByServer.value = {
-        ...usersByServer.value,
-        [sUrl]: {
-          ...usersByServer.value[sUrl],
-          [msg.user.username?.toLowerCase()]: {
-            ...msg.user,
-            status: msg.user.status,
-          },
-        },
-      };
-      if (msg.user.status) {
-        statusState.updateFromReady(sUrl, msg.user.username, msg.user.status);
-        myStatus.value = {
-          status: msg.user.status.status,
-          text: msg.user.status.text,
-        };
-        if (msg.user.status.text) {
-          savedStatusText.value = msg.user.status.text;
-        }
-      } else if (savedStatusText.value !== undefined) {
-        const caps = serverCapabilitiesByServer.value[sUrl] || [];
-        if (caps.includes("status_set")) {
-          wsSend(
-            {
-              cmd: "status_set",
-              status: myStatus.value.status,
-              text: savedStatusText.value,
-            },
-            sUrl,
-          );
-        }
-      }
-      renderMembersSignal.value++;
+    case "ready":
+      handleReady(msg, sUrl);
       break;
-    }
-    case "auth_success": {
-      const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
-      const serverHas = (cap: string) => caps.includes(cap);
-      wsSend({ cmd: "channels_get" }, sUrl);
-      wsSend({ cmd: "users_list" }, sUrl);
-      wsSend({ cmd: "users_online" }, sUrl);
-      if (serverHas("roles_list")) wsSend({ cmd: "roles_list" }, sUrl);
-      if (serverHas("slash_list")) wsSend({ cmd: "slash_list" }, sUrl);
-      if (serverHas("emoji_get_all")) wsSend({ cmd: "emoji_get_all" }, sUrl);
-      if (sUrl !== DM_SERVER_URL && serverHas("pings_get")) {
-        let channelReadTimes = readTimesByServer.value[sUrl];
-        if (!channelReadTimes || Object.keys(channelReadTimes).length === 0) {
-          channelReadTimes = await dbReadTimes.get(sUrl);
-          if (channelReadTimes && Object.keys(channelReadTimes).length > 0) {
-            readTimesByServer.value = {
-              ...readTimesByServer.value,
-              [sUrl]: channelReadTimes,
-            };
-          }
-        }
-      }
+    case "auth_success":
+      handleAuthSuccess(sUrl);
       break;
-    }
-    case "channels_get": {
-      channelsByServer.value = { ...channelsByServer.value, [sUrl]: msg.val };
-      // Extract threads from forum channels
-      const forumThreads: Record<string, Thread[]> = {};
-      for (const channel of msg.val) {
-        if (channel.type === "forum" && channel.threads) {
-          forumThreads[channel.name] = channel.threads;
-        }
-      }
-      if (Object.keys(forumThreads).length > 0) {
-        threadsByServer.value = {
-          ...threadsByServer.value,
-          [sUrl]: forumThreads,
-        };
-      }
-      renderChannelsSignal.value++;
-      // If a "dm add" was pending and this is the DMS responding with the
-      // updated channel list, the command succeeded — clear the pending state.
-      if (sUrl === DM_SERVER_URL && pendingDMAddUsername) {
-        setPendingDMAddUsername(null);
-      }
-      if (
-        serverUrl.value === sUrl &&
-        !currentChannel.value &&
-        channelsByServer.value[sUrl]?.length > 0 &&
-        sUrl !== DM_SERVER_URL
-      ) {
-        selectChannel(channelsByServer.value[sUrl][0]);
-      }
-      // After reconnect, if we're on this server and have a last channel saved,
-      // switch to it to refetch messages
-      if (serverUrl.value === sUrl && lastChannelByServer.value[sUrl]) {
-        const lastChannelName = lastChannelByServer.value[sUrl];
-        const channelList = channelsByServer.value[sUrl] || [];
-        const targetChannel = channelList.find(
-          (c) => c.name === lastChannelName,
-        );
-        if (targetChannel) {
-          selectChannel(targetChannel);
-        } else if (channelList.length > 0) {
-          const textChannels = channelList.filter(
-            (c) => c.type === "text" || c.type === "voice",
-          );
-          if (textChannels.length > 0) {
-            selectChannel(textChannels[0]);
-          }
-        }
-      }
+    case "channels_get":
+      handleChannelsGet(msg, sUrl);
       break;
-    }
-    case "thread_create": {
-      const threadCreate = msg as ThreadCreate;
-      if (threadCreate.thread && threadCreate.channel) {
-        addThreadToChannel(sUrl, threadCreate.channel, threadCreate.thread);
-        renderChannelsSignal.value++;
-      }
+    case "thread_create":
+      handleThreadCreate(msg, sUrl);
       break;
-    }
-    case "thread_delete": {
-      const threadDelete = msg as ThreadDelete;
-      if (threadDelete.thread_id && threadDelete.channel) {
-        removeThreadFromChannel(
-          sUrl,
-          threadDelete.channel,
-          threadDelete.thread_id,
-        );
-        if (currentThread.value?.id === threadDelete.thread_id) {
-          currentThread.value = null;
-        }
-        renderChannelsSignal.value++;
-      }
+    case "thread_delete":
+      handleThreadDelete(msg, sUrl);
       break;
-    }
-    case "thread_get": {
-      const threadGet = msg as ThreadGet;
-      if (threadGet.thread) {
-        currentThread.value = threadGet.thread;
-      }
+    case "thread_get":
+      handleThreadGet(msg);
       break;
-    }
-    case "thread_join": {
-      const threadJoin = msg as any;
-      if (threadJoin.thread && threadJoin.thread_id) {
-        updateThreadInChannel(
-          sUrl,
-          threadJoin.thread.parent_channel,
-          threadJoin.thread_id,
-          { participants: threadJoin.thread.participants },
-        );
-        if (currentThread.value?.id === threadJoin.thread_id) {
-          currentThread.value = {
-            ...currentThread.value,
-            participants: threadJoin.thread.participants,
-          } as Thread;
-        }
-        renderChannelsSignal.value++;
-      }
+    case "thread_join":
+      handleThreadJoin(msg, sUrl);
       break;
-    }
-    case "thread_leave": {
-      const threadLeave = msg as any;
-      if (threadLeave.thread && threadLeave.thread_id) {
-        updateThreadInChannel(
-          sUrl,
-          threadLeave.thread.parent_channel,
-          threadLeave.thread_id,
-          { participants: threadLeave.thread.participants },
-        );
-        if (currentThread.value?.id === threadLeave.thread_id) {
-          currentThread.value = {
-            ...currentThread.value,
-            participants: threadLeave.thread.participants,
-          } as Thread;
-        }
-        renderChannelsSignal.value++;
-      }
+    case "thread_leave":
+      handleThreadLeave(msg, sUrl);
       break;
-    }
-    case "thread_messages": {
-      const threadMsgs = msg as any;
-      if (threadMsgs.thread_id && threadMsgs.messages) {
-        setThreadMessagesForServer(
-          sUrl,
-          threadMsgs.thread_id,
-          threadMsgs.messages,
-        );
-        // Also store in messagesByServer so MessageArea can display them
-        if (!messagesByServer.value[sUrl]) {
-          messagesByServer.value = {
-            ...messagesByServer.value,
-            [sUrl]: {},
-          };
-        }
-        messagesByServer.value = {
-          ...messagesByServer.value,
-          [sUrl]: {
-            ...messagesByServer.value[sUrl],
-            [threadMsgs.thread_id]: threadMsgs.messages,
-          },
-        };
-        // Mark thread as loaded
-        if (!loadedChannelsByServer[sUrl]) {
-          loadedChannelsByServer[sUrl] = new Set();
-        }
-        loadedChannelsByServer[sUrl].add(threadMsgs.thread_id);
-        renderMessagesSignal.value++;
-      }
+    case "thread_messages":
+      handleThreadMessages(msg, sUrl);
       break;
-    }
-    case "users_list": {
-      const existing = usersByServer.value[sUrl] || {};
-      const next: Record<string, (typeof existing)[string]> = {};
-      for (const user of msg.users) {
-        const key = user.username?.toLowerCase();
-        if (!key) continue;
-        const statusObj = user.status;
-        const normalizedUser = {
-          ...existing[key],
-          ...user,
-          status:
-            typeof statusObj === "object"
-              ? statusObj
-              : { status: statusObj || "offline", text: "" },
-        };
-        next[key] = normalizedUser;
-      }
-      usersByServer.value = { ...usersByServer.value, [sUrl]: next };
-      renderMembersSignal.value++;
+    case "users_list":
+      handleUsersList(msg, sUrl);
       break;
-    }
-    case "users_online": {
-      if (!usersByServer.value[sUrl])
-        usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
-      const onlineUsernames = new Set<string>();
-      for (const user of msg.users) {
-        const key = user.username?.toLowerCase();
-        if (!key) continue;
-        onlineUsernames.add(key);
-        const statusObj = user.status;
-        const newStatus =
-          typeof statusObj === "object"
-            ? statusObj
-            : { status: "online", text: "" };
-        if (usersByServer.value[sUrl]?.[key]) {
-          usersByServer.value[sUrl][key].status = newStatus;
-        }
-      }
-      for (const key of Object.keys(usersByServer.value[sUrl] || {})) {
-        if (!onlineUsernames.has(key)) {
-          usersByServer.value[sUrl][key].status = {
-            status: "offline",
-            text: "",
-          };
-        }
-      }
-      renderMembersSignal.value++;
+    case "users_online":
+      handleUsersOnline(msg, sUrl);
       break;
-    }
-    case "status_get": {
-      const username = msg.username?.toLowerCase();
-      if (!username) break;
-      if (usersByServer.value[sUrl]?.[username]) {
-        usersByServer.value = {
-          ...usersByServer.value,
-          [sUrl]: {
-            ...usersByServer.value[sUrl],
-            [username]: {
-              ...usersByServer.value[sUrl][username],
-              status: msg.status,
-            },
-          },
-        };
-      }
-      statusState.updateFromStatusGet(sUrl, msg.username, msg.status);
-      renderMembersSignal.value++;
+    case "status_get":
+      handleStatusGet(msg, sUrl);
       break;
-    }
-    case "message_new": {
-      // Only append to the message store if this channel has already been
-      // loaded via messages_get. If not, the user hasn't opened it yet and
-      // the channel list unread indicators are sufficient; we don't want to
-      // pre-populate the cache because selectChannel() uses the loaded state
-      // to decide whether to fetch — if we wrote here, opening the channel
-      // would not load the history that precedes these new messages.
-
-      const msgNew = msg as MessageNew;
-
-      const isThreadMessage = !!msgNew.thread_id;
-      const messageKey = isThreadMessage ? msgNew.thread_id! : msgNew.channel;
-
-      const channelIsLoaded =
-        loadedChannelsByServer[sUrl]?.has(messageKey) ?? false;
-      if (channelIsLoaded) {
-        if (!messagesByServer.value[sUrl])
-          messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
-        if (!messagesByServer.value[sUrl][messageKey]) {
-          messagesByServer.value = {
-            ...messagesByServer.value,
-            [sUrl]: { ...messagesByServer.value[sUrl], [messageKey]: [] },
-          };
-        }
-        const channelMsgs = messagesByServer.value[sUrl][messageKey];
-        const alreadyExists = channelMsgs.some(
-          (m: Message) => m.id === msgNew.message.id,
-        );
-        if (!alreadyExists) {
-          messagesByServer.value = {
-            ...messagesByServer.value,
-            [sUrl]: {
-              ...messagesByServer.value[sUrl],
-              [messageKey]: [...channelMsgs, msgNew.message],
-            },
-          };
-        }
-      }
-
-      const chList = channelsByServer.value[sUrl];
-      const targetChannel = msgNew.channel;
-      if (chList) {
-        const idx = chList.findIndex((c: Channel) => c.name === targetChannel);
-        if (idx !== -1 && msgNew.message.timestamp) {
-          const updatedList = [...chList];
-          updatedList[idx] = {
-            ...updatedList[idx],
-            last_message: msgNew.message.timestamp,
-          };
-          channelsByServer.value = {
-            ...channelsByServer.value,
-            [sUrl]: updatedList,
-          };
-          if (sUrl === DM_SERVER_URL) {
-            renderChannelsSignal.value++;
-          }
-        }
-      }
-
-      const isThreadView =
-        isThreadMessage && currentThread.value?.id === msgNew.thread_id;
-      const isCurrentView =
-        isThreadView ||
-        (!isThreadMessage &&
-          serverUrl.value === sUrl &&
-          currentChannel.value?.name === messageKey);
-
-      const notifLevel = getChannelNotifLevel(sUrl, targetChannel);
-      const isMuted = notifLevel === "none";
-      const channelKey = `${sUrl}:${targetChannel}`;
-      const threadKey = isThreadMessage
-        ? `${sUrl}:thread:${msgNew.thread_id}`
-        : null;
-
-      let myUsername = currentUserByServer.value[sUrl]?.username;
-      const isOwnMessage = msgNew.message.user === myUsername;
-
-      if (!isCurrentView && !isMuted && !isOwnMessage) {
-        const keyToIncrement = isThreadMessage ? threadKey! : channelKey;
-        unreadByChannel.value = {
-          ...unreadByChannel.value,
-          [keyToIncrement]: (unreadByChannel.value[keyToIncrement] || 0) + 1,
-        };
-
-        if (sUrl === DM_SERVER_URL && !isOwnMessage && dmMessageSound.value) {
-          playPingSound();
-        }
-
-        // "all" mode: treat every incoming message as a ping
-        if (notifLevel === "all") {
-          myUsername = currentUserByServer.value[sUrl]?.username;
-          if (msgNew.message.user !== myUsername) {
-            const pingKeyToIncrement = isThreadMessage
-              ? threadKey!
-              : channelKey;
-            unreadPings.value = {
-              ...unreadPings.value,
-              [pingKeyToIncrement]:
-                (unreadPings.value[pingKeyToIncrement] || 0) + 1,
-            };
-            playPingSound();
-            const cleanContent = (msgNew.message.content || "").replace(
-              /<[^>]*>/g,
-              "",
-            );
-            const notifBody =
-              cleanContent.length > 100
-                ? cleanContent.substring(0, 100) + "..."
-                : cleanContent;
-            showNotification(
-              `${msgNew.message.user} in #${msgNew.channel}`,
-              notifBody,
-              msgNew.channel,
-            );
-            if (serverUrl.value === sUrl) renderChannelsSignal.value++;
-            renderGuildSidebarSignal.value++;
-          }
-        }
-
-        // If this DM channel isn't in the sidebar list yet, add it so the
-        // sender appears with an unread badge without needing a dm_list event.
-        if (sUrl === DM_SERVER_URL) {
-          const alreadyListed = dmServers.value.some(
-            (d: DMServer) => d.channel === msgNew.channel,
-          );
-          if (!alreadyListed) {
-            const senderUsername = msgNew.message.user as string;
-            dmServers.value = [
-              ...dmServers.value,
-              {
-                channel: msgNew.channel,
-                name: senderUsername,
-                username: senderUsername,
-                last_message: msgNew.message.timestamp,
-              },
-            ];
-          }
-        }
-
-        if (serverUrl.value === sUrl) renderChannelsSignal.value++;
-        renderGuildSidebarSignal.value++;
-      } else if (isOwnMessage && !isCurrentView) {
-        const keyToClear = isThreadMessage ? threadKey! : channelKey;
-        if (unreadByChannel.value[keyToClear]) {
-          const newUnreads = { ...unreadByChannel.value };
-          delete newUnreads[keyToClear];
-          unreadByChannel.value = newUnreads;
-        }
-        if (unreadPings.value[keyToClear]) {
-          const newPings = { ...unreadPings.value };
-          delete newPings[keyToClear];
-          unreadPings.value = newPings;
-        }
-      } else if (isCurrentView) {
-        const msgTimestamp = msgNew.message.timestamp;
-
-        readTimesByServer.value = {
-          ...readTimesByServer.value,
-          [sUrl]: {
-            ...(readTimesByServer.value[sUrl] ?? {}),
-            [msgNew.channel]: msgTimestamp,
-          },
-        };
-
-        const keyToClear = isThreadMessage ? threadKey! : channelKey;
-        if (unreadByChannel.value[keyToClear]) {
-          const newUnreads = { ...unreadByChannel.value };
-          delete newUnreads[keyToClear];
-          unreadByChannel.value = newUnreads;
-        }
-
-        if (_readTimeFlushTimers[channelKey]) {
-          clearTimeout(_readTimeFlushTimers[channelKey]);
-        }
-        _readTimeFlushTimers[channelKey] = setTimeout(() => {
-          delete _readTimeFlushTimers[channelKey];
-          dbReadTimes
-            .set(sUrl, readTimesByServer.value[sUrl] ?? {})
-            .catch((e) =>
-              console.warn("[message_new] Failed to persist read time:", e),
-            );
-        }, 1000);
-      } else if (!isCurrentView && isMuted) {
-        // Still update DM sidebar presence even when muted, but no badge.
-        if (sUrl === DM_SERVER_URL) {
-          const alreadyListed = dmServers.value.some(
-            (d: DMServer) => d.channel === msgNew.channel,
-          );
-          if (!alreadyListed) {
-            const senderUsername = msgNew.message.user;
-            dmServers.value = [
-              ...dmServers.value,
-              {
-                channel: msg.channel,
-                name: senderUsername,
-                username: senderUsername,
-                last_message: msg.message.timestamp,
-              },
-            ];
-          }
-        }
-      }
-
-      myUsername = currentUserByServer.value[sUrl]?.username;
-      const myRoles =
-        usersByServer.value[sUrl]?.[myUsername?.toLowerCase() || ""]?.roles ||
-        [];
-      const myRolesLower = myRoles.map((r) => r.toLowerCase());
-      const mentionedRoles = msgNew.message.pings?.roles || [];
-      const isRolePinged = mentionedRoles.some((r) =>
-        myRolesLower.includes(r.toLowerCase()),
-      );
-
-      const isUserPinged =
-        msgNew.message.pings?.users?.some(
-          (u) => u.toLowerCase() === myUsername?.toLowerCase(),
-        ) || false;
-      const isReplyPinged =
-        msgNew.message.pings?.replies?.some(
-          (r) => r.toLowerCase() === myUsername?.toLowerCase(),
-        ) || false;
-
-      // Only process mention/reply pings when not muted and not already in "all" mode
-      // ("all" already counted every message as a ping above).
-      if (
-        myUsername &&
-        msgNew.message.user !== myUsername &&
-        !isMuted &&
-        !isCurrentView &&
-        notifLevel !== "all"
-      ) {
-        const pingKeyToUse = isThreadMessage ? threadKey! : channelKey;
-
-        // Auto-join thread when pinged
-        if (
-          isThreadMessage &&
-          msgNew.thread_id &&
-          (isUserPinged || isRolePinged || isReplyPinged)
-        ) {
-          const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
-          if (caps.includes("thread_join")) {
-            wsSend({ cmd: "thread_join", thread_id: msgNew.thread_id }, sUrl);
-          }
-        }
-
-        if (isUserPinged) {
-          if (!isCurrentView) {
-            unreadPings.value = {
-              ...unreadPings.value,
-              [pingKeyToUse]: (unreadPings.value[pingKeyToUse] || 0) + 1,
-            };
-            if (serverUrl.value === sUrl) renderChannelsSignal.value++;
-          }
-          playPingSound();
-          const cleanContent = (msgNew.message.content || "").replace(
-            /<[^>]*>/g,
-            "",
-          );
-          const notifBody =
-            cleanContent.length > 100
-              ? cleanContent.substring(0, 100) + "..."
-              : cleanContent;
-          showNotification(
-            `${msgNew.message.user} mentioned you in #${msg.channel}`,
-            notifBody,
-            msg.channel,
-          );
-          renderGuildSidebarSignal.value++;
-        } else if (isRolePinged) {
-          if (!isCurrentView) {
-            unreadPings.value = {
-              ...unreadPings.value,
-              [pingKeyToUse]: (unreadPings.value[pingKeyToUse] || 0) + 1,
-            };
-            if (serverUrl.value === sUrl) renderChannelsSignal.value++;
-          }
-          playPingSound();
-          const cleanContent = (msgNew.message.content || "").replace(
-            /<[^>]*>/g,
-            "",
-          );
-          const notifBody =
-            cleanContent.length > 100
-              ? cleanContent.substring(0, 100) + "..."
-              : cleanContent;
-          const pingedRole = mentionedRoles.find((r) =>
-            myRolesLower.includes(r.toLowerCase()),
-          );
-          showNotification(
-            `${msgNew.message.user} mentioned ${pingedRole} in #${msg.channel}`,
-            notifBody,
-            msg.channel,
-          );
-          renderGuildSidebarSignal.value++;
-        } else if (isReplyPinged) {
-          if (!isCurrentView) {
-            unreadPings.value = {
-              ...unreadPings.value,
-              [pingKeyToUse]: (unreadPings.value[pingKeyToUse] || 0) + 1,
-            };
-            if (serverUrl.value === sUrl) renderChannelsSignal.value++;
-          }
-          playPingSound();
-          const cleanContent = (msgNew.message.content || "").replace(
-            /<[^>]*>/g,
-            "",
-          );
-          const notifBody =
-            cleanContent.length > 100
-              ? cleanContent.substring(0, 100) + "..."
-              : cleanContent;
-          showNotification(
-            `${msgNew.message.user} replied to your message in #${msgNew.channel}`,
-            notifBody,
-            msgNew.channel,
-          );
-        }
-      }
-
-      const typingServer = typingUsersByServer.value[sUrl];
-      if (typingServer && typingServer[msgNew.channel]) {
-        const typing = typingServer[msgNew.channel] as Map<string, number>;
-        if (typing.has(msgNew.message.user)) {
-          typing.delete(msgNew.message.user);
-        }
-      }
-
-      renderMessagesSignal.value++;
+    case "message_new":
+      handleMessageNew(msg, sUrl);
       break;
-    }
-    case "messages_get": {
-      const msgGet = msg as MessagesGet;
-
-      if (!messagesByServer.value[sUrl])
-        messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
-
-      const channel = msgGet.channel;
-      const messageKey = getMessageKey(msgGet);
-
-      finishMessageFetch(sUrl, messageKey);
-
-      // Mark this channel as loaded so future message_new events are stored
-      if (!loadedChannelsByServer[sUrl])
-        loadedChannelsByServer[sUrl] = new Set();
-      loadedChannelsByServer[sUrl].add(messageKey);
-
-      const existingMsgs = messagesByServer.value[sUrl][messageKey] || [];
-
-      const newMessages = (msgGet.messages || []).map((m) => {
-        const normalised: Record<string, string[]> = {};
-        if (m.reactions && typeof m.reactions === "object")
-          for (const [emoji, reactors] of Object.entries(m.reactions)) {
-            normalised[emoji] = reactors;
-          }
-        return { ...m, reactions: normalised };
-      });
-
-      const existingIds = new Set(existingMsgs.map((m) => m.id));
-      const deduplicatedNew = newMessages.filter((m) => !existingIds.has(m.id));
-      const mergedMsgs = [...deduplicatedNew, ...existingMsgs];
-
-      // If this was a pagination (scroll-up) fetch and the server returned fewer
-      // messages than the requested limit, we've reached the beginning of history.
-      const SCROLL_UP_LIMIT = 20;
-      if (existingMsgs.length > 0 && newMessages.length < SCROLL_UP_LIMIT) {
-        if (!reachedOldestByServer[sUrl])
-          reachedOldestByServer[sUrl] = new Set();
-        reachedOldestByServer[sUrl].add(messageKey);
-      }
-
-      messagesByServer.value = {
-        ...messagesByServer.value,
-        [sUrl]: {
-          ...messagesByServer.value[sUrl],
-          [messageKey]: mergedMsgs,
-        },
-      };
-
-      renderMessagesSignal.value++;
-
-      console.log(
-        `[messages_get] Received ${newMessages.length} messages for ${msgGet.thread_id ? `thread ${msgGet.thread_id}` : `channel ${channel}`}. Total: ${mergedMsgs.length}`,
-      );
-
-      if (
-        serverUrl.value === sUrl &&
-        !currentChannel.value &&
-        mergedMsgs.length > 0 &&
-        sUrl !== DM_SERVER_URL
-      ) {
-        const { selectChannel } = await import("./actions");
-        const channels = channelsByServer.value[sUrl] || [];
-        if (channels.length > 0) selectChannel(channels[0]);
-      }
+    case "messages_get":
+      handleMessagesGet(msg, sUrl);
       break;
-    }
-    case "message_get": {
-      if (!messagesByServer.value[sUrl]) break;
-      const msgGet = msg as MessageGet;
-      const channel = msgGet.channel;
-      const message = msgGet.message;
-      const messageKey = getMessageKey(msgGet);
-      if (!channel || !message) break;
-      pendingReplyFetchesByServer[sUrl]?.delete(message.id!);
-      if (!messagesByServer.value[sUrl][messageKey]) {
-        messagesByServer.value = {
-          ...messagesByServer.value,
-          [sUrl]: { ...messagesByServer.value[sUrl], [messageKey]: [] },
-        };
-      }
-      const existingMsgs = messagesByServer.value[sUrl][messageKey];
-      const alreadyExists = existingMsgs.some((m) => m.id === message.id);
-      if (!alreadyExists) {
-        const insertIdx = existingMsgs.findIndex(
-          (m) => m.timestamp > message.timestamp,
-        );
-        const newMsgs =
-          insertIdx === -1
-            ? [...existingMsgs, message]
-            : [
-                ...existingMsgs.slice(0, insertIdx),
-                message,
-                ...existingMsgs.slice(insertIdx),
-              ];
-        messagesByServer.value = {
-          ...messagesByServer.value,
-          [sUrl]: { ...messagesByServer.value[sUrl], [messageKey]: newMsgs },
-        };
-        renderMessagesSignal.value++;
-      }
+    case "message_get":
+      handleMessageGet(msg, sUrl);
       break;
-    }
-    case "message_edit": {
-      const msgEdit = msg as MessageEdit;
-      const messageKey = getMessageKey(msgEdit);
-      if (!messagesByServer.value[sUrl]?.[messageKey]) break;
-      const editedMsgs = messagesByServer.value[sUrl][messageKey].map((m) =>
-        m.id === msg.id ? { ...m, content: msgEdit.content, edited: true } : m,
-      );
-      messagesByServer.value = {
-        ...messagesByServer.value,
-        [sUrl]: {
-          ...messagesByServer.value[sUrl],
-          [messageKey]: editedMsgs,
-        },
-      };
-      renderMessagesSignal.value++;
+    case "message_edit":
+      handleMessageEdit(msg, sUrl);
       break;
-    }
-    case "message_delete": {
-      const msgDel = msg as MessageDelete;
-      const messageKey = getMessageKey(msgDel);
-      if (!messagesByServer.value[sUrl]?.[messageKey]) break;
-      const filteredMsgs = messagesByServer.value[sUrl][messageKey].filter(
-        (m) => m.id !== msgDel.id,
-      );
-      messagesByServer.value = {
-        ...messagesByServer.value,
-        [sUrl]: {
-          ...messagesByServer.value[sUrl],
-          [messageKey]: filteredMsgs,
-        },
-      };
-      renderMessagesSignal.value++;
+    case "message_delete":
+      handleMessageDelete(msg, sUrl);
       break;
-    }
-    case "attachment_deleted": {
-      const attDel = msg as {
-        cmd: string;
-        attachment_id: string;
-        deleted: boolean;
-      };
-      if (attDel.deleted) {
-        showBanner({
-          kind: "info",
-          message: "Attachment deleted successfully",
-          autoDismissMs: 3000,
-        });
-      }
+    case "attachment_deleted":
+      handleAttachmentDeleted(msg);
       break;
-    }
-    case "typing": {
-      const msgTyping = msg as Typing;
-      const { channel, user } = msgTyping;
-      if (!typingUsersByServer.value[sUrl])
-        typingUsersByServer.value = {
-          ...typingUsersByServer.value,
-          [sUrl]: {},
-        };
-      if (!typingUsersByServer.value[sUrl][channel])
-        typingUsersByServer.value[sUrl][channel] = new Map() as any;
-      (typingUsersByServer.value[sUrl][channel] as Map<string, number>).set(
-        user,
-        Date.now() + 10000,
-      );
+    case "typing":
+      handleTyping(msg, sUrl);
       break;
-    }
-    case "roles_list": {
-      const roles: Record<string, Role> = msg.roles || {};
-      rolesByServer.value = { ...rolesByServer.value, [sUrl]: roles };
+    case "roles_list":
+      handleRolesList(msg, sUrl);
       break;
-    }
-    case "role_reorder": {
-      const { rolesByServer } = await import("../state");
-      const currentRoles = rolesByServer.value[sUrl] || {};
-      const reorderedRoles: Record<string, Role> = {};
-      (msg.roles || []).forEach((roleName: string) => {
-        if (currentRoles[roleName]) {
-          reorderedRoles[roleName] = currentRoles[roleName];
-        }
-      });
-      rolesByServer.value = { ...rolesByServer.value, [sUrl]: reorderedRoles };
+    case "role_reorder":
+      handleRoleReorder(msg, sUrl);
       break;
-    }
-    case "user_roles_set": {
-      const username = msg.user?.toLowerCase();
-      if (!username) break;
-      const serverUsers = usersByServer.value[sUrl] || {};
-      const user = serverUsers[username];
-      if (user) {
-        user.roles = msg.roles || [];
-        const roleColor = Object.values(rolesByServer.value[sUrl] || {}).find(
-          (r) => user.roles?.includes(r.name),
-        )?.color;
-        if (roleColor) user.color = roleColor;
-        usersByServer.value = {
-          ...usersByServer.value,
-          [sUrl]: { ...serverUsers },
-        };
-      }
+    case "user_roles_set":
+      handleUserRolesSet(msg, sUrl);
       break;
-    }
-    case "user_roles_get": {
-      const username = (msg.user as string)?.toLowerCase();
-      if (!username) break;
-      const serverUsers = usersByServer.value[sUrl] || {};
-      const user = serverUsers[username];
-      if (user) {
-        user.roles = msg.roles || [];
-        if (msg.color) {
-          user.color = msg.color;
-        }
-        usersByServer.value = {
-          ...usersByServer.value,
-          [sUrl]: { ...serverUsers },
-        };
-      }
+    case "user_roles_get":
+      handleUserRolesGet(msg, sUrl);
       break;
-    }
-    case "users_banned_list": {
-      const { bannedUsersByServer } = await import("./ui-signals");
-      bannedUsersByServer.value = {
-        ...bannedUsersByServer.value,
-        [sUrl]: msg.users || [],
-      };
+    case "users_banned_list":
+      handleUsersBannedList(msg, sUrl);
       break;
-    }
     case "message_react_add":
-    case "message_react_remove": {
-      const reactMessageKey = getMessageKey(msg as any);
-      if (!messagesByServer.value[sUrl]?.[reactMessageKey]) break;
-      const reactMsg = messagesByServer.value[sUrl][reactMessageKey].find(
-        (m: any) => m.id === msg.id,
-      );
-      if (reactMsg) {
-        // server may send the reactor as msg.user or msg.from, either as a string or object
-        const reactUser: string = (() => {
-          const raw = msg.user ?? msg.from;
-          if (raw == null) return "";
-          return typeof raw === "object"
-            ? (raw.username ?? String(raw))
-            : String(raw);
-        })();
-        if (!reactMsg.reactions) reactMsg.reactions = {};
-        if (
-          msg.cmd === "message_react_add" ||
-          msg.type === "message_react_add"
-        ) {
-          if (!reactMsg.reactions[msg.emoji])
-            reactMsg.reactions[msg.emoji] = [];
-          if (!reactMsg.reactions[msg.emoji].includes(reactUser)) {
-            reactMsg.reactions[msg.emoji].push(reactUser);
-          }
-        } else {
-          if (reactMsg.reactions[msg.emoji]) {
-            reactMsg.reactions[msg.emoji] = reactMsg.reactions[
-              msg.emoji
-            ].filter((u: string) => u !== reactUser);
-            if (reactMsg.reactions[msg.emoji].length === 0) {
-              delete reactMsg.reactions[msg.emoji];
-            }
-          }
-        }
-      }
-      renderMessagesSignal.value++;
+    case "message_react_remove":
+      handleMessageReact(msg, sUrl);
       break;
-    }
-    case "message_pin": {
-      const msgPin = msg as MessagePin;
-      const messageKey = getMessageKey(msgPin);
-      if (!messagesByServer.value[sUrl]?.[messageKey]) break;
-      const pinMsg = messagesByServer.value[sUrl][messageKey].find(
-        (m) => m.id === msgPin.id,
-      );
-      if (pinMsg) {
-        pinMsg.pinned = pinMsg.pinned === true;
-      }
-      renderMessagesSignal.value++;
+    case "messages_search":
+      handleMessagesSearch(msg);
       break;
-    }
-    case "messages_search": {
-      const { searchResults, searchLoading } = await import("./ui-signals");
-      searchResults.value = msg.results || [];
-      searchLoading.value = false;
+    case "pings_get":
+      handlePingsGet(msg);
       break;
-    }
-    case "pings_get": {
-      const incoming = msg.messages || [];
-      const offset = msg.offset ?? 0;
-      if (offset === 0) {
-        pingsInboxMessages.value = incoming;
-      } else {
-        pingsInboxMessages.value = [...pingsInboxMessages.value, ...incoming];
-      }
-      pingsInboxTotal.value = msg.total ?? incoming.length;
-      pingsInboxOffset.value = offset;
-      pingsInboxLoading.value = false;
+    case "messages_pinned":
+      handleMessagesPinned(msg);
       break;
-    }
-    case "list_pings": {
-      // Server response to our on-connect list_pings request.
-      // Shape: { cmd: "list_pings", messages: PingMessage[] }
-      // Each message is a ping (mention or reply-to-me) that occurred after
-      // the `since` timestamp we sent. We count them per-channel, but only
-      // if the message's timestamp is newer than that channel's last read time.
-      const pingMessages: Array<{ channel: string; timestamp: number }> =
-        msg.messages || [];
-      if (!pingMessages.length) break;
-
-      const channelReadTimes = readTimesByServer.value[sUrl] || {};
-
-      // Count pings per channel (only those newer than the channel read time).
-      const newPingsByChannel: Record<string, number> = {};
-      for (const pm of pingMessages) {
-        const channelReadTime = channelReadTimes[pm.channel] ?? 0;
-        if (pm.timestamp > channelReadTime) {
-          newPingsByChannel[pm.channel] =
-            (newPingsByChannel[pm.channel] || 0) + 1;
-        }
-      }
-
-      if (!Object.keys(newPingsByChannel).length) break;
-
-      // Merge into unreadPings (additive with any already-counted live pings).
-      const mergedPings = { ...unreadPings.value };
-      let totalNew = 0;
-      for (const [channel, count] of Object.entries(newPingsByChannel)) {
-        // Skip muted channels.
-        if (getChannelNotifLevel(sUrl, channel) === "none") continue;
-        // Only add if we don't already have a live ping count for this channel
-        // (a live ping arrived via message_new and is already counted).
-        const pingKey = `${sUrl}:${channel}`;
-        if (!mergedPings[pingKey]) {
-          mergedPings[pingKey] = count;
-          totalNew += count;
-        }
-      }
-      if (totalNew > 0) {
-        unreadPings.value = mergedPings;
-        renderChannelsSignal.value++;
-        renderGuildSidebarSignal.value++;
-      }
+    case "user_connect":
+      handleUserConnect(msg, sUrl);
       break;
-    }
-    case "messages_pinned": {
-      const { pinnedMessages, pinnedLoading } = await import("./ui-signals");
-      pinnedMessages.value = msg.messages || [];
-      pinnedLoading.value = false;
+    case "user_join":
+      handleUserJoin(msg, sUrl);
       break;
-    }
-    case "user_connect": {
-      const userConnect = msg as UserConnect;
-      if (!usersByServer.value[sUrl]) {
-        usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
-      }
-      const key = userConnect.user.username?.toLowerCase();
-      if (key) {
-        usersByServer.value = {
-          ...usersByServer.value,
-          [sUrl]: {
-            ...usersByServer.value[sUrl],
-            [key]: {
-              ...usersByServer.value[sUrl][key],
-              ...userConnect.user,
-              status: { status: "online", text: "" },
-            },
-          },
-        };
-        renderMembersSignal.value++;
-      }
+    case "user_disconnect":
+      handleUserDisconnect(msg, sUrl);
       break;
-    }
-    case "user_join": {
-      if (!usersByServer.value[sUrl]) {
-        usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
-      }
-      usersByServer.value = {
-        ...usersByServer.value,
-        [sUrl]: {
-          ...usersByServer.value[sUrl],
-          [msg.user.username?.toLowerCase()]: msg.user,
-        },
-      };
-      renderMembersSignal.value++;
+    case "user_leave":
+      handleUserLeave(msg, sUrl);
       break;
-    }
-    case "user_disconnect": {
-      const userDisconnect = msg as UserDisconnect;
-      const uKey = userDisconnect.username.toLowerCase();
-      if (usersByServer.value[sUrl]?.[uKey]) {
-        usersByServer.value = {
-          ...usersByServer.value,
-          [sUrl]: {
-            ...usersByServer.value[sUrl],
-            [uKey]: {
-              ...usersByServer.value[sUrl][uKey],
-              status: { status: "offline", text: "" },
-            },
-          },
-        };
-        renderMembersSignal.value++;
-      }
+    case "user_status":
+      handleUserStatus(msg, sUrl);
       break;
-    }
-    case "user_leave": {
-      if (usersByServer.value[sUrl]?.[msg.username?.toLowerCase()]) {
-        const updated = { ...usersByServer.value[sUrl] };
-        delete updated[msg.username.toLowerCase()];
-        usersByServer.value = { ...usersByServer.value, [sUrl]: updated };
-        renderMembersSignal.value++;
-      }
+    case "nickname_update":
+      handleNicknameUpdate(msg, sUrl);
       break;
-    }
-    case "user_status": {
-      const uKey = msg.username?.toLowerCase();
-      if (usersByServer.value[sUrl]?.[uKey]) {
-        usersByServer.value[sUrl][uKey] = {
-          ...usersByServer.value[sUrl][uKey],
-          status: msg.status,
-        };
-        renderMembersSignal.value++;
-      }
+    case "nickname_remove":
+      handleNicknameRemove(msg, sUrl);
       break;
-    }
-    case "nickname_update": {
-      const uKey = msg.username?.toLowerCase();
-      if (usersByServer.value[sUrl]?.[uKey]) {
-        usersByServer.value[sUrl][uKey] = {
-          ...usersByServer.value[sUrl][uKey],
-          nickname: msg.nickname,
-        };
-        renderMembersSignal.value++;
-        renderMessagesSignal.value++;
-      }
+    case "voice_join":
+      handleVoiceJoin(msg, sUrl);
       break;
-    }
-    case "nickname_remove": {
-      const uKey = msg.username?.toLowerCase();
-      if (usersByServer.value[sUrl]?.[uKey]) {
-        usersByServer.value[sUrl][uKey] = {
-          ...usersByServer.value[sUrl][uKey],
-        };
-        delete usersByServer.value[sUrl][uKey].nickname;
-        renderMembersSignal.value++;
-        renderMessagesSignal.value++;
-      }
+    case "voice_user_joined":
+      handleVoiceUserJoined(msg, sUrl);
       break;
-    }
-
-    case "voice_join": {
-      const { voiceManager } = await import("../voice");
-      voiceManager.onJoined(msg.channel, msg.participants || []);
-      // Seed voice_state for the channel: server participant list + self at front
-      const selfUsername = currentUserByServer.value[sUrl]?.username;
-      _vcUpdateChannelState(sUrl, msg.channel, () => {
-        const serverList = (msg.participants || []) as VoiceUser[];
-        if (
-          selfUsername &&
-          !serverList.find((u) => u.username === selfUsername)
-        ) {
-          return [
-            { username: selfUsername, muted: voiceManager.isMuted },
-            ...serverList,
-          ];
-        }
-        return serverList;
-      });
-      renderChannelsSignal.value++;
+    case "voice_user_left":
+      handleVoiceUserLeft(msg, sUrl);
       break;
-    }
-    case "voice_user_joined": {
-      const { voiceManager } = await import("../voice");
-      voiceManager.onUserJoined(msg.channel, msg.user);
-      _vcUpdateChannelState(sUrl, msg.channel, (prev) => {
-        if (prev.find((u) => u.username === msg.user?.username)) return prev;
-        return [
-          ...prev,
-          {
-            username: msg.user.username,
-            muted: msg.user.muted ?? false,
-            pfp: msg.user.pfp,
-          },
-        ];
-      });
-      renderChannelsSignal.value++;
+    case "voice_user_updated":
+      handleVoiceUserUpdated(msg, sUrl);
       break;
-    }
-    case "voice_user_left": {
-      const { voiceManager } = await import("../voice");
-      voiceManager.onUserLeft(msg.channel, msg.username);
-      _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-        prev.filter((u) => u.username !== msg.username),
-      );
-      renderChannelsSignal.value++;
+    case "voice_leave":
+      handleVoiceLeave(msg, sUrl);
       break;
-    }
-    case "voice_user_updated": {
-      const { voiceManager } = await import("../voice");
-      voiceManager.onUserUpdated(msg.channel, msg.user);
-      _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-        prev.map((u) =>
-          u.username === msg.user?.username
-            ? { ...u, muted: msg.user.muted }
-            : u,
-        ),
-      );
-      renderChannelsSignal.value++;
+    case "slash_list":
+      handleSlashList(msg, sUrl);
       break;
-    }
-    case "voice_leave": {
-      // Server confirmed our leave — remove self from the channel sidebar.
-      // voiceManager._cleanup() was already called locally in leaveChannel(),
-      // but the sidebar voice_state needs updating here.
-      const myUsername = currentUserByServer.value[sUrl]?.username;
-      if (myUsername && msg.channel) {
-        _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-          prev.filter((u) => u.username !== myUsername),
-        );
-        renderChannelsSignal.value++;
-      }
+    case "slash_add":
+      handleSlashAdd(msg, sUrl);
       break;
-    }
-
-    case "slash_list": {
-      // Full command list for this server — replace the entire set.
-      slashCommandsByServer.value = {
-        ...slashCommandsByServer.value,
-        [sUrl]: msg.commands || [],
-      };
+    case "slash_remove":
+      handleSlashRemove(msg, sUrl);
       break;
-    }
-    case "slash_add": {
-      // One or more commands were registered — merge into the existing list.
-      const incoming: any[] =
-        msg.commands || (msg.command ? [msg.command] : []);
-      if (incoming.length === 0) break;
-      const existing = slashCommandsByServer.value[sUrl] || [];
-      const merged = [...existing];
-      for (const cmd of incoming) {
-        const idx = merged.findIndex((c) => c.name === cmd.name);
-        if (idx !== -1) {
-          merged[idx] = cmd;
-        } else {
-          merged.push(cmd);
-        }
-      }
-      slashCommandsByServer.value = {
-        ...slashCommandsByServer.value,
-        [sUrl]: merged,
-      };
+    case "emoji_get_all":
+      handleEmojiGetAll(msg, sUrl);
       break;
-    }
-    case "slash_remove": {
-      const toRemove: string[] =
-        msg.commands || (msg.command ? [msg.command] : []);
-      if (toRemove.length === 0) break;
-      const existing = slashCommandsByServer.value[sUrl] || [];
-      slashCommandsByServer.value = {
-        ...slashCommandsByServer.value,
-        [sUrl]: existing.filter((c) => !toRemove.includes(c.name)),
-      };
+    case "emoji_add":
+      handleEmojiAdd(msg, sUrl);
       break;
-    }
-
-    case "emoji_get_all": {
-      const emojis: Record<string, { name: string; fileName: string }> =
-        msg.emojis || {};
-      const mapped: Record<string, import("../types").CustomEmoji> = {};
-      for (const [id, e] of Object.entries(emojis)) {
-        mapped[id] = { id, name: e.name, fileName: e.fileName };
-      }
-      customEmojisByServer.value = {
-        ...customEmojisByServer.value,
-        [sUrl]: mapped,
-      };
+    case "emoji_delete":
+      handleEmojiDelete(msg, sUrl);
       break;
-    }
-    case "emoji_add": {
-      if (msg.added && msg.id !== undefined) {
-        const newEmoji: import("../types").CustomEmoji = {
-          id: String(msg.id),
-          name: msg.name,
-          fileName: msg.fileName || `${msg.id}`,
-        };
-        const current = customEmojisByServer.value[sUrl] || {};
-        customEmojisByServer.value = {
-          ...customEmojisByServer.value,
-          [sUrl]: { ...current, [newEmoji.id]: newEmoji },
-        };
-      }
+    case "emoji_update":
+      handleEmojiUpdate(msg, sUrl);
       break;
-    }
-    case "emoji_delete": {
-      if (msg.deleted) {
-        const current = customEmojisByServer.value[sUrl] || {};
-        const updated = { ...current };
-        delete updated[String(msg.id)];
-        customEmojisByServer.value = {
-          ...customEmojisByServer.value,
-          [sUrl]: updated,
-        };
-      }
+    case "push_vapid":
+      handlePushVapid(msg, sUrl);
       break;
-    }
-    case "emoji_update": {
-      if (msg.updated && msg.id !== undefined) {
-        const current = customEmojisByServer.value[sUrl] || {};
-        const existing = current[String(msg.id)];
-        if (existing) {
-          customEmojisByServer.value = {
-            ...customEmojisByServer.value,
-            [sUrl]: {
-              ...current,
-              [String(msg.id)]: {
-                ...existing,
-                ...(msg.name ? { name: msg.name } : {}),
-                ...(msg.fileName ? { fileName: msg.fileName } : {}),
-              },
-            },
-          };
-        }
-      }
+    case "push_subscribed":
+      handlePushSubscribed(msg, sUrl);
       break;
-    }
-
-    // ── Web Push responses ──────────────────────────────────────────────────
-    case "push_vapid": {
-      // Server sent its VAPID public key in response to push_get_vapid.
-      // Complete the subscription flow.
-      const vapidKey: string = msg.key || msg.vapid_key || msg.val;
-      if (vapidKey) {
-        subscribeToPushForServer(sUrl, vapidKey);
-      } else {
-        console.warn(`[Push] push_vapid from ${sUrl} had no key:`, msg);
-      }
+    case "channel_update":
+      handleChannelUpdate(msg, sUrl);
       break;
-    }
-    case "push_subscribed": {
-      if (msg.success === false) {
-        console.warn(`[Push] Server ${sUrl} rejected subscription.`);
-        // Roll back the opt-in flag
-        const next = { ...offlinePushServers.value };
-        delete next[sUrl];
-        offlinePushServers.value = next;
-      }
+    case "webhook_create":
+      handleWebhookCreate(msg, sUrl);
       break;
-    }
-    case "channel_update": {
-      if (msg.channel) {
-        const chList = channelsByServer.value[sUrl];
-        if (chList) {
-          const currentName = msg.current_name || msg.channel.name;
-          const idx = chList.findIndex((c: any) => c.name === currentName);
-          if (idx !== -1) {
-            const updatedList = [...chList];
-            updatedList[idx] = msg.channel;
-            channelsByServer.value = {
-              ...channelsByServer.value,
-              [sUrl]: updatedList,
-            };
-            if (currentChannel.value?.name === currentName) {
-              currentChannel.value = msg.channel;
-            }
-            renderChannelsSignal.value++;
-          }
-        }
-      } else if (msg.updated === false) {
-        const { showError } = await import("./ui-signals");
-        showError(msg.val || "Failed to update channel");
-      }
+    case "webhook_list":
+      handleWebhookList(msg, sUrl);
       break;
-    }
-    case "webhook_create": {
-      const { webhooksByServer, showInfo } = await import("./ui-signals");
-      if (msg.webhook) {
-        const currentWebhooks = webhooksByServer.value[sUrl] || [];
-        webhooksByServer.value = {
-          ...webhooksByServer.value,
-          [sUrl]: [...currentWebhooks, msg.webhook],
-        };
-        if (msg.webhook.token) {
-          showInfo(
-            `Webhook "${msg.webhook.name}" created. Token: ${msg.webhook.token}`,
-          );
-        }
-      } else {
-        const { showError } = await import("./ui-signals");
-        showError(msg.val || "Failed to create webhook");
-      }
+    case "webhook_get":
+      handleWebhookGet(msg, sUrl);
       break;
-    }
-    case "webhook_list": {
-      const { webhooksByServer, webhooksLoading } =
-        await import("./ui-signals");
-      webhooksByServer.value = {
-        ...webhooksByServer.value,
-        [sUrl]: msg.webhooks || [],
-      };
-      webhooksLoading.value = { ...webhooksLoading.value, [sUrl]: false };
+    case "webhook_update":
+      handleWebhookUpdate(msg, sUrl);
       break;
-    }
-    case "webhook_get": {
-      const { webhooksByServer } = await import("./ui-signals");
-      if (msg.webhook) {
-        const currentWebhooks = webhooksByServer.value[sUrl] || [];
-        const idx = currentWebhooks.findIndex(
-          (w: any) => w.id === msg.webhook.id,
-        );
-        if (idx !== -1) {
-          const updatedList = [...currentWebhooks];
-          updatedList[idx] = msg.webhook;
-          webhooksByServer.value = {
-            ...webhooksByServer.value,
-            [sUrl]: updatedList,
-          };
-        } else {
-          webhooksByServer.value = {
-            ...webhooksByServer.value,
-            [sUrl]: [...currentWebhooks, msg.webhook],
-          };
-        }
-      }
+    case "webhook_regenerate":
+      handleWebhookRegenerate(msg, sUrl);
       break;
-    }
-    case "webhook_update": {
-      const { webhooksByServer } = await import("./ui-signals");
-      const currentWebhooks = webhooksByServer.value[sUrl] || [];
-      const idx = currentWebhooks.findIndex(
-        (w: any) => w.id === msg.webhook.id,
-      );
-      if (idx !== -1 && msg.webhook) {
-        const updatedList = [...currentWebhooks];
-        updatedList[idx] = msg.webhook;
-        webhooksByServer.value = {
-          ...webhooksByServer.value,
-          [sUrl]: updatedList,
-        };
-      } else if (msg.updated === false) {
-        const { showError } = await import("./ui-signals");
-        showError(msg.val || "Failed to update webhook");
-      }
+    case "webhook_delete":
+      handleWebhookDelete(msg, sUrl);
       break;
-    }
-    case "webhook_regenerate": {
-      const { webhooksByServer, showInfo } = await import("./ui-signals");
-      const currentWebhooks = webhooksByServer.value[sUrl] || [];
-      const idx = currentWebhooks.findIndex(
-        (w: any) => w.id === msg.webhook.id,
-      );
-      if (idx !== -1 && msg.webhook) {
-        const updatedList = [...currentWebhooks];
-        updatedList[idx] = msg.webhook;
-        webhooksByServer.value = {
-          ...webhooksByServer.value,
-          [sUrl]: updatedList,
-        };
-        if (msg.webhook.token) {
-          showInfo(
-            `Webhook token regenerated. New token: ${msg.webhook.token}`,
-          );
-        }
-      } else if (msg.updated === false) {
-        const { showError } = await import("./ui-signals");
-        showError(msg.val || "Failed to regenerate webhook token");
-      }
-      break;
-    }
-    case "webhook_delete": {
-      const { webhooksByServer, showInfo } = await import("./ui-signals");
-      const currentWebhooks = webhooksByServer.value[sUrl] || [];
-      if (msg.deleted) {
-        webhooksByServer.value = {
-          ...webhooksByServer.value,
-          [sUrl]: currentWebhooks.filter((w: any) => w.id !== msg.id),
-        };
-        showInfo("Webhook deleted successfully");
-      } else {
-        const { showError } = await import("./ui-signals");
-        showError(msg.val || "Failed to delete webhook");
-      }
-      break;
-    }
     case "error":
-    case "err": {
-      // Server-sent error — surface as a dismissible error banner.
-      // Suppress "Unknown command: …" errors — these are expected when we
-      // send opportunistic commands (e.g. list_pings, slash_list) to servers
-      // that don't implement them yet.
-      const errText: string =
-        msg.val || msg.message || msg.error || "The server reported an error.";
-      if (/^unknown command/i.test(errText)) {
-        console.debug(`[${sUrl}] Unsupported command (ignored):`, errText);
-        // If the server doesn't know push_get_vapid it doesn't support offline
-        // push notifications. Roll back the opt-in and tell the user.
-        if (/push_get_vapid/i.test(errText)) {
-          const next = { ...offlinePushServers.value };
-          delete next[sUrl];
-          offlinePushServers.value = next;
-          showBanner({
-            kind: "error",
-            serverUrl: sUrl,
-            message: "This server does not support offline push notifications.",
-            autoDismissMs: 8000,
-          });
-        }
-        break;
-      }
-      // If a "dm add" is in flight and the DMS server says the user doesn't
-      // exist, show a clear, friendly message instead of the raw server error.
-      if (
-        sUrl === DM_SERVER_URL &&
-        pendingDMAddUsername &&
-        /does not exist/i.test(errText)
-      ) {
-        const attempted = pendingDMAddUsername;
-        setPendingDMAddUsername(null);
-        showBanner({
-          kind: "error",
-          serverUrl: sUrl,
-          message: `"${attempted}" is not on OriginChats. Make sure you have the right username.`,
-          autoDismissMs: 8000,
-        });
-        console.error(`[${sUrl}] DM add failed — user not found:`, attempted);
-        break;
-      }
-      // Clear pending DM state on any DMS error so it doesn't linger.
-      if (sUrl === DM_SERVER_URL && pendingDMAddUsername) {
-        setPendingDMAddUsername(null);
-      }
-      showBanner({
-        kind: "error",
-        serverUrl: sUrl,
-        message: errText,
-        autoDismissMs: 8000,
-      });
-      console.error(`[${sUrl}] Server error:`, errText);
+    case "err":
+      handleError(msg, sUrl);
       break;
-    }
     case "ping":
       break;
     default:
       console.debug(`[${sUrl}] Unhandled message type:`, msg.cmd || msg.type);
   }
 }
-
 export function refreshCurrentChannel(): void {
   const sUrl = serverUrl.value;
   const channel = currentChannel.value;

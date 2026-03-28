@@ -4,10 +4,8 @@ import {
   currentServer,
   currentChannel,
   currentThread,
-  unreadByChannel,
-  unreadPings,
   getServerPingCount,
-  getServerUnreadCount,
+  getChannelUnreadCount,
   DM_SERVER_URL,
   dmServers,
   serverUrl,
@@ -41,13 +39,12 @@ export function Header() {
   const [, forceUpdate] = useReducer((n) => n + 1, 0);
   useSignalEffect(() => {
     currentChannel.value;
-    unreadPings.value;
-    unreadByChannel.value;
     serverUrl.value;
     showVoiceCallView.value;
     serverCapabilities.value;
     rightPanelView.value;
     mobilePanelOpen.value;
+    dmServers.value;
     forceUpdate(undefined);
   });
 
@@ -71,8 +68,7 @@ export function Header() {
     0,
   );
   const dmPingTotal = dmServers.value.reduce(
-    (sum, dm) =>
-      sum + (unreadByChannel.value[`${DM_SERVER_URL}:${dm.channel}`] || 0),
+    (sum, dm) => sum + getChannelUnreadCount(DM_SERVER_URL, dm.channel),
     0,
   );
   const totalPings = serverPingTotal + dmPingTotal;

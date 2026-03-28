@@ -7,9 +7,9 @@ import {
   serverFolders,
   dmServers,
   wsStatus,
-  unreadByChannel,
   getServerPingCount,
   getServerUnreadCount,
+  getChannelUnreadCount,
   DM_SERVER_URL,
   serverNotifSettings,
   type NotificationLevel,
@@ -74,8 +74,7 @@ export function GuildSidebar() {
 
     const rect = listRef.current.getBoundingClientRect();
     const dmCount = dmServers.value.filter((dm) => {
-      const unread =
-        unreadByChannel.value[`${DM_SERVER_URL}:${dm.channel}`] || 0;
+      const unread = getChannelUnreadCount(DM_SERVER_URL, dm.channel);
       return unread > 0;
     }).length;
     const serverListOffset = 1 + dmCount + 1; // home + dms + divider
@@ -392,8 +391,7 @@ export function GuildSidebar() {
 
           {dmServers.value
             .filter((dm) => {
-              const unread =
-                unreadByChannel.value[`${DM_SERVER_URL}:${dm.channel}`] || 0;
+              const unread = getChannelUnreadCount(DM_SERVER_URL, dm.channel);
               return unread > 0;
             })
             .map((dm) => (
@@ -605,7 +603,7 @@ function DMServerItem({
 }: {
   dm: { channel: string; username: string; name: string };
 }) {
-  const unread = unreadByChannel.value[`${DM_SERVER_URL}:${dm.channel}`] || 0;
+  const unread = getChannelUnreadCount(DM_SERVER_URL, dm.channel);
   const displayName = useDisplayName(dm.username);
   return (
     <div
