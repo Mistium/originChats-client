@@ -11,6 +11,7 @@ export { handleError } from "./error";
 
 export { handleThreadCreate } from "./thread/create";
 export { handleThreadDelete } from "./thread/delete";
+export { handleThreadUpdate } from "./thread/update";
 export { handleThreadGet } from "./thread/get";
 export { handleThreadJoin, handleThreadLeave } from "./thread/join_leave";
 export { handleThreadMessages } from "./thread/messages";

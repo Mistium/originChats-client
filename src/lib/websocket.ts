@@ -58,6 +58,7 @@ import {
   handleChannelsGet,
   handleThreadCreate,
   handleThreadDelete,
+  handleThreadUpdate,
   handleThreadGet,
   handleThreadJoin,
   handleThreadLeave,
@@ -743,6 +744,9 @@ function handleMessage(msg: any, sUrl: string): void {
       break;
     case "thread_delete":
       handleThreadDelete(msg, sUrl);
+      break;
+    case "thread_update":
+      handleThreadUpdate(msg, sUrl);
       break;
     case "thread_get":
       handleThreadGet(msg);

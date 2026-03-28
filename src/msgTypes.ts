@@ -113,6 +113,13 @@ interface ThreadDelete {
   global?: boolean;
 }
 
+interface ThreadUpdate {
+  cmd: "thread_update";
+  thread: Thread;
+  channel: string;
+  global?: boolean;
+}
+
 interface ThreadGet {
   cmd: "thread_get";
   thread: Thread;
@@ -499,6 +506,7 @@ export type {
   Typing,
   ThreadCreate,
   ThreadDelete,
+  ThreadUpdate,
   ThreadGet,
   ThreadJoin,
   ThreadLeave,
