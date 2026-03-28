@@ -2312,7 +2312,6 @@ export function refreshCurrentChannel(): void {
 
 let visibilityHandlerAdded = false;
 let autoIdleActive = false;
-let autoIdleSavedText: string | undefined;
 let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const IDLE_DEBOUNCE_MS = 500;
 
@@ -2329,8 +2328,8 @@ export function setupVisibilityHandler(): void {
           if (!document.hidden) return;
           if (myStatus.value.status === "online") {
             autoIdleActive = true;
-            autoIdleSavedText = myStatus.value.text;
-            myStatus.value = { status: "idle", text: myStatus.value.text };
+            const currentText = myStatus.value.text;
+            myStatus.value = { status: "idle", text: currentText };
             for (const sUrl of Object.keys(wsConnections)) {
               const caps = serverCapabilitiesByServer.value[sUrl] || [];
               if (caps.includes("status_set")) {
@@ -2338,7 +2337,7 @@ export function setupVisibilityHandler(): void {
                   {
                     cmd: "status_set",
                     status: "idle",
-                    text: myStatus.value.text,
+                    text: currentText,
                   },
                   sUrl,
                 );
@@ -2354,7 +2353,7 @@ export function setupVisibilityHandler(): void {
         }
         if (autoIdleActive && myStatus.value.status === "idle") {
           autoIdleActive = false;
-          myStatus.value = { status: "online", text: autoIdleSavedText };
+          myStatus.value = { status: "online", text: savedStatusText.value };
           for (const sUrl of Object.keys(wsConnections)) {
             const caps = serverCapabilitiesByServer.value[sUrl] || [];
             if (caps.includes("status_set")) {
@@ -2362,7 +2361,7 @@ export function setupVisibilityHandler(): void {
                 {
                   cmd: "status_set",
                   status: "online",
-                  text: autoIdleSavedText,
+                  text: savedStatusText.value,
                 },
                 sUrl,
               );

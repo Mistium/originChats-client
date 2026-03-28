@@ -28,6 +28,7 @@ import {
   clearServerPings,
   myStatus,
   serverCapabilitiesByServer,
+  savedStatusText,
 } from "../state";
 import {
   renderGuildSidebarSignal,
@@ -543,6 +544,7 @@ export function setStatus(
   text?: string,
 ): void {
   myStatus.value = { status: status as "online" | "idle" | "dnd", text };
+  savedStatusText.value = text;
   for (const sUrl of Object.keys(wsConnections)) {
     const caps = serverCapabilitiesByServer.value[sUrl] || [];
     if (caps.includes("status_set")) {
