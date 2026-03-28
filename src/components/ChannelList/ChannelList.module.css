@@ -70,6 +70,42 @@
   padding: 8px;
 }
 
+.channelsListWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.scrollIndicatorAbove,
+.scrollIndicatorBelow {
+  align-items: center;
+  background: var(--primary, #5865f2);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 4px;
+  justify-content: center;
+  padding: 6px 10px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  cursor: pointer;
+  transition: opacity var(--anim-fast);
+}
+
+.scrollIndicatorAbove {
+  top: 4px;
+}
+
+.scrollIndicatorBelow {
+  bottom: 4px;
+}
+
 .channelItem {
   align-items: center;
   border-radius: var(--radius-df);
@@ -149,6 +185,19 @@
 
 .pingBadge {
   background: var(--danger, #ed4245);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  line-height: 1;
+  margin-left: auto;
+  min-width: 20px;
+  padding: var(--space-1) var(--space-2);
+  text-align: center;
+}
+
+.newThreadBadge {
+  background: var(--primary, #5865f2);
   border-radius: var(--radius-pill);
   color: #fff;
   font-size: var(--font-xs);

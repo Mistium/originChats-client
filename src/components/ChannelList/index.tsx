@@ -5,7 +5,7 @@ import {
   useCallback,
   useEffect,
 } from "preact/hooks";
-import { useSignalEffect } from "@preact/signals";
+import { useSignalEffect, useSignal } from "@preact/signals";
 
 import {
   serverUrl,
@@ -30,6 +30,8 @@ import {
   serverCapabilitiesByServer,
   rolesByServer,
   type NotificationLevel,
+  newThreadCounts,
+  clearNewThreadCount,
 } from "../../state";
 import {
   selectChannel,
@@ -79,6 +81,10 @@ function isChannelUnread(
 
 export function ChannelList() {
   const [, forceUpdate] = useReducer((n) => n + 1, 0);
+  const channelsListRef = useRef<HTMLDivElement>(null);
+  const [hasUnreadsAbove, setHasUnreadsAbove] = useState(false);
+  const [hasUnreadsBelow, setHasUnreadsBelow] = useState(false);
+
   useSignalEffect(() => {
     renderChannelsSignal.value; // subscribe to channel changes
     voiceState.value; // re-render when voice state changes
@@ -249,6 +255,67 @@ export function ChannelList() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  const checkForUnreadsOffscreen = useCallback(() => {
+    const listEl = channelsListRef.current;
+    if (!listEl) return;
+
+    const channelItems = listEl.querySelectorAll(`.${styles.channelItem}`);
+    if (channelItems.length === 0) {
+      setHasUnreadsAbove(false);
+      setHasUnreadsBelow(false);
+      return;
+    }
+
+    const listRect = listEl.getBoundingClientRect();
+    let hasAbove = false;
+    let hasBelow = false;
+
+    channelItems.forEach((item) => {
+      const rect = item.getBoundingClientRect();
+      const channelName = item.getAttribute("data-channel-name");
+      if (!channelName) return;
+
+      const key = `${serverUrl.value}:${channelName}`;
+      const hasUnreadState =
+        (unreadByChannel.value[key] || 0) > 0 ||
+        (unreadPings.value[key] || 0) > 0;
+      const hasUnreadClass = item.classList.contains(styles.hasUnread);
+
+      if (hasUnreadState || hasUnreadClass) {
+        if (rect.top < listRect.top - 5) {
+          hasAbove = true;
+        } else if (rect.bottom > listRect.bottom + 5) {
+          hasBelow = true;
+        }
+      }
+    });
+
+    setHasUnreadsAbove(hasAbove);
+    setHasUnreadsBelow(hasBelow);
+  }, [serverUrl.value]);
+
+  useEffect(() => {
+    const timer = setTimeout(checkForUnreadsOffscreen, 100);
+    const listEl = channelsListRef.current;
+    if (listEl) {
+      listEl.addEventListener("scroll", checkForUnreadsOffscreen);
+      const observer = new MutationObserver(checkForUnreadsOffscreen);
+      observer.observe(listEl, { childList: true, subtree: true });
+      return () => {
+        clearTimeout(timer);
+        listEl.removeEventListener("scroll", checkForUnreadsOffscreen);
+        observer.disconnect();
+      };
+    }
+    return () => clearTimeout(timer);
+  }, [checkForUnreadsOffscreen]);
+
+  useSignalEffect(() => {
+    unreadByChannel.value;
+    unreadPings.value;
+    checkForUnreadsOffscreen();
+  });
+
   return (
     <div
       id="channels"
@@ -312,274 +379,306 @@ export function ChannelList() {
           <Icon name="X" size={18} />
         </button>
       </div>
-      <div className={styles.channelsList}>
-        {isDM && (
-          <>
-            <div
-              className={`${styles.channelItem}${currentChannel.value?.name === "home" ? ` ${styles.active}` : ""}`}
-              onClick={selectHomeChannel}
-            >
-              <Icon name="Home" size={18} />
-              <span>Home</span>
-            </div>
-            <div
-              className={`${styles.channelItem}${currentChannel.value?.name === "relationships" ? ` ${styles.active}` : ""}`}
-              onClick={selectRelationshipsChannel}
-            >
-              <Icon name="Users" size={18} />
-              <span>Friends</span>
-            </div>
-            <div
-              className={`${styles.channelItem}${currentChannel.value?.name === "notes" ? ` ${styles.active}` : ""}`}
-              onClick={() =>
-                selectChannel({
-                  name: "notes",
-                  type: "text",
-                  display_name: "Notes",
-                })
-              }
-            >
-              <Icon name="FileText" size={18} />
-              <span>Notes</span>
-            </div>
-            <div
-              className={`${styles.channelItem}${currentChannel.value?.name === "new_message" ? ` ${styles.active}` : ""}`}
-              onClick={() =>
-                selectChannel({
-                  name: "new_message",
-                  type: "new_message",
-                  display_name: "New Message",
-                })
-              }
-            >
-              <Icon name="PenSquare" size={16} />
-              <span>New Message</span>
-            </div>
-            <div className={styles.channelSeparator} />
-          </>
+      <div className={styles.channelsListWrapper}>
+        {hasUnreadsAbove && (
+          <div className={styles.scrollIndicatorAbove}>
+            <Icon name="ChevronUp" size={14} />
+            <span>New unreads</span>
+          </div>
         )}
-        {!isDM &&
-          (() => {
-            const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
-            if (!caps.includes("self_roles_list")) return null;
-            const allRoles = rolesByServer.value[sUrl] ?? {};
-            const selfAssignableRoles = Object.entries(allRoles).filter(
-              ([, role]) => (role as any).self_assignable === true,
-            );
-            if (selfAssignableRoles.length === 0) return null;
-            return (
-              <div className={styles.specialChannelsSection}>
-                <div
-                  className={`${styles.channelItem}${currentChannel.value?.name === "roles" ? ` ${styles.active}` : ""}`}
-                  onClick={selectRolesChannel}
-                >
-                  <Icon name="Shield" size={18} />
-                  <span>Roles</span>
-                </div>
-                <div className={styles.channelSeparator} />
+        <div className={styles.channelsList} ref={channelsListRef}>
+          {isDM && (
+            <>
+              <div
+                className={`${styles.channelItem}${currentChannel.value?.name === "home" ? ` ${styles.active}` : ""}`}
+                onClick={selectHomeChannel}
+              >
+                <Icon name="Home" size={18} />
+                <span>Home</span>
               </div>
-            );
-          })()}
-        {chs.map((channel) => {
-          if (isDM && channel.name === "cmds") return null;
-          if (isDM && channel.type === "separator") return null;
+              <div
+                className={`${styles.channelItem}${currentChannel.value?.name === "relationships" ? ` ${styles.active}` : ""}`}
+                onClick={selectRelationshipsChannel}
+              >
+                <Icon name="Users" size={18} />
+                <span>Friends</span>
+              </div>
+              <div
+                className={`${styles.channelItem}${currentChannel.value?.name === "notes" ? ` ${styles.active}` : ""}`}
+                onClick={() =>
+                  selectChannel({
+                    name: "notes",
+                    type: "text",
+                    display_name: "Notes",
+                  })
+                }
+              >
+                <Icon name="FileText" size={18} />
+                <span>Notes</span>
+              </div>
+              <div
+                className={`${styles.channelItem}${currentChannel.value?.name === "new_message" ? ` ${styles.active}` : ""}`}
+                onClick={() =>
+                  selectChannel({
+                    name: "new_message",
+                    type: "new_message",
+                    display_name: "New Message",
+                  })
+                }
+              >
+                <Icon name="PenSquare" size={16} />
+                <span>New Message</span>
+              </div>
+              <div className={styles.channelSeparator} />
+            </>
+          )}
+          {!isDM &&
+            (() => {
+              const caps = serverCapabilitiesByServer.value[sUrl] ?? [];
+              if (!caps.includes("self_roles_list")) return null;
+              const allRoles = rolesByServer.value[sUrl] ?? {};
+              const selfAssignableRoles = Object.entries(allRoles).filter(
+                ([, role]) => (role as any).self_assignable === true,
+              );
+              if (selfAssignableRoles.length === 0) return null;
+              return (
+                <div className={styles.specialChannelsSection}>
+                  <div
+                    className={`${styles.channelItem}${currentChannel.value?.name === "roles" ? ` ${styles.active}` : ""}`}
+                    onClick={selectRolesChannel}
+                  >
+                    <Icon name="Shield" size={18} />
+                    <span>Roles</span>
+                  </div>
+                  <div className={styles.channelSeparator} />
+                </div>
+              );
+            })()}
+          {chs.map((channel) => {
+            if (isDM && channel.name === "cmds") return null;
+            if (isDM && channel.type === "separator") return null;
 
-          if (channel.type === "separator") {
-            separatorIndex++;
+            if (channel.type === "separator") {
+              separatorIndex++;
+              return (
+                <div
+                  key={`separator-${separatorIndex}`}
+                  className={styles.channelSeparator}
+                />
+              );
+            }
+
+            const isVoice = channel.type === "voice";
+            const displayName = (channel as any).display_name || channel.name;
+            const notifLevel = getChannelNotifLevel(
+              serverUrl.value,
+              channel.name,
+            );
+            const isMuted = notifLevel === "none";
+            const pingCount = isMuted
+              ? 0
+              : getChannelPingCount(serverUrl.value, channel.name);
+            const unreadCount = isMuted
+              ? 0
+              : getChannelUnreadCount(serverUrl.value, channel.name);
+            const hasUnread =
+              !isMuted &&
+              (isChannelUnread(channel, serverUrl.value) || unreadCount > 0);
+            const displayPingCount = isDM ? unreadCount : pingCount;
+            const hasPing = displayPingCount > 0;
+
+            const voiceUsers: VoiceUser[] = (channel as any).voice_state || [];
+
+            if (isVoice) {
+              return (
+                <div key={channel.name} className={styles.voiceChannelWrapper}>
+                  <div
+                    className={`${styles.channelItem}${voice.currentChannel === channel.name ? ` ${styles.active}` : ""}`}
+                    onClick={() => handleChannelClick(channel)}
+                    onContextMenu={(e: any) =>
+                      handleChannelContextMenu(e, channel)
+                    }
+                  >
+                    <Icon name="Mic" size={18} />
+                    {(channel as any).icon && (
+                      <img
+                        src={(channel as any).icon}
+                        className={styles.channelItemIcon}
+                      />
+                    )}
+                    <span>{displayName}</span>
+                    {voiceUsers.length > 0 && (
+                      <span className={styles.voiceUserCount}>
+                        {voiceUsers.length}
+                      </span>
+                    )}
+                  </div>
+                  {voiceUsers.length > 0 && (
+                    <div className={styles.voiceChannelUserList}>
+                      {voiceUsers.map((vu) => (
+                        <div
+                          key={vu.username}
+                          className={`${styles.voiceChannelUser}${vu.muted ? ` ${styles.muted}` : ""}`}
+                          onClick={(e: any) => openUserPopout(e, vu.username)}
+                        >
+                          <div className={styles.voiceChannelUserAvatar}>
+                            <img
+                              src={vu.pfp || avatarUrl(vu.username)}
+                              alt={vu.username}
+                            />
+                          </div>
+                          <span className={styles.voiceChannelUsername}>
+                            {vu.username}
+                          </span>
+                          {vu.muted && <Icon name="MicOff" size={14} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const isForum = channel.type === "forum";
+            const forumThreads = isForum
+              ? threadsByServer.value[serverUrl.value]?.[channel.name] || []
+              : [];
+
+            const visibleThreads = forumThreads.filter((t: any) => {
+              const isParticipant = t.participants?.includes(myUsername);
+              const isCurrentThread = currentThread.value?.id === t.id;
+              return isParticipant || isCurrentThread;
+            });
+
+            if (isForum) {
+              const ch = currentChannel.value as any;
+              const isThreadSelected = currentThread.value?.id !== undefined;
+              const isForumSelected =
+                !isThreadSelected && ch?.name === channel.name;
+
+              const newThreadCount =
+                newThreadCounts.value[serverUrl.value]?.[channel.name] || 0;
+
+              return (
+                <div key={channel.name}>
+                  <div
+                    className={`${styles.channelItem}${!voiceChannelActive && isForumSelected ? ` ${styles.active}` : ""}`}
+                    data-channel-name={channel.name}
+                    onClick={() => {
+                      handleChannelClick(channel);
+                      clearNewThreadCount(serverUrl.value, channel.name);
+                    }}
+                    onContextMenu={(e: any) =>
+                      handleChannelContextMenu(e, channel)
+                    }
+                  >
+                    <Icon name="MessageCircle" size={18} />
+                    <span>{displayName}</span>
+                    {newThreadCount > 0 && (
+                      <span className={styles.newThreadBadge}>
+                        +{newThreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {visibleThreads.map((thread: any) => {
+                    const threadPingKey = `${serverUrl.value}:thread:${thread.id}`;
+                    const threadPingCount =
+                      unreadPings.value[threadPingKey] || 0;
+                    const threadUnreadCount =
+                      unreadByChannel.value[threadPingKey] || 0;
+                    const threadHasPing = threadPingCount > 0;
+                    const threadHasUnread =
+                      !threadHasPing && threadUnreadCount > 0;
+
+                    return (
+                      <div
+                        key={thread.id}
+                        className={`${styles.channelItem} ${styles.threadItem}${!voiceChannelActive && currentThread.value?.id === thread.id ? ` ${styles.active}` : ""}${threadHasUnread ? ` ${styles.hasUnread}` : ""}`}
+                        onClick={(e: any) => {
+                          e.stopPropagation();
+                          selectThread(thread);
+                          wsSend(
+                            { cmd: "thread_messages", thread_id: thread.id },
+                            serverUrl.value,
+                          );
+                        }}
+                        onContextMenu={(e: any) => showThreadMenu(e, thread)}
+                      >
+                        <Icon name="CornerDownRight" size={15} />
+                        <span className={styles.threadName}>{thread.name}</span>
+                        {thread.locked && (
+                          <span className={styles.threadLockedIcon}>
+                            <Icon name="Lock" size={12} />
+                          </span>
+                        )}
+                        {threadHasPing && (
+                          <span className={styles.pingBadge}>
+                            {threadPingCount}
+                          </span>
+                        )}
+                        {threadHasUnread && (
+                          <span className={styles.unreadIndicator}></span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
             return (
               <div
-                key={`separator-${separatorIndex}`}
-                className={styles.channelSeparator}
-              />
-            );
-          }
-
-          const isVoice = channel.type === "voice";
-          const displayName = (channel as any).display_name || channel.name;
-          const notifLevel = getChannelNotifLevel(
-            serverUrl.value,
-            channel.name,
-          );
-          const isMuted = notifLevel === "none";
-          const pingCount = isMuted
-            ? 0
-            : getChannelPingCount(serverUrl.value, channel.name);
-          const unreadCount = isMuted
-            ? 0
-            : getChannelUnreadCount(serverUrl.value, channel.name);
-          const hasUnread =
-            !isMuted &&
-            (isChannelUnread(channel, serverUrl.value) || unreadCount > 0);
-          const displayPingCount = isDM ? unreadCount : pingCount;
-          const hasPing = displayPingCount > 0;
-
-          const voiceUsers: VoiceUser[] = (channel as any).voice_state || [];
-
-          if (isVoice) {
-            return (
-              <div key={channel.name} className={styles.voiceChannelWrapper}>
-                <div
-                  className={`${styles.channelItem}${voice.currentChannel === channel.name ? ` ${styles.active}` : ""}`}
-                  onClick={() => handleChannelClick(channel)}
-                  onContextMenu={(e: any) =>
-                    handleChannelContextMenu(e, channel)
-                  }
-                >
-                  <Icon name="Mic" size={18} />
-                  {(channel as any).icon && (
-                    <img
-                      src={(channel as any).icon}
-                      className={styles.channelItemIcon}
-                    />
-                  )}
-                  <span>{displayName}</span>
-                  {voiceUsers.length > 0 && (
-                    <span className={styles.voiceUserCount}>
-                      {voiceUsers.length}
-                    </span>
-                  )}
-                </div>
-                {voiceUsers.length > 0 && (
-                  <div className={styles.voiceChannelUserList}>
-                    {voiceUsers.map((vu) => (
-                      <div
-                        key={vu.username}
-                        className={`${styles.voiceChannelUser}${vu.muted ? ` ${styles.muted}` : ""}`}
-                        onClick={(e: any) => openUserPopout(e, vu.username)}
-                      >
-                        <div className={styles.voiceChannelUserAvatar}>
-                          <img
-                            src={vu.pfp || avatarUrl(vu.username)}
-                            alt={vu.username}
-                          />
-                        </div>
-                        <span className={styles.voiceChannelUsername}>
-                          {vu.username}
-                        </span>
-                        {vu.muted && <Icon name="MicOff" size={14} />}
-                      </div>
-                    ))}
-                  </div>
+                key={channel.name}
+                className={`${styles.channelItem}${!voiceChannelActive && currentChannel.value?.name === channel.name ? ` ${styles.active}` : ""}${hasUnread ? ` ${styles.hasUnread}` : ""}${isMuted ? ` ${styles.muted}` : ""}`}
+                data-channel-name={channel.name}
+                onClick={() => handleChannelClick(channel)}
+                onContextMenu={(e: any) => handleChannelContextMenu(e, channel)}
+              >
+                {isDM && channel.icon ? (
+                  <img
+                    src={channel.icon}
+                    alt={channel.display_name || channel.name}
+                    className={styles.channelItemDmAvatar}
+                  />
+                ) : (
+                  <>
+                    <Icon name="Hash" size={18} />
+                    {channel.icon && (
+                      <img
+                        src={channel.icon}
+                        className={styles.channelItemIcon}
+                      />
+                    )}
+                  </>
+                )}
+                <span>{displayName}</span>
+                {isMuted && !hasPing && (
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      opacity: 0.4,
+                      display: "flex",
+                    }}
+                  >
+                    <Icon name="BellOff" size={14} />
+                  </span>
+                )}
+                {hasPing && (
+                  <span className={styles.pingBadge}>{displayPingCount}</span>
+                )}
+                {hasUnread && !hasPing && (
+                  <span className={styles.unreadIndicator}></span>
                 )}
               </div>
             );
-          }
-
-          const isForum = channel.type === "forum";
-          const forumThreads = isForum
-            ? threadsByServer.value[serverUrl.value]?.[channel.name] || []
-            : [];
-
-          const visibleThreads = forumThreads.filter((t: any) => {
-            const isParticipant = t.participants?.includes(myUsername);
-            const isCurrentThread = currentThread.value?.id === t.id;
-            return isParticipant || isCurrentThread;
-          });
-
-          if (isForum) {
-            const ch = currentChannel.value as any;
-            const isThreadSelected = currentThread.value?.id !== undefined;
-            const isForumSelected =
-              !isThreadSelected && ch?.name === channel.name;
-
-            return (
-              <div key={channel.name}>
-                <div
-                  className={`${styles.channelItem}${!voiceChannelActive && isForumSelected ? ` ${styles.active}` : ""}`}
-                  onClick={() => handleChannelClick(channel)}
-                  onContextMenu={(e: any) =>
-                    handleChannelContextMenu(e, channel)
-                  }
-                >
-                  <Icon name="MessageCircle" size={18} />
-                  <span>{displayName}</span>
-                </div>
-                {visibleThreads.map((thread: any) => {
-                  const threadPingKey = `${serverUrl.value}:thread:${thread.id}`;
-                  const threadPingCount = unreadPings.value[threadPingKey] || 0;
-                  const threadUnreadCount =
-                    unreadByChannel.value[threadPingKey] || 0;
-                  const threadHasPing = threadPingCount > 0;
-                  const threadHasUnread =
-                    !threadHasPing && threadUnreadCount > 0;
-
-                  return (
-                    <div
-                      key={thread.id}
-                      className={`${styles.channelItem} ${styles.threadItem}${!voiceChannelActive && currentThread.value?.id === thread.id ? ` ${styles.active}` : ""}${threadHasUnread ? ` ${styles.hasUnread}` : ""}`}
-                      onClick={(e: any) => {
-                        e.stopPropagation();
-                        selectThread(thread);
-                        wsSend(
-                          { cmd: "thread_messages", thread_id: thread.id },
-                          serverUrl.value,
-                        );
-                      }}
-                      onContextMenu={(e: any) => showThreadMenu(e, thread)}
-                    >
-                      <Icon name="CornerDownRight" size={15} />
-                      <span className={styles.threadName}>{thread.name}</span>
-                      {thread.locked && (
-                        <span className={styles.threadLockedIcon}>
-                          <Icon name="Lock" size={12} />
-                        </span>
-                      )}
-                      {threadHasPing && (
-                        <span className={styles.pingBadge}>
-                          {threadPingCount}
-                        </span>
-                      )}
-                      {threadHasUnread && (
-                        <span className={styles.unreadIndicator}></span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={channel.name}
-              className={`${styles.channelItem}${!voiceChannelActive && currentChannel.value?.name === channel.name ? ` ${styles.active}` : ""}${hasUnread ? ` ${styles.hasUnread}` : ""}${isMuted ? ` ${styles.muted}` : ""}`}
-              onClick={() => handleChannelClick(channel)}
-              onContextMenu={(e: any) => handleChannelContextMenu(e, channel)}
-            >
-              {isDM && channel.icon ? (
-                <img
-                  src={channel.icon}
-                  alt={channel.display_name || channel.name}
-                  className={styles.channelItemDmAvatar}
-                />
-              ) : (
-                <>
-                  <Icon name="Hash" size={18} />
-                  {channel.icon && (
-                    <img
-                      src={channel.icon}
-                      className={styles.channelItemIcon}
-                    />
-                  )}
-                </>
-              )}
-              <span>{displayName}</span>
-              {isMuted && !hasPing && (
-                <span
-                  style={{ marginLeft: "auto", opacity: 0.4, display: "flex" }}
-                >
-                  <Icon name="BellOff" size={14} />
-                </span>
-              )}
-              {hasPing && (
-                <span className={styles.pingBadge}>{displayPingCount}</span>
-              )}
-              {hasUnread && !hasPing && (
-                <span className={styles.unreadIndicator}></span>
-              )}
-            </div>
-          );
-        })}
+          })}
+        </div>
+        {hasUnreadsBelow && (
+          <div className={styles.scrollIndicatorBelow}>
+            <Icon name="ChevronDown" size={14} />
+            <span>New unreads</span>
+          </div>
+        )}
       </div>
 
       {isInVoice && (

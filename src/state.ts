@@ -53,6 +53,10 @@ export const threadsByServer = signal<Record<string, Record<string, Thread[]>>>(
 export const threadMessagesByServer = signal<
   Record<string, Record<string, Message[]>>
 >({});
+
+export const newThreadCounts = signal<Record<string, Record<string, number>>>(
+  {},
+);
 export const messagesByServer = signal<
   Record<string, Record<string, Message[]>>
 >({});
@@ -241,6 +245,14 @@ export function addThreadToChannel(
       [channelName]: [...channelThreads, thread],
     },
   };
+  const currentCounts = newThreadCounts.value[url] || {};
+  newThreadCounts.value = {
+    ...newThreadCounts.value,
+    [url]: {
+      ...currentCounts,
+      [channelName]: (currentCounts[channelName] || 0) + 1,
+    },
+  };
 }
 
 export function removeThreadFromChannel(
@@ -277,6 +289,17 @@ export function updateThreadInChannel(
         ...current,
         [channelName]: updated,
       },
+    };
+  }
+}
+
+export function clearNewThreadCount(url: string, channelName: string) {
+  const currentCounts = newThreadCounts.value[url] || {};
+  if (currentCounts[channelName]) {
+    const { [channelName]: _, ...rest } = currentCounts;
+    newThreadCounts.value = {
+      ...newThreadCounts.value,
+      [url]: rest,
     };
   }
 }
