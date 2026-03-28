@@ -36,7 +36,6 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
     "user_connect",
     "user_disconnect",
     "users_list",
-    "users_online",
   ];
 
   serverCapabilitiesByServer.value = {
