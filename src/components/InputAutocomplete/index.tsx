@@ -188,19 +188,40 @@ function searchRoles(query: string): AutocompleteItem[] {
   return results;
 }
 
+interface EmojiEntry {
+  label: string;
+  hexcode: string;
+  emoji: string;
+  tags?: string[];
+}
+
 function searchEmojis(query: string): AutocompleteItem[] {
   const q = query.toLowerCase();
-  const recent = recentEmojis.value;
 
-  const results = emojiCache.search(q, 15);
+  const allEmojis: EmojiEntry[] = (window as any).shortcodes || [];
+  const results: AutocompleteItem[] = [];
 
-  return results.map((entry) => ({
-    type: "emoji" as const,
-    label: entry.label.replace(/ /g, "_"),
-    insertText: `:${entry.label.replace(/ /g, "_")}:`,
-    icon: entry.emoji,
-    hexcode: entry.hexcode,
-  }));
+  for (const entry of allEmojis) {
+    if (!entry.emoji || !entry.label) continue;
+    const label = entry.label.toLowerCase().replace(/ /g, "_");
+    const matchesLabel = label.includes(q);
+    const matchesTags = entry.tags?.some((t: string) =>
+      t.toLowerCase().includes(q),
+    );
+    if (!matchesLabel && !matchesTags) continue;
+
+    results.push({
+      type: "emoji",
+      label: entry.label.replace(/ /g, "_"),
+      insertText: `:${entry.label.replace(/ /g, "_")}:`,
+      icon: entry.emoji,
+      hexcode: entry.hexcode,
+    });
+
+    if (results.length >= 15) break;
+  }
+
+  return results;
 }
 
 function searchCustomEmojis(query: string): AutocompleteItem[] {
