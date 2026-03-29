@@ -8,6 +8,7 @@ import {
   currentUser,
   servers,
   customEmojisByServer,
+  usersByServer,
 } from "../../state";
 import {
   showServerSettingsModal,
@@ -536,7 +537,9 @@ export function ServerSettingsModal() {
   };
 
   const myServerUser =
-    users.value[currentUser.value?.username?.toLowerCase() || ""];
+    usersByServer.value[serverUrl.value]?.[
+      currentUser.value?.username?.toLowerCase() || ""
+    ];
   const isOwner = myServerUser?.roles?.includes("owner");
 
   const server = currentServer.value;

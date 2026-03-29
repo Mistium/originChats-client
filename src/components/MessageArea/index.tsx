@@ -17,6 +17,7 @@ import {
   serverUrl,
   currentServer,
   users,
+  usersByServer,
   channels,
   typingUsersByServer,
   sendTypingIndicators,
@@ -1059,7 +1060,7 @@ export function MessageArea() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastTypingSent = useRef<number>(0);
   const [typingUsers, setTypingUsers] = useState<
-    { username: string; color?: string | null }[]
+    { username: string; displayName: string; color?: string | null }[]
   >([]);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<
@@ -1199,13 +1200,21 @@ export function MessageArea() {
       const map = serverTyping[chName] as Map<string, number>;
       const now = Date.now();
       const myName = currentUser.value?.username;
-      const typingList: { username: string; color?: string | null }[] = [];
+      const typingList: {
+        username: string;
+        displayName: string;
+        color?: string | null;
+      }[] = [];
       for (const [user, expiry] of map.entries()) {
         if (expiry < now) {
           map.delete(user);
         } else if (user !== myName) {
-          const serverUser = users.value[user.toLowerCase()];
-          typingList.push({ username: user, color: serverUser?.color });
+          const serverUser = usersByServer.value[sUrl]?.[user.toLowerCase()];
+          typingList.push({
+            username: user,
+            displayName: getDisplayName(user),
+            color: serverUser?.color,
+          });
         }
       }
       setTypingUsers(typingList);
@@ -2047,11 +2056,11 @@ export function MessageArea() {
   const getReplyName = (msg: Message): string => {
     const replyMsg = getReplyMessage(msg);
     const userName = replyMsg?.user || msg.reply_to?.user || "";
-    return userName;
+    return getDisplayName(userName);
   };
 
   const getUserColor = (username: string): string | undefined => {
-    const u = users.value[username?.toLowerCase()];
+    const u = usersByServer.value[serverUrl.value]?.[username?.toLowerCase()];
     return u?.color || undefined;
   };
 
@@ -2845,7 +2854,7 @@ export function MessageArea() {
                     key={u.username}
                     className="typing-avatar"
                     src={avatarUrl(u.username)}
-                    alt={u.username}
+                    alt={u.displayName}
                   />
                 ))}
               </div>
@@ -2856,7 +2865,7 @@ export function MessageArea() {
                   className="typing-name"
                   style={{ color: typingUsers[0].color ?? undefined }}
                 >
-                  {typingUsers[0].username}
+                  {typingUsers[0].displayName}
                 </span>
                 {" is typing..."}
               </>
@@ -2866,14 +2875,14 @@ export function MessageArea() {
                   className="typing-name"
                   style={{ color: typingUsers[0].color ?? undefined }}
                 >
-                  {typingUsers[0].username}
+                  {typingUsers[0].displayName}
                 </span>
                 {" and "}
                 <span
                   className="typing-name"
                   style={{ color: typingUsers[1].color ?? undefined }}
                 >
-                  {typingUsers[1].username}
+                  {typingUsers[1].displayName}
                 </span>
                 {" are typing..."}
               </>
@@ -2883,21 +2892,21 @@ export function MessageArea() {
                   className="typing-name"
                   style={{ color: typingUsers[0].color ?? undefined }}
                 >
-                  {typingUsers[0].username}
+                  {typingUsers[0].displayName}
                 </span>
                 {", "}
                 <span
                   className="typing-name"
                   style={{ color: typingUsers[1].color ?? undefined }}
                 >
-                  {typingUsers[1].username}
+                  {typingUsers[1].displayName}
                 </span>
                 {", and "}
                 <span
                   className="typing-name"
                   style={{ color: typingUsers[2].color ?? undefined }}
                 >
-                  {typingUsers[2].username}
+                  {typingUsers[2].displayName}
                 </span>
                 {" are typing..."}
               </>
@@ -2907,14 +2916,14 @@ export function MessageArea() {
                   className="typing-name"
                   style={{ color: typingUsers[0].color ?? undefined }}
                 >
-                  {typingUsers[0].username}
+                  {typingUsers[0].displayName}
                 </span>
                 {", "}
                 <span
                   className="typing-name"
                   style={{ color: typingUsers[1].color ?? undefined }}
                 >
-                  {typingUsers[1].username}
+                  {typingUsers[1].displayName}
                 </span>
                 {`, and ${typingUsers.length - 2} others are typing...`}
               </>
@@ -3031,7 +3040,9 @@ export function ReplyBar({
       </div>
       <div className="reply-bar-body">
         <div className="reply-bar-label">
-          {isEdit ? "Editing message" : `Replying to ${msg.user}`}
+          {isEdit
+            ? "Editing message"
+            : `Replying to ${getDisplayName(msg.user)}`}
         </div>
         <div className="reply-bar-preview">
           <MessageContent
