@@ -76,10 +76,10 @@ function MembersListInner() {
   const rolesMap = rolesByServer.value[serverUrl.value] || {};
   const hoistedRoles = Object.entries(rolesMap)
     .filter(([, role]) => role.hoisted === true)
-    .map(([name, role]) => ({
+    .map(([name, role], i) => ({
       name,
       color: role.color || null,
-      position: role.position ?? 0,
+      position: role.position ?? i,
     }))
     .sort((a, b) => b.position - a.position);
 
