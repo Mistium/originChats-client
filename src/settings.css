@@ -18,6 +18,7 @@
   --scrollbar-thin-thumb: var(--surface-light, #141419);
   --scrollbar-thin-track: var(--surface, #0a0a0c);
   --input-bg: var(--surface, #0a0a0c);
+  --input-bg-darker: var(--surface-darker, #000);
   --red: var(--danger, #ed4245);
 }
 
