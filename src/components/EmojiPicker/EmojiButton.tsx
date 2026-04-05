@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useCallback } from "preact/compat";
+import { memo } from "preact/compat";
 import { useSystemEmojis } from "../../state";
 import { getEmojiImgOrDataUri } from "../../lib/emoji";
 
@@ -70,44 +70,27 @@ interface EmojiImageProps {
   hexcode: string;
 }
 
-function EmojiImageImpl({ emoji }: EmojiImageProps) {
+function EmojiImageImpl({ emoji, hexcode }: EmojiImageProps) {
   const useSystem = useSystemEmojis.value;
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (useSystem) return;
-
-    const span = spanRef.current;
-    if (!span) return;
-
-    const url = getEmojiImgOrDataUri(emoji);
-    if (!url) return;
-
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = emoji;
-    img.className = "emoji-picker-emoji-img";
-    img.draggable = false;
-    img.loading = "lazy";
-    img.decoding = "async";
-
-    span.replaceChildren(img);
-
-    return () => {
-      if (span.contains(img)) {
-        span.replaceChildren(emoji);
-      }
-    };
-  }, [useSystem, emoji]);
 
   if (useSystem) {
     return <span className="emoji-picker-emoji">{emoji}</span>;
   }
 
+  const url = getEmojiImgOrDataUri(emoji);
+  if (!url) {
+    return <span className="emoji-picker-emoji">{emoji}</span>;
+  }
+
   return (
-    <span ref={spanRef} className="emoji-picker-emoji">
-      {emoji}
-    </span>
+    <img
+      src={url}
+      alt={emoji}
+      className="emoji-picker-emoji-img"
+      draggable={false}
+      loading="lazy"
+      decoding="async"
+    />
   );
 }
 

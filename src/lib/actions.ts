@@ -90,7 +90,7 @@ export function selectChannel(channel: {
   const hasLoaded = loadedChannelsByServer[sUrl]?.has(channel.name) ?? false;
   if (!hasLoaded) {
     startMessageFetch(sUrl, channel.name);
-    wsSend({ cmd: "messages_get", channel: channel.name, limit: 30 }, sUrl);
+    wsSend({ cmd: "messages_get", channel: channel.name, limit: 100 }, sUrl);
   }
 
   renderChannelsSignal.value++;

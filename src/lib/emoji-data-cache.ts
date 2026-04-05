@@ -35,6 +35,7 @@ class EmojiDataCache {
   private customEmojiCache: Map<string, CustomEmojiItem[]> | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private initStarted = false;
 
   CATEGORY_ORDER = [
     "Faces",
@@ -88,6 +89,21 @@ class EmojiDataCache {
 
     this.initPromise = this.doInitialize();
     await this.initPromise;
+  }
+
+  startBackgroundInit(): void {
+    if (this.initStarted) return;
+    this.initStarted = true;
+
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => {
+        this.initialize();
+      });
+    } else {
+      setTimeout(() => {
+        this.initialize();
+      }, 1000);
+    }
   }
 
   private async doInitialize(): Promise<void> {

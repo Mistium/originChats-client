@@ -1,3 +1,4 @@
+import "preact/debug";
 import { render, h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { signal } from "@preact/signals";
@@ -59,6 +60,8 @@ import {
   navigateFromUrl,
 } from "./lib/actions";
 import { loadShortcodes } from "./lib/shortcodes";
+import { prewarmCommonEmojis } from "./lib/emoji";
+import { emojiCache } from "./lib/emoji-data-cache";
 import { session as dbSession, readTimes as dbReadTimes } from "./lib/db";
 import { initSettingsFromDb } from "./state";
 import {
@@ -272,6 +275,8 @@ function App() {
     });
 
     await loadShortcodes();
+    prewarmCommonEmojis();
+    emojiCache.startBackgroundInit();
 
     // Show notification prompt on new device if notifications are disabled and user hasn't dismissed
     if (

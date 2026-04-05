@@ -3909,6 +3909,10 @@ img.tenor-gif {
   contain-intrinsic-size: auto 300px;
 }
 
+.emoji-grid-placeholder {
+  min-height: 100px;
+}
+
 .emoji-section:last-child {
   margin-bottom: 0;
 }
@@ -3931,6 +3935,10 @@ img.tenor-gif {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
   gap: var(--space-1);
+}
+
+.emoji-grid-virtualized {
+  min-height: 100px;
 }
 
 .emoji-button {

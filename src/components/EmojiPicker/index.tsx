@@ -5,6 +5,7 @@ import {
   useCallback,
   useMemo,
 } from "preact/hooks";
+import { RefObject } from "preact";
 import { memo } from "preact/compat";
 import { recentEmojis, servers, useSystemEmojis } from "../../state";
 import {
@@ -14,6 +15,76 @@ import {
 } from "../../lib/emoji-data-cache";
 import { EmojiButton, CustomEmojiButton } from "./EmojiButton";
 import { getEmojiImgOrDataUri } from "../../lib/emoji";
+
+const INTERSECTION_THRESHOLD = 0.01;
+const INTERSECTION_ROOT_MARGIN = "100px";
+
+function useIntersectionObserver(
+  ref: RefObject<HTMLElement>,
+  options?: IntersectionObserverInit,
+): boolean {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        observer.disconnect();
+      }
+    }, options);
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, options]);
+
+  return isVisible;
+}
+
+interface LazyEmojiSectionProps {
+  id: string;
+  label: string;
+  items: EmojiEntry[] | CustomEmojiItem[];
+  onEmojiClick: (emoji: string) => void;
+  onCustomEmojiClick: (emoji: CustomEmojiItem) => void;
+  isActive: boolean;
+}
+
+const LazyEmojiSection = memo(function LazyEmojiSection({
+  id,
+  label,
+  items,
+  onEmojiClick,
+  onCustomEmojiClick,
+}: LazyEmojiSectionProps) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isVisible = useIntersectionObserver(sectionRef, {
+    threshold: INTERSECTION_THRESHOLD,
+    rootMargin: INTERSECTION_ROOT_MARGIN,
+  });
+
+  return (
+    <div
+      ref={sectionRef}
+      data-section={id}
+      className="emoji-section"
+      style={{ minHeight: isVisible ? undefined : 100 }}
+    >
+      <div className="emoji-section-header">{label}</div>
+      {isVisible ? (
+        <EmojiGrid
+          items={items}
+          onEmojiClick={onEmojiClick}
+          onCustomEmojiClick={onCustomEmojiClick}
+        />
+      ) : (
+        <div className="emoji-grid-placeholder" />
+      )}
+    </div>
+  );
+});
 
 export interface EmojiPickerProps {
   isOpen: boolean;
@@ -435,18 +506,15 @@ const EmojiListView = memo(function EmojiListView({
   return (
     <div ref={contentRef} className="emoji-list-scroll">
       {sections.map((section) => (
-        <div
+        <LazyEmojiSection
           key={section.id}
-          data-section={section.id}
-          className="emoji-section"
-        >
-          <div className="emoji-section-header">{section.label}</div>
-          <EmojiGrid
-            items={section.items}
-            onEmojiClick={onEmojiClick}
-            onCustomEmojiClick={onCustomEmojiClick}
-          />
-        </div>
+          id={section.id}
+          label={section.label}
+          items={section.items}
+          onEmojiClick={onEmojiClick}
+          onCustomEmojiClick={onCustomEmojiClick}
+          isActive={activeSection === section.id}
+        />
       ))}
     </div>
   );
@@ -458,11 +526,136 @@ interface EmojiGridProps {
   onCustomEmojiClick: (emoji: CustomEmojiItem) => void;
 }
 
+const EMOJI_SIZE = 36;
+const GRID_COLUMNS = 8;
+const OVERSCAN_ROWS = 2;
+
+const VirtualizedEmojiGrid = memo(function VirtualizedEmojiGrid({
+  items,
+  onEmojiClick,
+  onCustomEmojiClick,
+}: EmojiGridProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(300);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const handleScroll = useCallback((e: Event) => {
+    const target = e.target as HTMLDivElement;
+    setScrollTop(target.scrollTop);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  const totalRows = Math.ceil(items.length / GRID_COLUMNS);
+  const rowHeight = EMOJI_SIZE + 4;
+  const totalHeight = totalRows * rowHeight;
+
+  const startRow = Math.max(
+    0,
+    Math.floor(scrollTop / rowHeight) - OVERSCAN_ROWS,
+  );
+  const visibleRows =
+    Math.ceil(containerHeight / rowHeight) + OVERSCAN_ROWS * 2;
+  const endRow = Math.min(totalRows, startRow + visibleRows);
+
+  const startIndex = startRow * GRID_COLUMNS;
+  const endIndex = Math.min(items.length, endRow * GRID_COLUMNS);
+  const visibleItems = items.slice(startIndex, endIndex);
+
+  const offsetY = startRow * rowHeight;
+
+  return (
+    <div
+      ref={containerRef}
+      className="emoji-grid-virtualized"
+      style={{
+        height: "100%",
+        overflow: "auto",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          height: totalHeight,
+          position: "relative",
+        }}
+      >
+        <div
+          className="emoji-grid"
+          style={{
+            position: "absolute",
+            top: offsetY,
+            left: 0,
+            right: 0,
+          }}
+        >
+          {visibleItems.map((item) => {
+            if ("hexcode" in item) {
+              const entry = item as EmojiEntry;
+              return (
+                <EmojiButton
+                  key={entry.hexcode}
+                  emoji={entry.emoji}
+                  label={entry.label}
+                  hexcode={entry.hexcode}
+                  onClick={() => onEmojiClick(entry.emoji)}
+                />
+              );
+            }
+            const custom = item as CustomEmojiItem;
+            return (
+              <CustomEmojiButton
+                key={custom.id}
+                id={custom.id}
+                name={custom.name}
+                fileName={custom.fileName}
+                serverUrl={custom.serverUrl}
+                serverName={custom.serverName}
+                onClick={() => onCustomEmojiClick(custom)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const EmojiGrid = memo(function EmojiGrid({
   items,
   onEmojiClick,
   onCustomEmojiClick,
 }: EmojiGridProps) {
+  if (items.length > 50) {
+    return (
+      <VirtualizedEmojiGrid
+        items={items}
+        onEmojiClick={onEmojiClick}
+        onCustomEmojiClick={onCustomEmojiClick}
+      />
+    );
+  }
+
   return (
     <div className="emoji-grid">
       {items.map((item) => {

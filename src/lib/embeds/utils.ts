@@ -123,6 +123,17 @@ export async function detectEmbedType(url: string) {
     };
   }
 
+  const originChatsMatch = url.match(
+    /originchats\.mistium\.com\/?\?(?:.*&)?server=([^&]+)/i,
+  );
+  if (originChatsMatch) {
+    return {
+      type: "originchats_server",
+      url,
+      originChatsHost: originChatsMatch[1],
+    };
+  }
+
   if (hasExtension(url, VIDEO_EXTENSIONS) || url.startsWith("data:video/")) {
     return { type: "video", url };
   }

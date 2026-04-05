@@ -21,6 +21,13 @@ import {
   type EmojiEntry,
   type CustomEmojiItem,
 } from "../../lib/emoji-data-cache";
+import {
+  MemoVirtualizedEmojiGrid,
+  standardEmojiToItem,
+  customEmojiToItem,
+  type EmojiSection,
+  type EmojiItem,
+} from "./VirtualizedEmojiGrid";
 
 interface GifResult {
   id: string;
@@ -363,6 +370,14 @@ function EmojiPanel({
     return groups;
   }, [emojis]);
 
+  const isServerCategory = useCallback((cat: string | null): boolean => {
+    return cat?.startsWith("server:") ?? false;
+  }, []);
+
+  const getServerUrlFromCategory = useCallback((cat: string): string => {
+    return cat.replace("server:", "");
+  }, []);
+
   const addRecent = useCallback(
     (emoji: string) => {
       const current = recentEmojis.value;
@@ -432,13 +447,77 @@ function EmojiPanel({
     [],
   );
 
-  const isServerCategory = (cat: string | null): boolean => {
-    return cat?.startsWith("server:") ?? false;
-  };
+  const activeGroupEmojis = useMemo(() => {
+    if (activeCategory === null || isServerCategory(activeCategory)) {
+      return [];
+    }
+    return groupedEmojis[parseInt(activeCategory, 10)] || [];
+  }, [activeCategory, groupedEmojis]);
 
-  const getServerUrlFromCategory = (cat: string): string => {
-    return cat.replace("server:", "");
-  };
+  const activeGroupItems = useMemo(() => {
+    return activeGroupEmojis.map((entry) =>
+      standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
+    );
+  }, [activeGroupEmojis]);
+
+  const activeGroupSections = useMemo((): EmojiSection[] => {
+    if (activeGroupItems.length === 0) return [];
+    return [
+      {
+        header: EMOJI_GROUP_NAMES[parseInt(activeCategory || "0", 10)],
+        items: activeGroupItems,
+      },
+    ];
+  }, [activeGroupItems, activeCategory]);
+
+  const allEmojiItems = useMemo(() => {
+    const sections: EmojiSection[] = [];
+
+    // Add custom emojis by server
+    for (const sUrl of sortedServerUrls) {
+      const server = getServerForUrl(sUrl);
+      const serverEmojis = customEmojiData.get(sUrl) || [];
+      if (serverEmojis.length > 0) {
+        sections.push({
+          header: server?.name || sUrl,
+          items: serverEmojis.map(customEmojiToItem),
+        });
+      }
+    }
+
+    // Add standard emojis by group
+    for (const groupId of DISPLAY_GROUPS) {
+      const groupEmojis = groupedEmojis[groupId] || [];
+      if (groupEmojis.length > 0) {
+        sections.push({
+          header: EMOJI_GROUP_NAMES[groupId],
+          items: groupEmojis.map((entry) =>
+            standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
+          ),
+        });
+      }
+    }
+
+    return sections;
+  }, [sortedServerUrls, customEmojiData, groupedEmojis, getServerForUrl]);
+
+  const serverEmojiItems = useMemo((): EmojiSection[] => {
+    if (!isServerCategory(activeCategory)) return [];
+    const sUrl = activeCategory ? getServerUrlFromCategory(activeCategory) : "";
+    if (!sUrl) return [];
+    const emojis = customEmojiData.get(sUrl) || [];
+    return [
+      {
+        header: undefined,
+        items: emojis.map(customEmojiToItem),
+      },
+    ];
+  }, [
+    activeCategory,
+    customEmojiData,
+    isServerCategory,
+    getServerUrlFromCategory,
+  ]);
 
   const findHexcode = useCallback(
     (emoji: string): string | null => {
@@ -448,69 +527,90 @@ function EmojiPanel({
     [emojis],
   );
 
-  if (searchTerm.trim()) {
-    const query = searchTerm.toLowerCase();
-    const filtered = emojis
-      .filter(
-        (e) =>
-          e.label.toLowerCase().includes(query) ||
-          e.emoji.includes(searchTerm) ||
-          (e.tags && e.tags.some((t) => t.toLowerCase().includes(query))),
-      )
-      .slice(0, 200);
-    const filteredCustom = allCustomEmojis.filter((e) =>
-      e.name.toLowerCase().includes(query),
-    );
-    const hasResults = filtered.length > 0 || filteredCustom.length > 0;
+  // Filter function for search
+  const filterItems = useCallback(
+    (items: EmojiItem[]): EmojiItem[] => {
+      if (!searchTerm.trim()) return items;
+      const query = searchTerm.toLowerCase().trim();
+      return items.filter((item) => {
+        const labelMatch = item.label.toLowerCase().includes(query);
+        const emojiMatch = item.emoji.includes(searchTerm.trim());
+        return labelMatch || emojiMatch;
+      });
+    },
+    [searchTerm],
+  );
 
-    return (
-      <div className="unified-picker-body">
-        {!hasResults ? (
-          <div className="picker-empty">
-            <Icon name="Search" size={32} />
-            <p>No emoji found</p>
-          </div>
-        ) : (
-          <div className="emoji-list-scroll">
-            {filteredCustom.length > 0 && (
-              <div className="emoji-section">
-                <div className="emoji-section-label">Server Emojis</div>
-                <div className="emoji-grid">
-                  {filteredCustom.map((emoji) => (
-                    <MemoCustomEmojiButton
-                      key={emoji.id}
-                      id={emoji.id}
-                      name={emoji.name}
-                      fileName={emoji.fileName}
-                      serverUrl={emoji.serverUrl}
-                      serverName={emoji.serverName}
-                      onClick={() => addCustomEmoji(emoji)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {filtered.length > 0 && (
-              <div className="emoji-section">
-                <div className="emoji-section-label">Standard Emojis</div>
-                <div className="emoji-grid">
-                  {filtered.map((entry, i) => (
-                    <MemoEmojiButton
-                      key={`${entry.hexcode}-${i}`}
-                      hexcode={entry.hexcode}
-                      emoji={entry.emoji}
-                      label={entry.label}
-                      onClick={() => addRecent(entry.emoji)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+  // Apply search filter to all sections
+  const displaySections = useMemo(() => {
+    if (!searchTerm.trim()) {
+      // No search - show based on activeCategory
+      if (isServerCategory(activeCategory)) {
+        return serverEmojiItems;
+      }
+      if (activeCategory !== null) {
+        return activeGroupSections;
+      }
+      return allEmojiItems;
+    }
+
+    // With search - filter all items
+    const query = searchTerm.toLowerCase().trim();
+    const sections: EmojiSection[] = [];
+
+    // Filter custom emojis
+    for (const sUrl of sortedServerUrls) {
+      const serverEmojis = customEmojiData.get(sUrl) || [];
+      const server = getServerForUrl(sUrl);
+      const filtered = serverEmojis
+        .filter((e) => e.name.toLowerCase().includes(query))
+        .map(customEmojiToItem);
+      if (filtered.length > 0) {
+        sections.push({
+          header: server?.name || sUrl,
+          items: filtered,
+        });
+      }
+    }
+
+    // Filter standard emojis by group
+    for (const groupId of DISPLAY_GROUPS) {
+      const groupEmojis = groupedEmojis[groupId] || [];
+      const filtered = groupEmojis
+        .filter((e) => {
+          const labelMatch = e.label.toLowerCase().includes(query);
+          const emojiMatch = e.emoji.includes(searchTerm.trim());
+          const tagMatch =
+            e.tags && e.tags.some((t) => t.toLowerCase().includes(query));
+          return labelMatch || emojiMatch || tagMatch;
+        })
+        .map((entry) =>
+          standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
+        );
+      if (filtered.length > 0) {
+        sections.push({
+          header: EMOJI_GROUP_NAMES[groupId],
+          items: filtered,
+        });
+      }
+    }
+
+    return sections;
+  }, [
+    searchTerm,
+    activeCategory,
+    isServerCategory,
+    serverEmojiItems,
+    activeGroupSections,
+    allEmojiItems,
+    sortedServerUrls,
+    customEmojiData,
+    getServerForUrl,
+    groupedEmojis,
+  ]);
+
+  const showSearchEmpty =
+    searchTerm.trim() && displaySections.every((s) => s.items.length === 0);
 
   return (
     <div className="unified-picker-body">
@@ -565,130 +665,22 @@ function EmojiPanel({
         ))}
       </div>
       <div ref={contentRef} className="emoji-content">
-        {isServerCategory(activeCategory) && (
-          <div className="emoji-section" data-section={activeCategory!}>
-            <div className="emoji-section-header">
-              {getServerForUrl(getServerUrlFromCategory(activeCategory!))
-                ?.name || activeCategory}
-            </div>
-            <div className="emoji-grid">
-              {(
-                customEmojiData.get(
-                  getServerUrlFromCategory(activeCategory!),
-                ) || []
-              ).map((emoji) => (
-                <MemoCustomEmojiButton
-                  key={emoji.id}
-                  id={emoji.id}
-                  name={emoji.name}
-                  fileName={emoji.fileName}
-                  serverUrl={emoji.serverUrl}
-                  serverName={emoji.serverName}
-                  onClick={() => addCustomEmoji(emoji)}
-                />
-              ))}
-            </div>
+        {showSearchEmpty ? (
+          <div className="picker-empty">
+            <Icon name="Search" size={32} />
+            <p>No emoji found</p>
           </div>
-        )}
-        {activeCategory === null && (
-          <>
-            {sortedServerUrls.map((sUrl) => {
-              const server = getServerForUrl(sUrl);
-              const emojis = customEmojiData.get(sUrl) || [];
-              if (emojis.length === 0) return null;
-              return (
-                <div
-                  key={sUrl}
-                  className="emoji-section"
-                  data-section={`server:${sUrl}`}
-                >
-                  <div className="emoji-section-header">
-                    <span>{server?.name || sUrl}</span>
-                  </div>
-                  <div className="emoji-grid">
-                    {emojis.map((emoji) => (
-                      <MemoCustomEmojiButton
-                        key={emoji.id}
-                        id={emoji.id}
-                        name={emoji.name}
-                        fileName={emoji.fileName}
-                        serverUrl={emoji.serverUrl}
-                        serverName={emoji.serverName}
-                        onClick={() => addCustomEmoji(emoji)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="emoji-section" data-section="recent">
-              <div className="emoji-section-header">Recent</div>
-              <div className="emoji-grid">
-                {(recentEmojis.value.length > 0
-                  ? recentEmojis.value
-                  : QUICK_REACTIONS
-                ).map((emoji, i) => {
-                  const hex = findHexcode(emoji);
-                  if (!hex) return null;
-                  return (
-                    <MemoEmojiButton
-                      key={`recent-${hex}-${i}`}
-                      hexcode={hex}
-                      emoji={emoji}
-                      label={emoji}
-                      onClick={() => addRecent(emoji)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            {DISPLAY_GROUPS.map((groupId) => {
-              const groupEmojis = groupedEmojis[groupId] || [];
-              if (groupEmojis.length === 0) return null;
-              return (
-                <div
-                  key={groupId}
-                  className="emoji-section"
-                  data-section={String(groupId)}
-                >
-                  <div className="emoji-section-header">
-                    {EMOJI_GROUP_NAMES[groupId]}
-                  </div>
-                  <div className="emoji-grid">
-                    {groupEmojis.map((entry) => (
-                      <MemoEmojiButton
-                        key={entry.hexcode}
-                        hexcode={entry.hexcode}
-                        emoji={entry.emoji}
-                        label={entry.label}
-                        onClick={() => addRecent(entry.emoji)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </>
-        )}
-        {!isServerCategory(activeCategory) && activeCategory !== null && (
-          <div className="emoji-section" data-section={activeCategory}>
-            <div className="emoji-section-header">
-              {EMOJI_GROUP_NAMES[parseInt(activeCategory, 10)]}
-            </div>
-            <div className="emoji-grid">
-              {(groupedEmojis[parseInt(activeCategory, 10)] || []).map(
-                (entry) => (
-                  <MemoEmojiButton
-                    key={entry.hexcode}
-                    hexcode={entry.hexcode}
-                    emoji={entry.emoji}
-                    label={entry.label}
-                    onClick={() => addRecent(entry.emoji)}
-                  />
-                ),
-              )}
-            </div>
-          </div>
+        ) : (
+          <MemoVirtualizedEmojiGrid
+            sections={displaySections}
+            onSelect={(item) => {
+              if (item.type === "custom" && item.data) {
+                addCustomEmoji(item.data);
+              } else {
+                addRecent(item.emoji);
+              }
+            }}
+          />
         )}
       </div>
     </div>

@@ -42,22 +42,7 @@ export function GiftEmbed({ giftCode, originalUrl }: GiftEmbedProps) {
     }
   };
 
-  if (loading) return null;
-
-  if (error || !gift) {
-    return (
-      <div className="embed-container gift-embed">
-        <div className="gift-card gift-error">
-          <div className="gift-card-header">
-            <div className="gift-icon">
-              <Icon name="Gift" size={32} />
-            </div>
-            <div className="gift-card-title">Gift Not Found</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading || error || !gift) return null;
 
   const isClaimed =
     (gift.claimed_at && !gift.cancelled_at && !gift.is_expired) || claimed;

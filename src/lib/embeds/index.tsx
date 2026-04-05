@@ -14,6 +14,7 @@ export { WikipediaEmbed } from "./wikipedia";
 export { SpotifyEmbed } from "./spotify";
 export { SteamEmbed } from "./steam";
 export { MistWarpEmbed } from "./mistwarp";
+export { OriginChatsServerEmbed } from "./originchats-server";
 export { LinkPreviewEmbed } from "./link-preview";
 
 import { type EmbedInfo } from "./types";
@@ -30,6 +31,7 @@ import { WikipediaEmbed } from "./wikipedia";
 import { SpotifyEmbed } from "./spotify";
 import { SteamEmbed } from "./steam";
 import { MistWarpEmbed } from "./mistwarp";
+import { OriginChatsServerEmbed } from "./originchats-server";
 import { LinkPreviewEmbed } from "./link-preview";
 
 interface EmbedProps {
@@ -98,6 +100,13 @@ export function Embed({ info }: EmbedProps) {
     case "mistwarp":
       return (
         <MistWarpEmbed projectId={info.mistWarpId!} originalUrl={info.url} />
+      );
+    case "originchats_server":
+      return (
+        <OriginChatsServerEmbed
+          serverHost={info.originChatsHost!}
+          originalUrl={info.url}
+        />
       );
     case "link_preview":
       return (

@@ -13,6 +13,7 @@ export type EmbedType =
   | "spotify"
   | "steam"
   | "mistwarp"
+  | "originchats_server"
   | "link_preview"
   | "unknown";
 
@@ -32,6 +33,7 @@ export interface EmbedInfo {
   spotifyUrl?: string;
   steamAppId?: string;
   mistWarpId?: string;
+  originChatsHost?: string;
   title?: string;
   description?: string;
   image?: string;

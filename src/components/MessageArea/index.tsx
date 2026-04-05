@@ -285,9 +285,9 @@ async function sendMessage() {
     ),
     ...(isThread
       ? {
-          thread_id: currentThread.value?.id,
-          channel: (currentChannel.value as any).parent_channel,
-        }
+        thread_id: currentThread.value?.id,
+        channel: (currentChannel.value as any).parent_channel,
+      }
       : { channel: currentChannel.value.name }),
   };
   if (attachmentsToSend.length > 0) {
@@ -464,7 +464,7 @@ function RightPanel() {
       isDMServer &&
       dmUser &&
       currentChannel.value?.icon ===
-        avatarUrl(currentChannel.value?.display_name ?? "");
+      avatarUrl(currentChannel.value?.display_name ?? "");
 
     if (is1on1DM) {
       return (
@@ -926,6 +926,7 @@ export function MessageArea() {
     resetForChannel,
     beginLoadOlder,
     beginLoadNewer,
+    overscrollPadding,
   } = useScrollLock({
     isLoadingOlder: loadingOlder,
     onOlderLoaded: () => setLoadingOlder(false),
@@ -956,17 +957,17 @@ export function MessageArea() {
           wsSend(
             threadId
               ? {
-                  cmd: "messages_around",
-                  thread_id: threadId,
-                  around: oldestMsg.id,
-                  bounds: { above: 0, below: 20 },
-                }
+                cmd: "messages_around",
+                thread_id: threadId,
+                around: oldestMsg.id,
+                bounds: { above: 0, below: 100 },
+              }
               : {
-                  cmd: "messages_around",
-                  channel: ch,
-                  around: oldestMsg.id,
-                  bounds: { above: 0, below: 20 },
-                },
+                cmd: "messages_around",
+                channel: ch,
+                around: oldestMsg.id,
+                bounds: { above: 0, below: 100 },
+              },
             sUrl,
           );
         } else {
@@ -975,18 +976,8 @@ export function MessageArea() {
       } else {
         wsSend(
           threadId
-            ? {
-                cmd: "messages_get",
-                thread_id: threadId,
-                start: msgs.length,
-                limit: 20,
-              }
-            : {
-                cmd: "messages_get",
-                channel: ch,
-                start: msgs.length,
-                limit: 20,
-              },
+            ? { cmd: "messages_get", thread_id: threadId, start: msgs.length, limit: 100 }
+            : { cmd: "messages_get", channel: ch, start: msgs.length, limit: 100 },
           sUrl,
         );
       }
@@ -1017,17 +1008,17 @@ export function MessageArea() {
           wsSend(
             threadId
               ? {
-                  cmd: "messages_around",
-                  thread_id: threadId,
-                  around: newestMsg.id,
-                  bounds: { above: 20, below: 0 },
-                }
+                cmd: "messages_around",
+                thread_id: threadId,
+                around: newestMsg.id,
+                bounds: { above: 100, below: 0 },
+              }
               : {
-                  cmd: "messages_around",
-                  channel: ch,
-                  around: newestMsg.id,
-                  bounds: { above: 20, below: 0 },
-                },
+                cmd: "messages_around",
+                channel: ch,
+                around: newestMsg.id,
+                bounds: { above: 100, below: 0 },
+              },
             sUrl,
           );
         } else {
@@ -1278,6 +1269,8 @@ export function MessageArea() {
     // e.g. switching to a cached channel).
     renderMessagesSignal.value;
     currentChannel.value;
+    blockedUsers.value;
+    blockedMessageDisplay.value;
 
     // Schedule after the current paint so the new channel's DOM is in place.
     requestAnimationFrame(() => {
@@ -1292,10 +1285,10 @@ export function MessageArea() {
 
   const currentMessages = currentChannel.value
     ? messages.value[
-        currentChannel.value.type === "thread" && currentThread.value
-          ? currentThread.value.id
-          : currentChannel.value.name
-      ] || []
+    currentChannel.value.type === "thread" && currentThread.value
+      ? currentThread.value.id
+      : currentChannel.value.name
+    ] || []
     : [];
   const messageKey =
     currentChannel.value?.type === "thread" && currentThread.value
@@ -1465,13 +1458,13 @@ export function MessageArea() {
             prev.map((att) =>
               att.id === tempId
                 ? {
-                    ...att,
-                    id: result.id,
-                    url: result.url,
-                    uploading: false,
-                    expires_at: result.expires_at,
-                    permanent: result.permanent,
-                  }
+                  ...att,
+                  id: result.id,
+                  url: result.url,
+                  uploading: false,
+                  expires_at: result.expires_at,
+                  permanent: result.permanent,
+                }
                 : att,
             ),
           );
@@ -1661,11 +1654,13 @@ export function MessageArea() {
         insertText +
         value.substring(cursorEnd);
       input.value = newValue;
-      input.focus();
-      input.setSelectionRange(
-        cursorStart + insertText.length,
-        cursorStart + insertText.length,
-      );
+      requestAnimationFrame(() => {
+        input.focus();
+        input.setSelectionRange(
+          cursorStart + insertText.length,
+          cursorStart + insertText.length,
+        );
+      });
     }
   };
 
@@ -1675,7 +1670,9 @@ export function MessageArea() {
     ) as HTMLTextAreaElement;
     if (input) {
       input.value = gifUrl;
-      input.focus();
+      requestAnimationFrame(() => {
+        input.focus();
+      });
     }
   };
 
@@ -2466,11 +2463,16 @@ export function MessageArea() {
             className="messages"
             onClick={handleMessagesClick as any}
           >
-            {loadingOlder && (
-              <div className="older-messages-loader">
-                <div className="loading-throbber" />
-              </div>
-            )}
+            <div
+              className={styles.overscrollArea}
+              style={{ height: overscrollPadding }}
+            >
+              {loadingOlder && (
+                <div className={styles.skeletonMessagesTop}>
+                  <SkeletonMessageList count={4} />
+                </div>
+              )}
+            </div>
             {currentMessages.length === 0 && channelLoading ? (
               <div style={{ padding: "20px" }}>
                 <SkeletonMessageList count={3} />
@@ -2573,9 +2575,9 @@ export function MessageArea() {
               {pendingAttachments.map((att) => {
                 const daysUntilExpiry = att.expires_at
                   ? Math.max(
-                      0,
-                      Math.ceil((att.expires_at - Date.now() / 1000) / 86400),
-                    )
+                    0,
+                    Math.ceil((att.expires_at - Date.now() / 1000) / 86400),
+                  )
                   : null;
                 const showExpiry =
                   !att.permanent &&
@@ -2798,14 +2800,14 @@ export function MessageArea() {
                   accept={
                     hasCapability("attachment_upload")
                       ? (() => {
-                          const types =
-                            attachmentConfigByServer.value[serverUrl.value]
-                              ?.allowed_types;
-                          if (types && types.includes("*")) return "*/*";
-                          return mimeTypeToAcceptString(
-                            types || ["image/*", "video/*"],
-                          );
-                        })()
+                        const types =
+                          attachmentConfigByServer.value[serverUrl.value]
+                            ?.allowed_types;
+                        if (types && types.includes("*")) return "*/*";
+                        return mimeTypeToAcceptString(
+                          types || ["image/*", "video/*"],
+                        );
+                      })()
                       : "image/*,video/*"
                   }
                   multiple
@@ -2978,6 +2980,12 @@ export function MessageArea() {
         onClose={() => {
           setShowPicker(false);
           setReactingToMessage(null);
+          requestAnimationFrame(() => {
+            const input = document.getElementById(
+              "message-input",
+            ) as HTMLTextAreaElement;
+            if (input) input.focus();
+          });
         }}
         onEmojiSelect={handleEmojiSelect}
         onGifSelect={handleGifSelect}

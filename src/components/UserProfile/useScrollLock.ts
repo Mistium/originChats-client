@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "preact/hooks";
 
 const NEAR_BOTTOM_THRESHOLD = 80;
+const NEAR_TOP_THRESHOLD = 150;
+const OVERSCROLL_PADDING = 500;
 const MAX_MESSAGES = 500;
 const UNLOAD_BUFFER = 50;
 
@@ -32,12 +34,10 @@ interface UseScrollLockResult {
   showScrollBtn: boolean;
   scrollToBottom: () => void;
   scrollToMessage: (messageId: string) => void;
-  /** Call when the channel changes so the lock resets and view snaps to bottom. */
   resetForChannel: () => void;
-  /** Call before prepending older messages so height compensation is applied. */
   beginLoadOlder: () => void;
-  /** Call before appending newer messages. */
   beginLoadNewer: () => void;
+  overscrollPadding: number;
 }
 
 export function useScrollLock({
@@ -150,9 +150,9 @@ export function useScrollLock({
       autoScroll.current = nearBottom;
       setShowScrollBtn(!nearBottom);
 
-      // Load older messages when near top
+      // Load older messages when near top (with overscroll support)
       if (
-        el.scrollTop <= 10 &&
+        el.scrollTop <= NEAR_TOP_THRESHOLD &&
         !isLoadingOlderRef.current &&
         !pendingOlderLoad.current
       ) {
@@ -162,12 +162,12 @@ export function useScrollLock({
           const container = containerRef.current;
           if (
             !container ||
-            container.scrollTop > 10 ||
+            container.scrollTop > NEAR_TOP_THRESHOLD ||
             pendingOlderLoad.current
           )
             return;
           stableOnLoadOlder();
-        }, 300);
+        }, 50);
       }
 
       // Load newer messages when near bottom but not at bottom
@@ -220,10 +220,13 @@ export function useScrollLock({
           el.scrollTop += heightAdded;
         });
         pendingOlderLoad.current = false;
-        if (el.scrollTop <= 10 && loadOlderDebounce.current === null) {
+        if (
+          el.scrollTop <= NEAR_TOP_THRESHOLD &&
+          loadOlderDebounce.current === null
+        ) {
           loadOlderDebounce.current = window.setTimeout(() => {
             loadOlderDebounce.current = null;
-          }, 300);
+          }, 50);
         }
         stableOnOlderLoaded();
         return;
@@ -266,5 +269,6 @@ export function useScrollLock({
     resetForChannel,
     beginLoadOlder,
     beginLoadNewer,
+    overscrollPadding: OVERSCROLL_PADDING,
   };
 }

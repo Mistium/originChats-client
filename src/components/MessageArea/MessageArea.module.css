@@ -18,6 +18,16 @@
   position: relative;
 }
 
+.overscrollArea {
+  flex-shrink: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.skeletonMessagesTop {
+  padding: 12px 20px;
+}
+
 .messages::before {
   content: "";
   min-height: 0;
