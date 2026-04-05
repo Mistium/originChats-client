@@ -167,6 +167,7 @@ export interface MentionContext {
   validUsernames: Set<string>; // lowercase
   validChannels: Set<string>; // lowercase
   validRoles?: Set<string>; // lowercase
+  allRoles?: Set<string>; // lowercase - all roles in server
   roleColors?: Record<string, string>; // lowercase role name -> color
   currentServerUrl?: string; // for detecting cross-server channel links
   usernameToNickname?: Record<string, string>; // lowercase username -> nickname
@@ -464,15 +465,14 @@ export function parseMarkdown(
     );
   }
 
+  console.log(text);
+
   text = text.replace(/@&amp;([a-zA-Z0-9_]+)/g, (match, roleName) => {
-    console.log(mentionCtx, match, roleName);
-    if (
-      mentionCtx?.validRoles &&
-      !mentionCtx.validRoles.has(roleName.toLowerCase())
-    ) {
+    const roleLower = roleName.toLowerCase();
+    if (!mentionCtx?.allRoles?.has(roleLower)) {
       return match;
     }
-    const color = mentionCtx?.roleColors?.[roleName.toLowerCase()];
+    const color = mentionCtx?.roleColors?.[roleLower];
     const style = color ? ` style="--mention: ${color};"` : "";
     return `<span class="role-mention" data-role="${escapeAttribute(roleName)}"${style}>@${roleName}</span>`;
   });
