@@ -9,7 +9,7 @@ import {
   users,
   hasCapability,
 } from "../../state";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import {
   selectThread,
   createThread,
@@ -234,9 +234,9 @@ export function ThreadPanel() {
                     onContextMenu={(e) => showThreadMenu(e, thread)}
                   >
                     <div className={styles.threadCardHeader}>
-                      <img
+                      <UserAvatar
+                        username={thread.created_by}
                         className={styles.threadCardAvatar}
-                        src={avatarUrl(thread.created_by)}
                         alt={thread.created_by}
                       />
                       <div className={styles.threadCardInfo}>

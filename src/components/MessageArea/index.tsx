@@ -399,8 +399,8 @@ function RightPanelMessageCard({
       onClick={() => scrollToMessage(msg.id)}
     >
       <div className="right-panel-message-header">
-        <img
-          src={avatarUrl(msg.user)}
+        <UserAvatar
+          username={msg.user}
           className="right-panel-avatar"
           alt={msg.user}
         />
@@ -1151,44 +1151,41 @@ export function MessageArea() {
     wsSend({ cmd: "typing", channel: currentChannel.value.name });
   }, []);
 
-  // Clean up expired typing indicators and update display
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const sUrl = serverUrl.value;
-      const chName = currentChannel.value?.name;
-      if (!sUrl || !chName) {
-        setTypingUsers([]);
-        return;
+  // Update typing indicators when signal changes
+  useSignalEffect(() => {
+    const sUrl = serverUrl.value;
+    const chName = currentChannel.value?.name;
+    if (!sUrl || !chName) {
+      setTypingUsers([]);
+      return;
+    }
+    const serverTyping = typingUsersByServer.value[sUrl];
+    if (!serverTyping || !serverTyping[chName]) {
+      setTypingUsers([]);
+      return;
+    }
+    const map = serverTyping[chName] as Map<string, number>;
+    const now = Date.now();
+    const myName = currentUser.value?.username;
+    const typingList: {
+      username: string;
+      displayName: string;
+      color?: string | null;
+    }[] = [];
+    for (const [user, expiry] of map.entries()) {
+      if (expiry < now) {
+        map.delete(user);
+      } else if (user !== myName) {
+        const serverUser = usersByServer.value[sUrl]?.[user.toLowerCase()];
+        typingList.push({
+          username: user,
+          displayName: getDisplayName(user),
+          color: serverUser?.color,
+        });
       }
-      const serverTyping = typingUsersByServer.value[sUrl];
-      if (!serverTyping || !serverTyping[chName]) {
-        setTypingUsers([]);
-        return;
-      }
-      const map = serverTyping[chName] as Map<string, number>;
-      const now = Date.now();
-      const myName = currentUser.value?.username;
-      const typingList: {
-        username: string;
-        displayName: string;
-        color?: string | null;
-      }[] = [];
-      for (const [user, expiry] of map.entries()) {
-        if (expiry < now) {
-          map.delete(user);
-        } else if (user !== myName) {
-          const serverUser = usersByServer.value[sUrl]?.[user.toLowerCase()];
-          typingList.push({
-            username: user,
-            displayName: getDisplayName(user),
-            color: serverUser?.color,
-          });
-        }
-      }
-      setTypingUsers(typingList);
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
+    }
+    setTypingUsers(typingList);
+  });
 
   useEffect(() => {
     return () => {
@@ -2071,10 +2068,6 @@ export function MessageArea() {
       const interaction = msg.interaction;
       const webhook = msg.webhook;
       const displayName = webhook?.name || getDisplayName(msg.user);
-      const displayAvatar =
-        webhook?.avatar ||
-        users.value[msg.user?.toLowerCase()]?.pfp ||
-        (isCrackedAccount(msg.user) ? "" : avatarUrl(msg.user));
       const groupClass =
         isHead || interaction || webhook
           ? (replyTo && canReply) || interaction
@@ -2257,8 +2250,14 @@ export function MessageArea() {
                   </div>
                 ) : (
                   <>
-                    <img
-                      src={displayAvatar}
+                    <UserAvatar
+                      username={msg.user}
+                      nickname={users.value[msg.user?.toLowerCase()]?.nickname}
+                      pfp={
+                        webhook?.avatar ||
+                        users.value[msg.user?.toLowerCase()]?.pfp
+                      }
+                      cracked={users.value[msg.user?.toLowerCase()]?.cracked}
                       className="avatar clickable"
                       alt={displayName}
                       onClick={(e: any) =>
@@ -2387,9 +2386,9 @@ export function MessageArea() {
               <span className="reaction-tooltip">
                 <span className="reaction-tooltip-avatars">
                   {previewUsers.map((u) => (
-                    <img
+                    <UserAvatar
                       key={u}
-                      src={avatarUrl(u)}
+                      username={u}
                       className="reaction-tooltip-avatar"
                       alt={u}
                     />
@@ -2861,10 +2860,10 @@ export function MessageArea() {
             {typingUsers.length > 0 && (
               <div className="typing-avatars">
                 {typingUsers.slice(0, 3).map((u) => (
-                  <img
+                  <UserAvatar
                     key={u.username}
+                    username={u.username}
                     className="typing-avatar"
-                    src={avatarUrl(u.username)}
                     alt={u.displayName}
                   />
                 ))}
@@ -3333,8 +3332,8 @@ function ReactionUserItem({ username }: { username: string }) {
   const displayName = useDisplayName(username);
   return (
     <div className="reaction-modal-user">
-      <img
-        src={avatarUrl(username)}
+      <UserAvatar
+        username={username}
         className="reaction-modal-avatar"
         alt={displayName}
       />

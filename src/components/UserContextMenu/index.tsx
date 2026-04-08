@@ -18,7 +18,8 @@ import { showAccountModal } from "../../lib/ui-signals";
 import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
 import { Icon } from "../Icon";
 import { useContextMenu } from "../../hooks/useContextMenu";
-import { avatarUrl, reloadAvatar } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
+import { reloadAvatar } from "../../utils";
 import { useDisplayName } from "../../lib/useDisplayName";
 import { saveFriendNicknames } from "../../lib/persistence";
 import styles from "./UserContextMenu.module.css";
@@ -139,8 +140,8 @@ export function UserContextMenu({
 
   const header = (
     <>
-      <img
-        src={avatarUrl(username)}
+      <UserAvatar
+        username={username}
         className={styles.contextMenuAvatar}
         alt={displayName}
       />

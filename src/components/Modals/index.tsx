@@ -8,6 +8,7 @@ import {
 } from "../../lib/ui-signals";
 import { notificationPromptDismissed, servers } from "../../state";
 import { connectToServer, enablePushForServer } from "../../lib/websocket";
+import { UserAvatar } from "../UserAvatar";
 import {
   serverUrl,
   usersByServer,
@@ -235,7 +236,7 @@ export function SettingsModal() {
               {profile?.pfp ? (
                 <img src={profile.pfp} alt="" />
               ) : currentUser.value?.username ? (
-                <img src={avatarUrl(currentUser.value.username)} alt="" />
+                <UserAvatar username={currentUser.value.username} alt="" />
               ) : (
                 <Icon name="User" size={20} />
               )}
@@ -491,10 +492,9 @@ export function SettingsModal() {
                         : {}
                     }
                   >
-                    <img
-                      src={
-                        profile?.pfp || avatarUrl(currentUser.value?.username)
-                      }
+                    <UserAvatar
+                      username={currentUser.value?.username || ""}
+                      pfp={profile?.pfp}
                       alt=""
                     />
                     {!(
@@ -2282,8 +2282,9 @@ export function AccountModal({ username }: { username: string }) {
               </div>
               <div className="account-avatar-section">
                 <div className="account-avatar">
-                  <img
-                    src={profile.pfp || avatarUrl(profile.username)}
+                  <UserAvatar
+                    username={profile.username}
+                    pfp={profile.pfp}
                     alt={profile.username}
                   />
                   <div

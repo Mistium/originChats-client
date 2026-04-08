@@ -1,13 +1,75 @@
 import { signal, computed } from "@preact/signals";
+import { pings as pingsDb } from "../db";
+import { loadPings, savePings } from "../persistence";
 
 type ChannelKey = `${string}:${string}`;
+
+let persistenceEnabled = false;
+let cloudPersistenceEnabled = false;
+
+async function persistToDb(
+  pings: Record<ChannelKey, number>,
+  unreads: Record<ChannelKey, number>,
+) {
+  if (!persistenceEnabled) return;
+  try {
+    await pingsDb.set({ pings, unreads });
+    if (cloudPersistenceEnabled) {
+      savePings().catch((e) =>
+        console.error("Failed to persist pings to cloud:", e),
+      );
+    }
+  } catch (e) {
+    console.error("Failed to persist pings to IndexedDB:", e);
+  }
+}
 
 class UnreadState {
   private readonly _pings = signal<Record<ChannelKey, number>>({});
   private readonly _unreads = signal<Record<ChannelKey, number>>({});
+  private persistTimeout: ReturnType<typeof setTimeout> | null = null;
 
   readonly pings = this._pings;
   readonly unreads = this._unreads;
+
+  constructor() {
+    this.loadFromDb();
+  }
+
+  private async loadFromDb() {
+    try {
+      const data = await pingsDb.get();
+      if (data) {
+        this._pings.value = (data.pings as Record<ChannelKey, number>) || {};
+        this._unreads.value =
+          (data.unreads as Record<ChannelKey, number>) || {};
+      }
+      persistenceEnabled = true;
+    } catch (e) {
+      console.error("Failed to load pings from IndexedDB:", e);
+    }
+  }
+
+  async mergeFromCloud() {
+    try {
+      const cloudData = await loadPings();
+      const mergedPings = { ...cloudData.pings, ...this._pings.value };
+      const mergedUnreads = { ...cloudData.unreads, ...this._unreads.value };
+      this._pings.value = mergedPings as Record<ChannelKey, number>;
+      this._unreads.value = mergedUnreads as Record<ChannelKey, number>;
+      cloudPersistenceEnabled = true;
+      this.schedulePersist();
+    } catch (e) {
+      console.error("Failed to merge pings from cloud:", e);
+    }
+  }
+
+  private schedulePersist() {
+    if (this.persistTimeout) clearTimeout(this.persistTimeout);
+    this.persistTimeout = setTimeout(() => {
+      persistToDb(this._pings.value, this._unreads.value);
+    }, 500);
+  }
 
   private key(serverUrl: string, channel: string): ChannelKey {
     return `${serverUrl}:${channel}`;
@@ -97,6 +159,7 @@ class UnreadState {
     const k = this.key(serverUrl, channel);
     const target = isPing ? this._pings : this._unreads;
     target.value = { ...target.value, [k]: (target.value[k] || 0) + 1 };
+    this.schedulePersist();
   }
 
   incrementPing(serverUrl: string, channel: string): void {
@@ -114,6 +177,7 @@ class UnreadState {
     } else {
       this._clearKeyValue(k);
     }
+    this.schedulePersist();
   }
 
   setUnread(serverUrl: string, channel: string, count: number): void {
@@ -123,6 +187,7 @@ class UnreadState {
     } else {
       this._clearKeyValue(k);
     }
+    this.schedulePersist();
   }
 
   addPing(serverUrl: string, channel: string, delta: number): void {
@@ -134,16 +199,19 @@ class UnreadState {
     } else {
       this._clearKeyValue(k);
     }
+    this.schedulePersist();
   }
 
   clearChannel(serverUrl: string, channel: string): void {
     const k = this.key(serverUrl, channel);
     this._clearKeyValue(k);
+    this.schedulePersist();
   }
 
   clearThread(serverUrl: string, threadId: string): void {
     const k = this.threadKey(serverUrl, threadId);
     this._clearKeyValue(k);
+    this.schedulePersist();
   }
 
   clearServer(serverUrl: string): void {
@@ -154,11 +222,13 @@ class UnreadState {
       prefix,
       true,
     );
+    this.schedulePersist();
   }
 
   clearAll(): void {
     this._pings.value = {};
     this._unreads.value = {};
+    this.schedulePersist();
   }
 
   private _clearKeyValue(k: ChannelKey): void {

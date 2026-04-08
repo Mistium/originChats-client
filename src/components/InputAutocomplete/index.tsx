@@ -13,6 +13,7 @@ import {
 import { avatarUrl } from "../../utils";
 import { emojiImgUrl } from "../../lib/emoji";
 import { emojiCache } from "../../lib/emoji-data-cache";
+import { UserAvatar } from "../UserAvatar";
 
 type AutocompleteType = "user" | "channel" | "emoji" | "slash" | "role";
 
@@ -609,10 +610,11 @@ export function InputAutocomplete({
                 scrollToUser(username);
               }}
             >
-              <img
-                src={icon || avatarUrl(username)}
-                alt={username}
+              <UserAvatar
+                username={username}
+                pfp={icon ? undefined : undefined}
                 className="autocomplete-slash-sidebar-avatar"
+                alt={username}
               />
             </button>
           ))}
@@ -625,10 +627,10 @@ export function InputAutocomplete({
           {groups.map(({ user, icon, items }) => (
             <div key={user} className="autocomplete-slash-group">
               <div className="autocomplete-slash-group-header">
-                <img
-                  src={icon || avatarUrl(user)}
-                  alt={user}
+                <UserAvatar
+                  username={user}
                   className="autocomplete-slash-group-avatar"
+                  alt={user}
                 />
                 <span className="autocomplete-slash-group-name">{user}</span>
               </div>

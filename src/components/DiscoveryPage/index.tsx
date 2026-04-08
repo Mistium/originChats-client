@@ -3,6 +3,7 @@ import { servers, usersByServer } from "../../state";
 import { switchServer, selectHomeChannel } from "../../lib/actions";
 import { saveServers } from "../../lib/persistence";
 import { Icon } from "../Icon";
+import { UserAvatar } from "../UserAvatar";
 
 interface DiscoveryServer {
   url: string;
@@ -265,8 +266,8 @@ export function DiscoveryPage() {
                           </div>
                         </div>
                         <div className="discovery-featured-owner">
-                          <img
-                            src={`https://avatars.rotur.dev/${server.owner}`}
+                          <UserAvatar
+                            username={server.owner}
                             alt={server.owner}
                           />
                         </div>
@@ -425,10 +426,9 @@ export function DiscoveryPage() {
                               </span>
                             )}
                             <span className="discovery-page-card-owner-info">
-                              <img
-                                src={`https://avatars.rotur.dev/${ownerName}`}
+                              <UserAvatar
+                                username={ownerName}
                                 alt={ownerName}
-                                title={ownerName}
                               />
                               {ownerName}
                             </span>

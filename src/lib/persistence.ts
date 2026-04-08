@@ -9,6 +9,7 @@ import {
   friendNicknames,
   serverNotifSettings,
   channelNotifSettings,
+  unreadState,
 } from "../state";
 import { getOriginFS, DEFAULT_SERVERS } from "../state";
 import type { NotificationLevel } from "../state";
@@ -184,5 +185,44 @@ export async function saveFriendNicknames(): Promise<void> {
     await originFS.commit();
   } catch (error) {
     console.error("Failed to save friend nicknames:", error);
+  }
+}
+
+export async function loadPings(): Promise<{
+  pings: Record<string, number>;
+  unreads: Record<string, number>;
+}> {
+  const originFS = getOriginFS();
+  if (!originFS) return { pings: {}, unreads: {} };
+  try {
+    await originFS.loadIndex();
+    const content = await originFS.readFileContent(
+      "/application data/chats@mistium/pings.json",
+    );
+    const parsed = JSON.parse(content);
+    return {
+      pings: parsed.pings ?? {},
+      unreads: parsed.unreads ?? {},
+    };
+  } catch {
+    return { pings: {}, unreads: {} };
+  }
+}
+
+export async function savePings(): Promise<void> {
+  const originFS = getOriginFS();
+  if (!originFS) return;
+  const path = "/application data/chats@mistium/pings.json";
+  const data = JSON.stringify({
+    pings: unreadState.pings.value,
+    unreads: unreadState.unreads.value,
+  });
+  try {
+    await originFS.createFolders("/application data/chats@mistium");
+    if (await originFS.exists(path)) await originFS.writeFile(path, data);
+    else await originFS.createFile(path, data);
+    await originFS.commit();
+  } catch (error) {
+    console.error("Failed to save pings:", error);
   }
 }

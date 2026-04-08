@@ -1,7 +1,7 @@
 import { memo } from "preact/compat";
 import { useMemo } from "preact/hooks";
 import { currentUser } from "../../state";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import { MessageContent } from "../MessageContent";
 import type { Message } from "../../types";
 import { openUserPopout } from "../UserPopout";
@@ -112,8 +112,8 @@ function MessageGroupRowInner({
       onClick={onClick}
       onContextMenu={onContextMenu}
     >
-      <img
-        src={avatarUrl(headUser)}
+      <UserAvatar
+        username={headUser}
         className={`${styles.avatar} ${styles.clickable}`}
         alt={headUser}
         onClick={(e: any) => openUserPopout(e, headUser)}
@@ -122,8 +122,8 @@ function MessageGroupRowInner({
         {showReply && replyTo && replyUser && (
           <div className={styles.replyContext}>
             <Icon name="CornerUpRight" size={14} />
-            <img
-              src={avatarUrl(replyUser)}
+            <UserAvatar
+              username={replyUser}
               className={styles.replyAvatar}
               alt={replyUser}
             />

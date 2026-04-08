@@ -32,7 +32,7 @@ import {
 } from "../../lib/rotur-api";
 import { Icon } from "../Icon";
 import { MessageContent } from "../MessageContent";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import { useDisplayName } from "../../lib/useDisplayName";
 import type { RoturGroup } from "../../types";
 import { Header } from "../Header";
@@ -246,8 +246,8 @@ function FriendItem({
 
   return (
     <div className="dm-friend-item">
-      <img
-        src={avatarUrl(username)}
+      <UserAvatar
+        username={username}
         className="dm-avatar"
         onClick={() => (showAccountModal.value = username)}
       />
@@ -308,8 +308,8 @@ function RequestItem({ username }: { username: string }) {
   const displayName = useDisplayName(username);
   return (
     <div className="dm-friend-item">
-      <img
-        src={avatarUrl(username)}
+      <UserAvatar
+        username={username}
         className="dm-avatar"
         onClick={() => (showAccountModal.value = username)}
       />
@@ -362,7 +362,7 @@ function BlockedItem({ username }: { username: string }) {
   const displayName = useDisplayName(username);
   return (
     <div className="dm-friend-item">
-      <img src={avatarUrl(username)} className="dm-avatar" />
+      <UserAvatar username={username} className="dm-avatar" />
       <span className="dm-username">{displayName}</span>
       <div className="dm-actions">
         <button

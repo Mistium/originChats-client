@@ -783,7 +783,7 @@ function UserPanel() {
           onClick={() => setShowStatusSelector(!showStatusSelector)}
         >
           <div className={styles.channelUserPanelAvatar}>
-            <img src={avatarUrl(username)} alt={displayName} />
+            <UserAvatar username={username} alt={displayName} />
             {supportsStatus && (
               <div
                 className={styles.channelUserPanelStatusDot}

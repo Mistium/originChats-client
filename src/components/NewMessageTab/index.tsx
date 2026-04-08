@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { useSignalEffect } from "@preact/signals";
 import { friends, currentUser } from "../../state";
 import { Icon } from "../Icon";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import { useDisplayName } from "../../lib/useDisplayName";
 import { openDMWith } from "../../lib/actions";
 import { Header } from "../Header";
@@ -92,8 +92,8 @@ function NewMessageFriendItem({
   const displayName = useDisplayName(username);
   return (
     <div className="new-message-item" onClick={onClick}>
-      <img
-        src={avatarUrl(username)}
+      <UserAvatar
+        username={username}
         className="new-message-item-avatar"
         alt={displayName}
       />

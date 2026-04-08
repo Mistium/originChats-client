@@ -5,7 +5,7 @@ import { notesChannel } from "../../lib/notes-channel";
 import { Icon } from "../Icon";
 import { showContextMenu } from "../../lib/ui-signals";
 import { MessageContent } from "../MessageContent";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import { useScrollLock } from "../UserProfile/useScrollLock";
 import { Header } from "../Header";
 
@@ -232,8 +232,8 @@ export function NotesTab() {
                   >
                     {isHead && (
                       <>
-                        <img
-                          src={avatarUrl(note.user)}
+                        <UserAvatar
+                          username={note.user}
                           className="avatar"
                           alt={note.user}
                         />

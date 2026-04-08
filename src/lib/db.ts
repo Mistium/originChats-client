@@ -14,7 +14,7 @@
  */
 
 const DB_NAME = "originchats";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORES = [
   "settings",
@@ -23,6 +23,7 @@ const STORES = [
   "favGifs",
   "mediaServers",
   "folders",
+  "pings",
 ] as const;
 
 export type StoreName = (typeof STORES)[number];
@@ -171,4 +172,16 @@ export const mediaServersDb = {
 const foldersDb = {
   get: <T>(): Promise<T | undefined> => dbGet<T>("folders", "folders"),
   set: (value: unknown) => dbSet("folders", "folders", value),
+};
+
+/** Pings and unreads persistence. */
+export const pings = {
+  get: (): Promise<
+    | { pings: Record<string, number>; unreads: Record<string, number> }
+    | undefined
+  > => dbGet("pings", "pings"),
+  set: (value: {
+    pings: Record<string, number>;
+    unreads: Record<string, number>;
+  }) => dbSet("pings", "pings", value),
 };

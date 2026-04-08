@@ -2,7 +2,7 @@ import { currentUserByServer, serverUrl } from "../../state";
 import { showVoiceCallView } from "../../lib/ui-signals";
 import { voiceState, voiceManager } from "../../voice";
 import { Icon } from "../Icon";
-import { avatarUrl } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
 import styles from "./VoiceCallView.module.css";
 
 interface VoiceCallViewProps {
@@ -145,8 +145,8 @@ export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
                 <div
                   className={`${styles.voiceCallTileSpeakingRing} ${speaking ? styles.active : ""}`}
                 />
-                <img
-                  src={avatarUrl(isSelf ? myUsername : p.username)}
+                <UserAvatar
+                  username={isSelf ? myUsername : p.username}
                   alt={displayName}
                   className={styles.voiceCallTileAvatar}
                 />

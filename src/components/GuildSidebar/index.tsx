@@ -31,7 +31,8 @@ import {
   showInfo,
 } from "../../lib/ui-signals";
 import { Icon, ServerIcon } from "../Icon";
-import { avatarUrl, reloadServerIcon } from "../../utils";
+import { UserAvatar } from "../UserAvatar";
+import { reloadServerIcon } from "../../utils";
 import { useDisplayName } from "../../lib/useDisplayName";
 import { saveNotifSettings, saveFolders } from "../../lib/persistence";
 import styles from "./GuildSidebar.module.css";
@@ -651,7 +652,7 @@ function DMServerItem({
       }}
     >
       <div className={styles.guildIcon}>
-        <img src={avatarUrl(dm.username)} alt={displayName} />
+        <UserAvatar username={dm.username} alt={displayName} />
       </div>
       <div className={styles.guildPill} />
       {unread > 0 ? (

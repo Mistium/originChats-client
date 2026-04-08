@@ -21,6 +21,7 @@ import {
 import { wsSend } from "../../lib/websocket";
 import { Icon } from "../Icon";
 import type { Role, Channel, ServerUser, CustomEmoji } from "../../types";
+import { UserAvatar } from "../UserAvatar";
 import { avatarUrl } from "../../utils";
 import {
   isServerOwner,
@@ -444,7 +445,7 @@ function UserRolesEditor({
       )}
     </div>
   );
-};
+}
 
 export function ServerSettingsModal() {
   const [section, setSection] = useState<Section>("overview");
@@ -544,7 +545,7 @@ export function ServerSettingsModal() {
 
   const myServerUser =
     usersByServer.value[serverUrl.value]?.[
-    currentUser.value?.username?.toLowerCase() || ""
+      currentUser.value?.username?.toLowerCase() || ""
     ];
   const owner = isServerOwner(serverUrl.value);
   const canChannels = canManageChannels(serverUrl.value);
@@ -1449,7 +1450,7 @@ export function ServerSettingsModal() {
                                     role.name,
                                     "color",
                                     (e.target as HTMLInputElement).value ||
-                                    null,
+                                      null,
                                   );
                                 }}
                                 onBlur={() => saveRoleField(role.name, "color")}
@@ -1558,43 +1559,43 @@ export function ServerSettingsModal() {
                             {!["owner", "admin", "moderator"].includes(
                               role.name,
                             ) && (
-                                <label className="checkbox-label">
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      (getRoleEditValue(
-                                        role,
-                                        "self_assignable",
-                                      ) as boolean) ?? false
-                                    }
-                                    onChange={(e) => {
-                                      const checked = (
-                                        e.target as HTMLInputElement
-                                      ).checked;
-                                      updateRoleField(
-                                        role.name,
-                                        "self_assignable",
-                                        checked,
-                                      );
-                                      wsSend(
-                                        {
-                                          cmd: "role_update",
-                                          name: role.name,
-                                          self_assignable: checked,
-                                        },
-                                        serverUrl.value,
-                                      );
-                                      showInfo(
-                                        `Role "${role.name}" ${checked ? "is now self-assignable" : "is no longer self-assignable"}`,
-                                      );
-                                    }}
-                                  />
-                                  <span>
-                                    Self-assignable (users can assign to
-                                    themselves)
-                                  </span>
-                                </label>
-                              )}
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    (getRoleEditValue(
+                                      role,
+                                      "self_assignable",
+                                    ) as boolean) ?? false
+                                  }
+                                  onChange={(e) => {
+                                    const checked = (
+                                      e.target as HTMLInputElement
+                                    ).checked;
+                                    updateRoleField(
+                                      role.name,
+                                      "self_assignable",
+                                      checked,
+                                    );
+                                    wsSend(
+                                      {
+                                        cmd: "role_update",
+                                        name: role.name,
+                                        self_assignable: checked,
+                                      },
+                                      serverUrl.value,
+                                    );
+                                    showInfo(
+                                      `Role "${role.name}" ${checked ? "is now self-assignable" : "is no longer self-assignable"}`,
+                                    );
+                                  }}
+                                />
+                                <span>
+                                  Self-assignable (users can assign to
+                                  themselves)
+                                </span>
+                              </label>
+                            )}
                           </div>
                           <div className="role-permissions-section">
                             <div className="permissions-header">
@@ -1719,8 +1720,8 @@ export function ServerSettingsModal() {
                       })
                     }
                   >
-                    <img
-                      src={avatarUrl(member.username)}
+                    <UserAvatar
+                      username={member.username}
                       className="settings-member-avatar"
                       alt=""
                     />
@@ -1960,8 +1961,8 @@ export function ServerSettingsModal() {
           >
             <div className="settings-inner-dialog settings-inner-dialog-wide">
               <div className="user-detail-header">
-                <img
-                  src={avatarUrl(userDetailModal.username)}
+                <UserAvatar
+                  username={userDetailModal.username}
                   className="user-detail-avatar"
                   alt=""
                 />
