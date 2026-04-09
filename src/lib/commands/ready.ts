@@ -58,4 +58,10 @@ export function handleReady(msg: Ready, sUrl: string): void {
       enablePushForServer(sUrl);
     }
   }
+
+  // Request unreads from server
+  const caps = serverCapabilitiesByServer.value[sUrl] || [];
+  if (caps.includes("unreads_get")) {
+    wsSend({ cmd: "unreads_get" }, sUrl);
+  }
 }

@@ -48,6 +48,54 @@ export function cleanupWsSenderAudio(): void {
   }
 }
 
+export function markChannelAsRead(
+  channelName: string,
+  messageId?: string,
+  sUrl?: string
+): boolean {
+  const payload: any = {
+    cmd: "unreads_ack",
+    channel: channelName,
+  };
+  if (messageId) {
+    payload.message_id = messageId;
+  }
+  return wsSend(payload, sUrl);
+}
+
+export function markThreadAsRead(
+  threadId: string,
+  messageId?: string,
+  sUrl?: string
+): boolean {
+  const payload: any = {
+    cmd: "unreads_ack",
+    thread_id: threadId,
+  };
+  if (messageId) {
+    payload.message_id = messageId;
+  }
+  return wsSend(payload, sUrl);
+}
+
+export function getUnreadCount(
+  channelName: string,
+  sUrl?: string
+): boolean {
+  return wsSend({ cmd: "unreads_count", channel: channelName }, sUrl);
+}
+
+export function getThreadUnreadCount(
+  threadId: string,
+  sUrl?: string
+): boolean {
+  return wsSend({ cmd: "unreads_count", thread_id: threadId }, sUrl);
+}
+
+export function getAllUnreads(sUrl?: string): boolean {
+  return wsSend({ cmd: "unreads_get" }, sUrl);
+}
+
 function playPingSound(
   type: "default" | "soft" | "bell" | "pop" | "none" | "custom" = "default",
   volume: number = 0.5,

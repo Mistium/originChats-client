@@ -247,6 +247,12 @@ export function markChannelAsRead(channelName: string): void {
   saveReadTimes().catch((e) =>
     console.warn("[markChannelAsRead] Failed to sync read times to cloud:", e),
   );
+
+  // Send unreads_ack command to server
+  const caps = serverCapabilitiesByServer.value[sUrl] || [];
+  if (caps.includes("unreads_ack")) {
+    wsSend({ cmd: "unreads_ack", channel: channelName }, sUrl);
+  }
 }
 
 export function markServerAsRead(sUrl: string): void {

@@ -8,7 +8,7 @@ import {
   channelsByServer,
   DM_SERVER_URL,
 } from "../../../state";
-import { finishMessageFetch } from "../../ws-sender";
+import { finishMessageFetch, markChannelAsRead, markThreadAsRead } from "../../ws-sender";
 import { selectChannel } from "../../actions";
 import {
   getMessageKey,
@@ -43,6 +43,16 @@ export function handleMessagesGet(msg: MessagesGet, sUrl: string): void {
   }
 
   setMessages(sUrl, messageKey, sortedMsgs);
+
+  // Auto-ack when fetching messages (mark as read up to latest message)
+  if (sortedMsgs.length > 0) {
+    const latestMessage = sortedMsgs[sortedMsgs.length - 1];
+    if (msg.thread_id) {
+      markThreadAsRead(msg.thread_id, latestMessage.id, sUrl);
+    } else {
+      markChannelAsRead(msg.channel, latestMessage.id, sUrl);
+    }
+  }
 
   if (
     serverUrl.value === sUrl &&

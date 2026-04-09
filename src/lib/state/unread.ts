@@ -231,6 +231,26 @@ class UnreadState {
     this.schedulePersist();
   }
 
+  // New methods for server-driven unreads
+  setChannelUnread(channelId: string, count: number): void {
+    // channelId is already in the format "serverUrl:channelName"
+    const k = channelId as ChannelKey;
+    if (count > 0) {
+      this._unreads.value = { ...this._unreads.value, [k]: count };
+    } else {
+      const next = { ...this._unreads.value };
+      delete next[k];
+      this._unreads.value = next;
+    }
+    this.schedulePersist();
+  }
+
+  setAllUnreads(unreads: Record<string, number>): void {
+    // Replace all unreads with server-provided data
+    this._unreads.value = unreads as Record<ChannelKey, number>;
+    this.schedulePersist();
+  }
+
   private _clearKeyValue(k: ChannelKey): void {
     if (this._pings.value[k] !== undefined) {
       const next = { ...this._pings.value };
