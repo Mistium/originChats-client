@@ -22,6 +22,28 @@ This document describes the server-side unreads tracking implementation for Orig
 - Added unreads command handlers to websocket imports
 - Added routing cases for `unreads_get`, `unreads_count`, `unreads_ack`, `unreads_update`
 
+### Session-Based Unreads for Legacy Servers
+- Updated `ready.ts` to clear unreads on connection for servers without unreads capabilities
+- Added capability checks to all unreads helper functions in `ws-sender.ts`
+- Servers without unreads support now have session-based unreads (cleared on reload/reconnect)
+- Servers with unreads support use persistent, cross-device synced unreads
+
+## Behavior Based on Server Capabilities
+
+### Servers WITH unreads commands
+- Unreads are tracked server-side and persist across sessions and devices
+- `unreads_get` is called on connection to fetch current unread counts
+- `unreads_ack` is sent when viewing channels to mark them as read
+- `unreads_update` events sync read state across all your sessions
+- Local tracking still works but is synchronized with server state
+
+### Servers WITHOUT unreads commands
+- Unreads are tracked locally only (session-based)
+- All unreads for that server are **cleared on reconnect/reload**
+- Local tracking increments unreads on new messages
+- Local clearing happens when viewing channels
+- No persistence or cross-device sync
+
 ## Overview
 
 The client now supports server-side unreads tracking using the following commands:

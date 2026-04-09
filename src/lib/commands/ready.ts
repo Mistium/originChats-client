@@ -7,6 +7,7 @@ import {
   savedStatusText,
   offlinePushServers,
 } from "../../state";
+import { unreadState } from "../../state";
 import { statusState } from "../state";
 import { renderMembersSignal } from "../ui-signals";
 import { wsSend } from "../ws-sender";
@@ -59,9 +60,14 @@ export function handleReady(msg: Ready, sUrl: string): void {
     }
   }
 
-  // Request unreads from server
+  // Handle unreads based on server capabilities
   const caps = serverCapabilitiesByServer.value[sUrl] || [];
   if (caps.includes("unreads_get")) {
+    // Server supports unreads - request them from server
     wsSend({ cmd: "unreads_get" }, sUrl);
+  } else {
+    // Server doesn't support unreads - clear any existing unreads for this server
+    // This makes unreads session-based (cleared on reconnect/reload)
+    unreadState.clearServer(sUrl);
   }
 }

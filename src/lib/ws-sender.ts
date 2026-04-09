@@ -1,4 +1,4 @@
-import { serverUrl, wsConnections } from "../state";
+import { serverUrl, wsConnections, serverCapabilitiesByServer } from "../state";
 
 const pendingMessageFetchesByServer: Record<
   string,
@@ -53,6 +53,14 @@ export function markChannelAsRead(
   messageId?: string,
   sUrl?: string
 ): boolean {
+  const url = sUrl || serverUrl.value;
+  const caps = serverCapabilitiesByServer.value[url] || [];
+  
+  // Only send unreads_ack if server supports it
+  if (!caps.includes("unreads_ack")) {
+    return false;
+  }
+  
   const payload: any = {
     cmd: "unreads_ack",
     channel: channelName,
@@ -68,6 +76,14 @@ export function markThreadAsRead(
   messageId?: string,
   sUrl?: string
 ): boolean {
+  const url = sUrl || serverUrl.value;
+  const caps = serverCapabilitiesByServer.value[url] || [];
+  
+  // Only send unreads_ack if server supports it
+  if (!caps.includes("unreads_ack")) {
+    return false;
+  }
+  
   const payload: any = {
     cmd: "unreads_ack",
     thread_id: threadId,
@@ -82,6 +98,13 @@ export function getUnreadCount(
   channelName: string,
   sUrl?: string
 ): boolean {
+  const url = sUrl || serverUrl.value;
+  const caps = serverCapabilitiesByServer.value[url] || [];
+  
+  if (!caps.includes("unreads_count")) {
+    return false;
+  }
+  
   return wsSend({ cmd: "unreads_count", channel: channelName }, sUrl);
 }
 
@@ -89,10 +112,24 @@ export function getThreadUnreadCount(
   threadId: string,
   sUrl?: string
 ): boolean {
+  const url = sUrl || serverUrl.value;
+  const caps = serverCapabilitiesByServer.value[url] || [];
+  
+  if (!caps.includes("unreads_count")) {
+    return false;
+  }
+  
   return wsSend({ cmd: "unreads_count", thread_id: threadId }, sUrl);
 }
 
 export function getAllUnreads(sUrl?: string): boolean {
+  const url = sUrl || serverUrl.value;
+  const caps = serverCapabilitiesByServer.value[url] || [];
+  
+  if (!caps.includes("unreads_get")) {
+    return false;
+  }
+  
   return wsSend({ cmd: "unreads_get" }, sUrl);
 }
 
