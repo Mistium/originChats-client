@@ -582,6 +582,10 @@ export type {
   PollResults,
   PollGet,
   AuthError,
+  UnreadsGet,
+  UnreadsCount,
+  UnreadsAck,
+  UnreadsUpdate,
 };
 
 interface PollOption {
@@ -672,4 +676,36 @@ interface PollGet {
     ended_at?: number;
     user_votes: string[];
   };
+}
+
+interface UnreadsGet {
+  cmd: "unreads_get";
+  unreads: Record<string, {
+    last_read: string | null;
+    unread_count: number;
+    total_messages: number;
+  }>;
+}
+
+interface UnreadsCount {
+  cmd: "unreads_count";
+  channel?: string;
+  thread_id?: string;
+  unread_count: number;
+  last_read: string | null;
+  total_messages: number;
+}
+
+interface UnreadsAck {
+  cmd: "unreads_ack";
+  channel?: string;
+  thread_id?: string;
+  last_read: string;
+}
+
+interface UnreadsUpdate {
+  cmd: "unreads_update";
+  channel?: string;
+  thread_id?: string;
+  last_read: string;
 }
