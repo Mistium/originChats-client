@@ -476,7 +476,7 @@ export function ChannelList() {
             const unreadCount = isMuted
               ? 0
               : getChannelUnreadCount(serverUrl.value, channel.name);
-            const hasUnread = !isMuted && unreadCount > 0;
+            const hasUnread = !isMuted && (unreadCount > 0 || pingCount > 0);
             const displayPingCount = isDM ? unreadCount : pingCount;
             const hasPing = displayPingCount > 0;
 

@@ -1172,9 +1172,11 @@ export function MessageArea() {
       displayName: string;
       color?: string | null;
     }[] = [];
+    let hasExpired = false;
     for (const [user, expiry] of map.entries()) {
       if (expiry < now) {
         map.delete(user);
+        hasExpired = true;
       } else if (user !== myName) {
         const serverUser = usersByServer.value[sUrl]?.[user.toLowerCase()];
         typingList.push({
@@ -1183,6 +1185,9 @@ export function MessageArea() {
           color: serverUser?.color,
         });
       }
+    }
+    if (hasExpired) {
+      typingUsersByServer.value = { ...typingUsersByServer.value };
     }
     setTypingUsers(typingList);
   });

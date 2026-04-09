@@ -1,11 +1,9 @@
 import { signal, computed } from "@preact/signals";
 import { pings as pingsDb } from "../db";
-import { loadPings, savePings } from "../persistence";
 
 type ChannelKey = `${string}:${string}`;
 
 let persistenceEnabled = false;
-let cloudPersistenceEnabled = false;
 
 async function persistToDb(
   pings: Record<ChannelKey, number>,
@@ -14,11 +12,6 @@ async function persistToDb(
   if (!persistenceEnabled) return;
   try {
     await pingsDb.set({ pings, unreads });
-    if (cloudPersistenceEnabled) {
-      savePings().catch((e) =>
-        console.error("Failed to persist pings to cloud:", e),
-      );
-    }
   } catch (e) {
     console.error("Failed to persist pings to IndexedDB:", e);
   }
@@ -27,10 +20,12 @@ async function persistToDb(
 class UnreadState {
   private readonly _pings = signal<Record<ChannelKey, number>>({});
   private readonly _unreads = signal<Record<ChannelKey, number>>({});
+  private readonly _lastRead = signal<Record<ChannelKey, string | null>>({});
   private persistTimeout: ReturnType<typeof setTimeout> | null = null;
 
   readonly pings = this._pings;
   readonly unreads = this._unreads;
+  readonly lastRead = this._lastRead;
 
   constructor() {
     this.loadFromDb();
@@ -50,18 +45,36 @@ class UnreadState {
     }
   }
 
-  async mergeFromCloud() {
-    try {
-      const cloudData = await loadPings();
-      const mergedPings = { ...cloudData.pings, ...this._pings.value };
-      const mergedUnreads = { ...cloudData.unreads, ...this._unreads.value };
-      this._pings.value = mergedPings as Record<ChannelKey, number>;
-      this._unreads.value = mergedUnreads as Record<ChannelKey, number>;
-      cloudPersistenceEnabled = true;
-      this.schedulePersist();
-    } catch (e) {
-      console.error("Failed to merge pings from cloud:", e);
+  getLastRead(serverUrl: string, channel: string): string | null {
+    const k = this.key(serverUrl, channel);
+    return this._lastRead.value[k] || null;
+  }
+
+  setLastRead(
+    serverUrl: string,
+    channel: string,
+    lastRead: string | null,
+  ): void {
+    const k = this.key(serverUrl, channel);
+    if (lastRead) {
+      this._lastRead.value = { ...this._lastRead.value, [k]: lastRead };
+    } else {
+      const next = { ...this._lastRead.value };
+      delete next[k];
+      this._lastRead.value = next;
     }
+    this.schedulePersist();
+  }
+
+  isChannelUnreadByLastMessage(
+    serverUrl: string,
+    channel: string,
+    lastMessageId?: string,
+  ): boolean {
+    if (!lastMessageId) return false;
+    const lastRead = this.getLastRead(serverUrl, channel);
+    if (!lastRead) return false;
+    return lastMessageId !== lastRead;
   }
 
   private schedulePersist() {
@@ -228,6 +241,26 @@ class UnreadState {
   clearAll(): void {
     this._pings.value = {};
     this._unreads.value = {};
+    this.schedulePersist();
+  }
+
+  // New methods for server-driven unreads
+  setChannelUnread(channelId: string, count: number): void {
+    // channelId is already in the format "serverUrl:channelName"
+    const k = channelId as ChannelKey;
+    if (count > 0) {
+      this._unreads.value = { ...this._unreads.value, [k]: count };
+    } else {
+      const next = { ...this._unreads.value };
+      delete next[k];
+      this._unreads.value = next;
+    }
+    this.schedulePersist();
+  }
+
+  setAllUnreads(unreads: Record<string, number>): void {
+    // Replace all unreads with server-provided data
+    this._unreads.value = unreads as Record<ChannelKey, number>;
     this.schedulePersist();
   }
 

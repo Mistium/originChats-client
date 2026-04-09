@@ -1,7 +1,7 @@
 .header {
   align-items: center;
   background: var(--surface);
-  
+
   display: flex;
   gap: 10px;
   padding: 7px;
@@ -49,6 +49,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.channelDescription {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .channelDescription {
+    display: none;
+  }
 }
 
 .headerActions {
@@ -200,6 +211,12 @@
 
 .mainHeaderChannelDescription:empty {
   display: none;
+}
+
+@media (max-width: 768px) {
+  .mainHeaderChannelDescription {
+    display: none;
+  }
 }
 
 .mainHeaderRight {

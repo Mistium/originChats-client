@@ -121,6 +121,10 @@ import {
   handlePollEnd,
   handlePollResults,
   handlePollGet,
+  handleUnreadsGet,
+  handleUnreadsCount,
+  handleUnreadsUpdate,
+  handleUnreadsAck,
 } from "./commands";
 
 let audioCtx: AudioContext | null = null;
@@ -863,6 +867,18 @@ function handleMessage(msg: any, sUrl: string): void {
       break;
     case "poll_get":
       handlePollGet(msg, sUrl);
+      break;
+    case "unreads_get":
+      handleUnreadsGet(msg, sUrl);
+      break;
+    case "unreads_count":
+      handleUnreadsCount(msg, sUrl);
+      break;
+    case "unreads_ack":
+      handleUnreadsAck(msg, sUrl);
+      break;
+    case "unreads_update":
+      handleUnreadsUpdate(msg, sUrl);
       break;
     case "ping":
       break;

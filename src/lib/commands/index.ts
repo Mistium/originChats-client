@@ -84,6 +84,13 @@ export {
 export { handlePingsGet } from "./pings/s_get";
 
 export {
+  handleUnreadsGet,
+  handleUnreadsCount,
+  handleUnreadsUpdate,
+  handleUnreadsAck,
+} from "./unreads/unreads";
+
+export {
   handlePollCreate,
   handlePollVote,
   handlePollVoteUpdate,

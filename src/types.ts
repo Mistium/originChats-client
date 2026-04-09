@@ -16,6 +16,7 @@ export interface Channel {
   };
   voice_state?: VoiceUser[];
   last_message?: number;
+  last_message_id?: string;
   size?: number;
   threads?: Thread[];
 }

@@ -142,7 +142,10 @@ export function Header() {
               currentChannel.value?.name ||
               "home"}
             {(currentChannel.value as any)?.description && (
-              <span style={{ marginLeft: 8, opacity: 0.6 }}>
+              <span
+                className={styles.channelDescription}
+                style={{ marginLeft: 8, opacity: 0.6 }}
+              >
                 {(currentChannel.value as any).description}
               </span>
             )}

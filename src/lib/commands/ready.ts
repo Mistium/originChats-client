@@ -7,6 +7,7 @@ import {
   savedStatusText,
   offlinePushServers,
 } from "../../state";
+import { unreadState } from "../../state";
 import { statusState } from "../state";
 import { renderMembersSignal } from "../ui-signals";
 import { wsSend } from "../ws-sender";
@@ -57,5 +58,12 @@ export function handleReady(msg: Ready, sUrl: string): void {
     if (!offlinePushServers.value[sUrl]) {
       enablePushForServer(sUrl);
     }
+  }
+
+  const caps = serverCapabilitiesByServer.value[sUrl] || [];
+  if (caps.includes("unreads_get")) {
+    wsSend({ cmd: "unreads_get" }, sUrl);
+  } else {
+    unreadState.clearServer(sUrl);
   }
 }

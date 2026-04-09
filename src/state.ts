@@ -114,6 +114,18 @@ export function hasChannelUnreads(sUrl: string, channelName: string): boolean {
   return unreadState.hasUnreads(sUrl, channelName);
 }
 
+export function isChannelUnreadByLastMessage(
+  sUrl: string,
+  channelName: string,
+  lastMessageId?: string,
+): boolean {
+  return unreadState.isChannelUnreadByLastMessage(
+    sUrl,
+    channelName,
+    lastMessageId,
+  );
+}
+
 export interface PingMessage {
   id: string;
   user: string;

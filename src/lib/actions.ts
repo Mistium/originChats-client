@@ -5,7 +5,6 @@ import {
   channelsByServer,
   readTimesByServer,
   messagesByServer,
-  loadedChannelsByServer,
   wsConnections,
   servers,
   wsStatus,

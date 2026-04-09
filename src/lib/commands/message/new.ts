@@ -126,6 +126,7 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
   if (!isCurrentView && !isMuted && !isOwnMessage) {
     const targetChannelKey = isThreadMessage ? msg.thread_id! : msg.channel;
     unreadState.incrementUnread(sUrl, targetChannelKey);
+    renderChannelsSignal.value++;
 
     if (sUrl === DM_SERVER_URL && !isOwnMessage && dmMessageSound.value) {
       playPingSound();
