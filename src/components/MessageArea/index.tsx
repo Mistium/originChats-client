@@ -1344,14 +1344,19 @@ export function MessageArea() {
       } else {
         sendMessage();
       }
-    } else if (e.key === "Escape" && editingMessage) {
-      setEditingMessage(null);
-      const input = document.getElementById(
-        "message-input",
-      ) as HTMLTextAreaElement;
-      if (input) {
-        input.value = "";
-        resetInputHeight();
+    } else if (e.key === "Escape") {
+      if (editingMessage) {
+        setEditingMessage(null);
+        const input = document.getElementById(
+          "message-input",
+        ) as HTMLTextAreaElement;
+        if (input) {
+          input.value = "";
+          resetInputHeight();
+        }
+      } else if (replyTo.value) {
+        replyTo.value = null;
+        replyPing.value = true;
       }
     } else if (e.key === "ArrowUp" && !editingMessage) {
       const input = e.currentTarget;
