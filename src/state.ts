@@ -647,7 +647,7 @@ export const customPingSound = signal<string | null>(null);
 
 export const blockedMessageDisplay = signal<BlockedMessageDisplay>("collapse");
 
-export const appTheme = signal<AppTheme>("dim");
+export const appTheme = signal<AppTheme>("dark");
 
 export const appFont = signal<AppFont>("default");
 
@@ -884,7 +884,7 @@ export async function initSettingsFromDb(): Promise<void> {
     "blockedMessageDisplay",
     "collapse"
   );
-  appTheme.value = await str<AppTheme>("theme", "dim");
+  appTheme.value = await str<AppTheme>("theme", "dark");
   appFont.value = await str<AppFont>("font", "default");
   hideScrollbars.value = await bool("hideScrollbars", false);
   hideAvatarBorders.value = await bool("hideAvatarBorders", false);

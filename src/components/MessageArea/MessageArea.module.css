@@ -118,6 +118,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  margin-top: var(--space-2);
   position: relative;
 }
 
@@ -135,11 +136,8 @@
 
 .typingPill {
   position: absolute;
-  top: -28px;
-  left: 12px;
-  background: var(--surface-light);
-  border: 1px solid var(--border);
-  border-radius: 9999px;
+  top: -30px;
+  left: 0px;
   padding: 4px 12px 4px 8px;
   display: flex;
   align-items: center;

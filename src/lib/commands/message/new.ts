@@ -215,5 +215,7 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
   const typing = typingUsersByServer.value[sUrl]?.[msg.channel];
   if (typing) (typing as Map<string, number>).delete(msg.message.user);
 
+  // Batch render signal at the end - this batches pending message removal
+  // with message append to prevent flicker
   renderMessagesSignal.value++;
 }
