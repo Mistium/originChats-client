@@ -42,11 +42,7 @@ function requireToken(): string {
  * Build a URL under api.rotur.dev.
  * If `authenticated` is true the raw token is appended as `?auth=`.
  */
-function buildUrl(
-  path: string,
-  params?: Record<string, string>,
-  authenticated = false,
-): string {
+function buildUrl(path: string, params?: Record<string, string>, authenticated = false): string {
   const u = new URL(ROTUR_API_BASE + path);
   if (authenticated) {
     u.searchParams.set("auth", requireToken());
@@ -75,7 +71,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 async function get<T>(
   path: string,
   params?: Record<string, string>,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<T> {
   const res = await fetch(buildUrl(path, params), { signal });
   return handleResponse<T>(res);
@@ -85,7 +81,7 @@ async function get<T>(
 async function authGet<T>(
   path: string,
   params?: Record<string, string>,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<T> {
   const res = await fetch(buildUrl(path, params, true), { signal });
   return handleResponse<T>(res);
@@ -96,7 +92,7 @@ async function authPost<T>(
   path: string,
   body?: Record<string, any>,
   params?: Record<string, string>,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<T> {
   if (body) {
     body.auth = token;
@@ -111,10 +107,7 @@ async function authPost<T>(
 }
 
 /** DELETE to api.rotur.dev (authenticated). */
-async function authDelete<T>(
-  path: string,
-  params?: Record<string, string>,
-): Promise<T> {
+async function authDelete<T>(path: string, params?: Record<string, string>): Promise<T> {
   const res = await fetch(buildUrl(path, params, true), { method: "DELETE" });
   return handleResponse<T>(res);
 }
@@ -149,7 +142,7 @@ export function getAuthRedirectUrl(returnTo: string): string {
 export async function getProfile(
   username: string,
   includePosts = false,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<RoturProfile> {
   const params: Record<string, string> = {
     name: username,
@@ -169,10 +162,7 @@ export async function getProfile(
 }
 
 /** Check if a username exists (no auth needed). */
-async function userExists(
-  username: string,
-  signal?: AbortSignal,
-): Promise<boolean> {
+async function userExists(username: string, signal?: AbortSignal): Promise<boolean> {
   try {
     const data = await get<any>("/exists", { name: username }, signal);
     return !!data.exists;
@@ -254,17 +244,14 @@ export async function unfollowUser(username: string): Promise<any> {
 }
 
 /** Get a user's followers (public, no auth). */
-async function getFollowers(
-  username: string,
-  signal?: AbortSignal,
-): Promise<RoturFollowersResult> {
+async function getFollowers(username: string, signal?: AbortSignal): Promise<RoturFollowersResult> {
   return get<RoturFollowersResult>("/followers", { username }, signal);
 }
 
 /** Get who a user is following (public, no auth). */
 export async function getFollowing(
   username: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<RoturFollowingResult> {
   return get<RoturFollowingResult>("/following", { username }, signal);
 }
@@ -287,13 +274,13 @@ export async function clearStatus(): Promise<any> {
 /** Get a user's custom status (public, no auth). Returns null if no active status. */
 export async function getStatus(
   username: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<RoturStatusUpdate | null> {
   try {
     const data = await get<{ status: RoturStatusUpdate }>(
       "/status/get",
       { name: username },
-      signal,
+      signal
     );
     return data.status ?? null;
   } catch {
@@ -304,35 +291,17 @@ export async function getStatus(
 // ── Groups ───────────────────────────────────────────────────────────────────
 
 export async function getMyGroups(signal?: AbortSignal): Promise<RoturGroup[]> {
-  const data = await authGet<{ groups: RoturGroup[] }>(
-    "/groups/mine",
-    undefined,
-    signal,
-  );
+  const data = await authGet<{ groups: RoturGroup[] }>("/groups/mine", undefined, signal);
   return data.groups || [];
 }
 
-export async function searchGroups(
-  query: string,
-  signal?: AbortSignal,
-): Promise<RoturGroup[]> {
-  const data = await authGet<{ groups: RoturGroup[] }>(
-    "/groups/search",
-    { q: query },
-    signal,
-  );
+export async function searchGroups(query: string, signal?: AbortSignal): Promise<RoturGroup[]> {
+  const data = await authGet<{ groups: RoturGroup[] }>("/groups/search", { q: query }, signal);
   return data.groups || [];
 }
 
-async function getGroup(
-  grouptag: string,
-  signal?: AbortSignal,
-): Promise<RoturGroupDetails> {
-  return authGet<RoturGroupDetails>(
-    `/groups/${encodeURIComponent(grouptag)}`,
-    undefined,
-    signal,
-  );
+async function getGroup(grouptag: string, signal?: AbortSignal): Promise<RoturGroupDetails> {
+  return authGet<RoturGroupDetails>(`/groups/${encodeURIComponent(grouptag)}`, undefined, signal);
 }
 
 export async function joinGroup(grouptag: string): Promise<any> {
@@ -348,7 +317,7 @@ export async function leaveGroup(grouptag: string): Promise<any> {
 /** Get a user's standing/reputation (public, no auth). */
 export async function getStanding(
   username: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<RoturStanding | null> {
   try {
     return await get<RoturStanding>("/get_standing", { username }, signal);
@@ -362,7 +331,7 @@ export async function getStanding(
 export async function createGift(
   amount: number,
   note?: string,
-  expiresInHrs?: number,
+  expiresInHrs?: number
 ): Promise<{ code: string }> {
   return authPost<{ code: string }>("/gifts/create", {
     amount,
@@ -372,15 +341,8 @@ export async function createGift(
 }
 
 /** Get gift details (public, no auth). */
-export async function getGift(
-  code: string,
-  signal?: AbortSignal,
-): Promise<{ gift: RoturGift }> {
-  return get<{ gift: RoturGift }>(
-    `/gifts/${encodeURIComponent(code)}`,
-    undefined,
-    signal,
-  );
+export async function getGift(code: string, signal?: AbortSignal): Promise<{ gift: RoturGift }> {
+  return get<{ gift: RoturGift }>(`/gifts/${encodeURIComponent(code)}`, undefined, signal);
 }
 
 export async function claimGift(code: string): Promise<any> {
@@ -391,24 +353,18 @@ async function cancelGift(id: string): Promise<any> {
   return authPost<any>(`/gifts/cancel/${encodeURIComponent(id)}`);
 }
 
-async function getMyGifts(
-  signal?: AbortSignal,
-): Promise<{ gifts: RoturGift[] }> {
+async function getMyGifts(signal?: AbortSignal): Promise<{ gifts: RoturGift[] }> {
   return authGet<{ gifts: RoturGift[] }>("/gifts/mine", undefined, signal);
 }
 
 // ── Economy / Stats ──────────────────────────────────────────────────────────
 
 /** Public stats endpoints – no auth. */
-async function getEconomyStats(
-  signal?: AbortSignal,
-): Promise<RoturEconomyStats> {
+async function getEconomyStats(signal?: AbortSignal): Promise<RoturEconomyStats> {
   return get<RoturEconomyStats>("/stats/economy", undefined, signal);
 }
 
-async function getUserStats(
-  signal?: AbortSignal,
-): Promise<RoturUserStats> {
+async function getUserStats(signal?: AbortSignal): Promise<RoturUserStats> {
   return get<RoturUserStats>("/stats/users", undefined, signal);
 }
 
@@ -421,10 +377,7 @@ export async function getClaimTime(signal?: AbortSignal): Promise<any> {
 }
 
 /** Transfer credits. Token only in query param, not in body. */
-async function transferCredits(
-  to: string,
-  amount: number,
-): Promise<any> {
+async function transferCredits(to: string, amount: number): Promise<any> {
   return authPost<any>("/me/transfer", { to, amount });
 }
 
@@ -452,10 +405,7 @@ async function getBadges(signal?: AbortSignal): Promise<any> {
 
 // ── Notes ────────────────────────────────────────────────────────────────────
 
-async function setUserNote(
-  username: string,
-  note: string,
-): Promise<any> {
+async function setUserNote(username: string, note: string): Promise<any> {
   return authPost<any>(`/me/note/${encodeURIComponent(username)}`, { note });
 }
 

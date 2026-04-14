@@ -1,28 +1,13 @@
 import type { MessagesAround } from "@/msgTypes";
-import {
-  messagesByServer,
-  loadedChannelsByServer,
-  reachedOldestByServer,
-} from "../../../state";
+import { messagesByServer, loadedChannelsByServer, reachedOldestByServer } from "../../../state";
 import { finishMessageFetch } from "../../ws-sender";
-import {
-  getMessageKey,
-  setMessages,
-  mergeAndSortMessages,
-} from "../../message-utils";
+import { getMessageKey, setMessages, mergeAndSortMessages } from "../../message-utils";
 
-const pendingJumpByServer: Record<
-  string,
-  { messageId: string; channel: string } | null
-> = {};
+const pendingJumpByServer: Record<string, { messageId: string; channel: string } | null> = {};
 
 const olderLoadPendingByServer: Record<string, Set<string>> = {};
 
-export function setPendingJump(
-  sUrl: string,
-  messageId: string,
-  channel: string,
-): void {
+export function setPendingJump(sUrl: string, messageId: string, channel: string): void {
   pendingJumpByServer[sUrl] = { messageId, channel };
 }
 
@@ -62,15 +47,9 @@ export function handleMessagesAround(msg: MessagesAround, sUrl: string): void {
   const sortedMsgs = mergeAndSortMessages(existingMsgs, newMessages);
 
   const SCROLL_UP_LIMIT = 20;
-  if (
-    existingMsgs.length > 0 &&
-    newMessages.length > 0 &&
-    newMessages.length < SCROLL_UP_LIMIT
-  ) {
+  if (existingMsgs.length > 0 && newMessages.length > 0 && newMessages.length < SCROLL_UP_LIMIT) {
     const oldestNewTimestamp = Math.min(...newMessages.map((m) => m.timestamp));
-    const oldestExistingTimestamp = Math.min(
-      ...existingMsgs.map((m) => m.timestamp),
-    );
+    const oldestExistingTimestamp = Math.min(...existingMsgs.map((m) => m.timestamp));
     if (oldestNewTimestamp < oldestExistingTimestamp) {
       if (!reachedOldestByServer[sUrl]) reachedOldestByServer[sUrl] = new Set();
       reachedOldestByServer[sUrl].add(messageKey);
@@ -96,9 +75,7 @@ export function handleMessagesAround(msg: MessagesAround, sUrl: string): void {
   if (pendingJump && pendingJump.channel === messageKey) {
     pendingJumpByServer[sUrl] = null;
     setTimeout(() => {
-      const el = document.querySelector(
-        `[data-msg-id="${pendingJump.messageId}"]`,
-      );
+      const el = document.querySelector(`[data-msg-id="${pendingJump.messageId}"]`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add("highlight-flash");

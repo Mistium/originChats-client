@@ -27,24 +27,17 @@ export function DMHomeTab() {
         <p className="home-heading-subtitle">What would you like to do?</p>
         <div className="home-options-grid">
           {hasToken && (
-            <div
-              className="home-option-card"
-              onClick={() => selectRelationshipsChannel()}
-            >
+            <div className="home-option-card" onClick={() => selectRelationshipsChannel()}>
               <div className="home-option-icon">
                 <Icon name="Users" size={20} />
               </div>
               <h3 className="home-option-title">
                 Manage Relationships
                 {friendRequests.value.length > 0 && (
-                  <span className="dm-home-card-badge">
-                    {friendRequests.value.length}
-                  </span>
+                  <span className="dm-home-card-badge">{friendRequests.value.length}</span>
                 )}
               </h3>
-              <p className="home-option-description">
-                View and manage your friends
-              </p>
+              <p className="home-option-description">View and manage your friends</p>
             </div>
           )}
 
@@ -63,23 +56,16 @@ export function DMHomeTab() {
                 <Icon name="UserPlus" size={20} />
               </div>
               <h3 className="home-option-title">Create DM</h3>
-              <p className="home-option-description">
-                Start a new conversation
-              </p>
+              <p className="home-option-description">Start a new conversation</p>
             </div>
           )}
 
-          <div
-            className="home-option-card"
-            onClick={() => selectDiscoveryChannel()}
-          >
+          <div className="home-option-card" onClick={() => selectDiscoveryChannel()}>
             <div className="home-option-icon">
               <Icon name="Compass" size={20} />
             </div>
             <h3 className="home-option-title">Discover Servers</h3>
-            <p className="home-option-description">
-              Browse and join public servers
-            </p>
+            <p className="home-option-description">Browse and join public servers</p>
           </div>
 
           <div
@@ -91,13 +77,9 @@ export function DMHomeTab() {
                 if (trimmed === "dms.mistium.com") return;
                 const existing = servers.value;
                 if (!existing.find((s: any) => s.url === trimmed)) {
-                  servers.value = [
-                    ...existing,
-                    { name: trimmed, url: trimmed, icon: null },
-                  ];
+                  servers.value = [...existing, { name: trimmed, url: trimmed, icon: null }];
                   try {
-                    const { saveServers } =
-                      await import("../../lib/persistence");
+                    const { saveServers } = await import("../../lib/persistence");
                     await saveServers();
                   } catch (err) {
                     console.error("Failed to save servers:", err);

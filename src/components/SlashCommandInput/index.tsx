@@ -46,7 +46,7 @@ export function SlashCommandInput({
         onSubmit();
       }
     },
-    [onDismiss, onSubmit],
+    [onDismiss, onSubmit]
   );
 
   const setArg = (name: string, value: string) => {
@@ -74,9 +74,7 @@ export function SlashCommandInput({
         <div className="slash-cmd-args">
           {command.options.map((opt, i) => {
             const isFirst = i === 0;
-            const placeholder = opt.required
-              ? opt.description
-              : `${opt.description} (optional)`;
+            const placeholder = opt.required ? opt.description : `${opt.description} (optional)`;
 
             if (opt.type === "enum" && opt.choices && opt.choices.length > 0) {
               return (
@@ -92,9 +90,7 @@ export function SlashCommandInput({
                           }
                         : undefined
                     }
-                    onChange={(e) =>
-                      setArg(opt.name, (e.target as HTMLSelectElement).value)
-                    }
+                    onChange={(e) => setArg(opt.name, (e.target as HTMLSelectElement).value)}
                   >
                     {!opt.required && <option value="">—</option>}
                     {opt.choices.map((c) => (
@@ -111,11 +107,7 @@ export function SlashCommandInput({
               <div key={opt.name} className="slash-cmd-arg">
                 <label className="slash-cmd-arg-label">{opt.name}</label>
                 <input
-                  type={
-                    opt.type === "int" || opt.type === "float"
-                      ? "number"
-                      : "text"
-                  }
+                  type={opt.type === "int" || opt.type === "float" ? "number" : "text"}
                   className="slash-cmd-arg-input"
                   placeholder={placeholder}
                   value={args[opt.name] ?? ""}
@@ -126,9 +118,7 @@ export function SlashCommandInput({
                         }
                       : undefined
                   }
-                  onInput={(e) =>
-                    setArg(opt.name, (e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setArg(opt.name, (e.target as HTMLInputElement).value)}
                   step={opt.type === "float" ? "any" : undefined}
                 />
               </div>

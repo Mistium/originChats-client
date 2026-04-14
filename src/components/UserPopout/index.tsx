@@ -71,11 +71,7 @@ export function UserPopout() {
     };
     const handleScroll = (e: Event) => {
       // Ignore scrolls that happen inside the popout itself
-      if (
-        popoutRef.current &&
-        e.target instanceof Node &&
-        popoutRef.current.contains(e.target)
-      ) {
+      if (popoutRef.current && e.target instanceof Node && popoutRef.current.contains(e.target)) {
         return;
       }
 
@@ -120,20 +116,12 @@ export function UserPopout() {
         visibility: "hidden",
       }}
     >
-      <UserProfileCard
-        username={data.username}
-        onClose={() => (userPopout.value = null)}
-        compact
-      />
+      <UserProfileCard username={data.username} onClose={() => (userPopout.value = null)} compact />
     </div>
   );
 }
 
-export function openUserPopout(
-  e: MouseEvent,
-  username: string,
-  anchorRight?: boolean,
-) {
+export function openUserPopout(e: MouseEvent, username: string, anchorRight?: boolean) {
   e.stopPropagation();
 
   if (isMobile()) {

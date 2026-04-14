@@ -73,10 +73,7 @@ export async function deleteMediaServer(id: string): Promise<void> {
   }
 }
 
-export async function setMediaServerEnabled(
-  id: string,
-  enabled: boolean,
-): Promise<void> {
+export async function setMediaServerEnabled(id: string, enabled: boolean): Promise<void> {
   await mediaServersLoaded;
   const server = getMediaServerById(id);
   if (server) {
@@ -92,9 +89,7 @@ async function initRoturPhotosAuth(): Promise<boolean> {
   try {
     const validator = await generateValidator("rotur-photos");
 
-    const response = await fetch(
-      `https://photos.rotur.dev/api/auth?v=${validator}`,
-    );
+    const response = await fetch(`https://photos.rotur.dev/api/auth?v=${validator}`);
     if (!response.ok) {
       console.error("Auth request failed:", response.status);
       return false;
@@ -135,9 +130,7 @@ function buildImageUrl(server: MediaServer, response: any, file: File): string {
   if (server.responseUrlPath) {
     const extracted = extractValueByPath(response, server.responseUrlPath);
     if (extracted) {
-      return server.urlTemplate
-        .replace(/{id}/g, extracted)
-        .replace(/{url}/g, extracted);
+      return server.urlTemplate.replace(/{id}/g, extracted).replace(/{url}/g, extracted);
     }
   }
 
@@ -150,11 +143,7 @@ function buildImageUrl(server: MediaServer, response: any, file: File): string {
     .replace(/{username}/g, username)
     .replace(/{name}/g, safeName)
     .replace(/{timestamp}/g, timestamp.toString())
-    .replace(
-      /{id}/g,
-      extractValueByPath(response, server.responseUrlPath) ||
-        timestamp.toString(),
-    );
+    .replace(/{id}/g, extractValueByPath(response, server.responseUrlPath) || timestamp.toString());
 
   return template;
 }
@@ -162,7 +151,7 @@ function buildImageUrl(server: MediaServer, response: any, file: File): string {
 function uploadImageWithXHR(
   file: File,
   url: string,
-  headers: Record<string, string>,
+  headers: Record<string, string>
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -205,10 +194,7 @@ function uploadImageWithXHR(
   });
 }
 
-export async function uploadImage(
-  file: File,
-  server?: MediaServer,
-): Promise<string> {
+export async function uploadImage(file: File, server?: MediaServer): Promise<string> {
   const mediaServer = server || (await getEnabledMediaServer());
   const headers: Record<string, string> = {};
 
@@ -247,9 +233,7 @@ export async function uploadImage(
 }
 
 export function generateServerId(): string {
-  return (
-    "server_" + Date.now() + "_" + Math.random().toString(36).substring(2, 11)
-  );
+  return "server_" + Date.now() + "_" + Math.random().toString(36).substring(2, 11);
 }
 
 mediaServersLoaded = loadMediaServers();

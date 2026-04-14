@@ -13,7 +13,7 @@ import { renderChannelsSignal } from "../../ui-signals";
 function _vcUpdateChannelState(
   sUrl: string,
   channelName: string,
-  updater: (prev: VoiceUser[]) => VoiceUser[],
+  updater: (prev: VoiceUser[]) => VoiceUser[]
 ): void {
   const chList = channelsByServer.value[sUrl];
   if (!chList) return;
@@ -32,20 +32,14 @@ export function handleVoiceJoin(msg: VoiceJoin, sUrl: string): void {
   _vcUpdateChannelState(sUrl, msg.channel, () => {
     const serverList = (msg.participants || []) as VoiceUser[];
     if (selfUsername && !serverList.find((u) => u.username === selfUsername)) {
-      return [
-        { username: selfUsername, muted: voiceManager.isMuted },
-        ...serverList,
-      ];
+      return [{ username: selfUsername, muted: voiceManager.isMuted }, ...serverList];
     }
     return serverList;
   });
   renderChannelsSignal.value++;
 }
 
-export function handleVoiceUserJoined(
-  msg: VoiceUserJoined,
-  sUrl: string,
-): void {
+export function handleVoiceUserJoined(msg: VoiceUserJoined, sUrl: string): void {
   voiceManager.onUserJoined(msg.channel, msg.user as any);
   _vcUpdateChannelState(sUrl, msg.channel, (prev) => {
     if (prev.find((u) => u.username === msg.user?.username)) return prev;
@@ -64,23 +58,18 @@ export function handleVoiceUserJoined(
 export function handleVoiceUserLeft(msg: VoiceUserLeft, sUrl: string): void {
   voiceManager.onUserLeft(msg.channel, msg.username);
   _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-    prev.filter((u) => u.username !== msg.username),
+    prev.filter((u) => u.username !== msg.username)
   );
   renderChannelsSignal.value++;
 }
 
-export function handleVoiceUserUpdated(
-  msg: VoiceUserUpdated,
-  sUrl: string,
-): void {
+export function handleVoiceUserUpdated(msg: VoiceUserUpdated, sUrl: string): void {
   voiceManager.onUserUpdated(msg.channel, {
     ...msg.user,
     muted: msg.user.muted ?? false,
   } as any);
   _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-    prev.map((u) =>
-      u.username === msg.user?.username ? { ...u, muted: msg.user.muted } : u,
-    ),
+    prev.map((u) => (u.username === msg.user?.username ? { ...u, muted: msg.user.muted } : u))
   );
   renderChannelsSignal.value++;
 }
@@ -89,7 +78,7 @@ export function handleVoiceLeave(msg: VoiceLeave, sUrl: string): void {
   const myUsername = currentUserByServer.value[sUrl]?.username;
   if (myUsername && msg.channel) {
     _vcUpdateChannelState(sUrl, msg.channel, (prev) =>
-      prev.filter((u) => u.username !== myUsername),
+      prev.filter((u) => u.username !== myUsername)
     );
     renderChannelsSignal.value++;
   }

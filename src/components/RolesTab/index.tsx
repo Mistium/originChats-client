@@ -1,11 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "preact/hooks";
 import { useSignalEffect } from "@preact/signals";
-import {
-  serverUrl,
-  currentUser,
-  usersByServer,
-  rolesByServer,
-} from "../../state";
+import { serverUrl, currentUser, usersByServer, rolesByServer } from "../../state";
 import { wsSend } from "../../lib/websocket";
 import { Icon } from "../Icon";
 import { UserProfileCard } from "../UserProfile";
@@ -35,9 +30,7 @@ export function RolesTab() {
   useSignalEffect(() => {
     const allRoles = rolesByServer.value[sUrl] || {};
     const serverUsers = usersByServer.value[sUrl] || {};
-    const myRoles = myUsername
-      ? serverUsers[myUsername.toLowerCase()]?.roles || []
-      : [];
+    const myRoles = myUsername ? serverUsers[myUsername.toLowerCase()]?.roles || [] : [];
 
     const selfAssignable: RoleWithStatus[] = Object.entries(allRoles)
       .filter(([, role]) => (role as any).self_assignable === true)
@@ -59,14 +52,10 @@ export function RolesTab() {
 
   const toggleRole = useCallback(
     (roleName: string, currentlyAssigned: boolean) => {
-      setRoles((prev) =>
-        prev.map((r) => (r.name === roleName ? { ...r, pending: true } : r)),
-      );
+      setRoles((prev) => prev.map((r) => (r.name === roleName ? { ...r, pending: true } : r)));
 
       setRoles((prev) =>
-        prev.map((r) =>
-          r.name === roleName ? { ...r, assigned: !currentlyAssigned } : r,
-        ),
+        prev.map((r) => (r.name === roleName ? { ...r, assigned: !currentlyAssigned } : r))
       );
 
       const serverUsers = usersByServer.value[sUrl] || {};
@@ -95,11 +84,9 @@ export function RolesTab() {
         wsSend({ cmd: "self_role_add", role: roleName }, sUrl);
       }
 
-      setRoles((prev) =>
-        prev.map((r) => (r.name === roleName ? { ...r, pending: false } : r)),
-      );
+      setRoles((prev) => prev.map((r) => (r.name === roleName ? { ...r, pending: false } : r)));
     },
-    [sUrl, myUsername],
+    [sUrl, myUsername]
   );
 
   const categorizedRoles = useMemo(() => {
@@ -161,9 +148,7 @@ export function RolesTab() {
                 {categorizedRoles.categories.map((category) => (
                   <div key={category.name} className={styles.roleCategory}>
                     <div className={styles.categoryHeader}>
-                      <span className={styles.categoryTitle}>
-                        {category.name}
-                      </span>
+                      <span className={styles.categoryTitle}>{category.name}</span>
                     </div>
                     <div className={styles.rolesGrid}>
                       {category.roles.map((role) => (
@@ -174,9 +159,7 @@ export function RolesTab() {
                             role.color
                               ? {
                                   "--role-color": role.color,
-                                  background: role.assigned
-                                    ? `${role.color}15`
-                                    : undefined,
+                                  background: role.assigned ? `${role.color}15` : undefined,
                                 }
                               : undefined
                           }
@@ -186,11 +169,7 @@ export function RolesTab() {
                         >
                           <span
                             className={styles.roleDot}
-                            style={
-                              role.color
-                                ? { background: role.color }
-                                : undefined
-                            }
+                            style={role.color ? { background: role.color } : undefined}
                           />
                           <span className={styles.roleName}>{role.name}</span>
                           {role.assigned && (
@@ -219,9 +198,7 @@ export function RolesTab() {
                             role.color
                               ? {
                                   "--role-color": role.color,
-                                  background: role.assigned
-                                    ? `${role.color}15`
-                                    : undefined,
+                                  background: role.assigned ? `${role.color}15` : undefined,
                                 }
                               : undefined
                           }
@@ -231,11 +208,7 @@ export function RolesTab() {
                         >
                           <span
                             className={styles.roleDot}
-                            style={
-                              role.color
-                                ? { background: role.color }
-                                : undefined
-                            }
+                            style={role.color ? { background: role.color } : undefined}
                           />
                           <span className={styles.roleName}>{role.name}</span>
                           {role.assigned && (
@@ -261,9 +234,7 @@ export function RolesTab() {
                 <UserProfileCard username={myUsername} compact />
               ) : (
                 <div className={styles.emptyState}>
-                  <div className={styles.emptyText}>
-                    Log in to see your profile preview
-                  </div>
+                  <div className={styles.emptyText}>Log in to see your profile preview</div>
                 </div>
               )}
             </div>

@@ -1,17 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
 import { friendNicknames, usersByServer, serverUrl } from "../state";
 
-export function useDisplayName(
-  username: string,
-  overrideServerUrl?: string,
-): string {
-  const [displayName, setDisplayName] = useState(() =>
-    getDisplayName(username, overrideServerUrl),
-  );
+export function useDisplayName(username: string, overrideServerUrl?: string): string {
+  const [displayName, setDisplayName] = useState(() => getDisplayName(username, overrideServerUrl));
 
   useEffect(() => {
-    const update = () =>
-      setDisplayName(getDisplayName(username, overrideServerUrl));
+    const update = () => setDisplayName(getDisplayName(username, overrideServerUrl));
 
     const unsub1 = friendNicknames.subscribe(update);
     const unsub2 = usersByServer.subscribe(update);
@@ -25,10 +19,7 @@ export function useDisplayName(
   return displayName;
 }
 
-export function getDisplayName(
-  username: string,
-  overrideServerUrl?: string,
-): string {
+export function getDisplayName(username: string, overrideServerUrl?: string): string {
   const friendNick = friendNicknames.value[username];
   if (friendNick) return friendNick;
 
@@ -39,12 +30,9 @@ export function getDisplayName(
   return username;
 }
 
-export function useUserColor(
-  username: string,
-  overrideServerUrl?: string,
-): string | undefined {
+export function useUserColor(username: string, overrideServerUrl?: string): string | undefined {
   const [color, setColor] = useState<string | undefined>(() =>
-    getUserColor(username, overrideServerUrl),
+    getUserColor(username, overrideServerUrl)
   );
 
   useEffect(() => {
@@ -57,12 +45,7 @@ export function useUserColor(
   return color;
 }
 
-function getUserColor(
-  username: string,
-  overrideServerUrl?: string,
-): string | undefined {
+function getUserColor(username: string, overrideServerUrl?: string): string | undefined {
   const sUrl = overrideServerUrl ?? serverUrl.value;
-  return (
-    usersByServer.value[sUrl]?.[username.toLowerCase()]?.color ?? undefined
-  );
+  return usersByServer.value[sUrl]?.[username.toLowerCase()]?.color ?? undefined;
 }

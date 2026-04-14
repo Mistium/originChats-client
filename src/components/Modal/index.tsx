@@ -57,11 +57,7 @@ export function Modal({
               </span>
             )}
             {showClose && (
-              <button
-                className="dialog-close icon-btn"
-                onClick={onClose}
-                aria-label="Close dialog"
-              >
+              <button className="dialog-close icon-btn" onClick={onClose} aria-label="Close dialog">
                 <Icon name="X" size={16} />
               </button>
             )}
@@ -97,13 +93,7 @@ export function ConfirmDialog({
   if (!isOpen) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      size="sm"
-      showClose={false}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm" showClose={false}>
       {message ? <p className="dialog-message">{message}</p> : null}
       <div className="dialog-actions">
         <button className="btn btn-secondary" onClick={onClose}>

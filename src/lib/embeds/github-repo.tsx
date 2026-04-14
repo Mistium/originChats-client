@@ -8,11 +8,7 @@ interface GitHubRepoEmbedProps {
   originalUrl: string;
 }
 
-export function GitHubRepoEmbed({
-  owner,
-  repo,
-  originalUrl,
-}: GitHubRepoEmbedProps) {
+export function GitHubRepoEmbed({ owner, repo, originalUrl }: GitHubRepoEmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,8 +19,7 @@ export function GitHubRepoEmbed({
         return res.json();
       })
       .then((repoData) => {
-        if (!repoData || repoData.message)
-          throw new Error("Repository not found");
+        if (!repoData || repoData.message) throw new Error("Repository not found");
         setData(repoData);
       })
       .catch(() => {})
@@ -58,15 +53,9 @@ export function GitHubRepoEmbed({
           <span className="gh-embed__sep">/</span>
           <span className="gh-embed__repo">{repo}</span>
         </span>
-        {data.archived && (
-          <span className="gh-embed__badge gh-embed__badge--muted">
-            Archived
-          </span>
-        )}
+        {data.archived && <span className="gh-embed__badge gh-embed__badge--muted">Archived</span>}
         {data.private && <span className="gh-embed__badge">Private</span>}
-        {data.fork && (
-          <span className="gh-embed__badge gh-embed__badge--muted">Fork</span>
-        )}
+        {data.fork && <span className="gh-embed__badge gh-embed__badge--muted">Fork</span>}
       </div>
 
       {data.description && <p className="gh-embed__desc">{data.description}</p>}

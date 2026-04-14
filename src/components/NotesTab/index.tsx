@@ -53,13 +53,10 @@ function groupNotes(notes: NoteMessage[]): NoteGroup[] {
   return groups;
 }
 
-const formatTimestamp = (timestamp: number): string =>
-  formatMessageTime(timestamp);
+const formatTimestamp = (timestamp: number): string => formatMessageTime(timestamp);
 
 function resetInputHeight() {
-  const input = document.getElementById(
-    "message-input",
-  ) as HTMLTextAreaElement | null;
+  const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
   if (input) input.style.height = "auto";
 }
 
@@ -104,9 +101,7 @@ export function NotesTab() {
   };
 
   const sendNote = useCallback(async () => {
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement | null;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
     if (!input || !input.value.trim()) return;
     const content = input.value.trim();
     input.value = "";
@@ -116,10 +111,7 @@ export function NotesTab() {
       await notesChannel.editMessage(editingNote.key, content);
       setEditingNote(null);
     } else {
-      await notesChannel.saveMessage(
-        content,
-        currentUser.value?.username || "you",
-      );
+      await notesChannel.saveMessage(content, currentUser.value?.username || "you");
     }
     await loadNotes();
   }, [editingNote]);
@@ -131,9 +123,7 @@ export function NotesTab() {
 
   const startEdit = (note: NoteMessage) => {
     setEditingNote(note);
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement | null;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
     if (input) {
       input.value = note.content;
       input.focus();
@@ -143,9 +133,7 @@ export function NotesTab() {
 
   const cancelEdit = () => {
     setEditingNote(null);
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement | null;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
     if (input) {
       input.value = "";
       resetInputHeight();
@@ -192,11 +180,7 @@ export function NotesTab() {
       <Header />
       <div className="main-content-area">
         <div className="messages-container">
-          <div
-            id="notes-messages"
-            ref={messagesContainerRef}
-            className="messages"
-          >
+          <div id="notes-messages" ref={messagesContainerRef} className="messages">
             {notes.length === 0 && (
               <div className="empty-channel-message">
                 <div className="empty-channel-icon">📝</div>
@@ -220,20 +204,12 @@ export function NotesTab() {
                   >
                     {isHead && (
                       <>
-                        <UserAvatar
-                          username={note.user}
-                          className="avatar"
-                          alt={note.user}
-                        />
+                        <UserAvatar username={note.user} className="avatar" alt={note.user} />
                         <div className="message-group-content">
                           <div className="message-header">
                             <span className="username">{note.user}</span>
-                            <span className="timestamp">
-                              {formatTimestamp(note.timestamp)}
-                            </span>
-                            {note.edited && (
-                              <span className="edited-indicator">(edited)</span>
-                            )}
+                            <span className="timestamp">{formatTimestamp(note.timestamp)}</span>
+                            {note.edited && <span className="edited-indicator">(edited)</span>}
                           </div>
                           <MessageContent
                             content={note.content}
@@ -267,9 +243,7 @@ export function NotesTab() {
             </button>
           )}
           {editingNote && (
-            <div
-              className={`${styles.replyBar} ${styles.active} ${styles.editingMode}`}
-            >
+            <div className={`${styles.replyBar} ${styles.active} ${styles.editingMode}`}>
               <div className={styles.replyBarIcon}>
                 <Icon name="Pencil" size={16} />
               </div>
@@ -283,11 +257,7 @@ export function NotesTab() {
                   />
                 </div>
               </div>
-              <button
-                className={styles.replyBarClose}
-                onClick={cancelEdit}
-                title="Cancel"
-              >
+              <button className={styles.replyBarClose} onClick={cancelEdit} title="Cancel">
                 <Icon name="X" size={20} />
               </button>
             </div>
@@ -296,14 +266,10 @@ export function NotesTab() {
             <div className="input-wrapper">
               <textarea
                 id="message-input"
-                placeholder={
-                  editingNote ? "Edit your note..." : "Write a note..."
-                }
+                placeholder={editingNote ? "Edit your note..." : "Write a note..."}
                 rows={1}
                 onKeyDown={handleKeyDown as any}
-                onInput={(e) =>
-                  autoResize(e.currentTarget as HTMLTextAreaElement)
-                }
+                onInput={(e) => autoResize(e.currentTarget as HTMLTextAreaElement)}
               />
               <button className="send-btn" onClick={sendNote}>
                 <Icon name="Send" />

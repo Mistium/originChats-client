@@ -8,17 +8,9 @@ import {
   channelsByServer,
   DM_SERVER_URL,
 } from "../../../state";
-import {
-  finishMessageFetch,
-  markChannelAsRead,
-  markThreadAsRead,
-} from "../../ws-sender";
+import { finishMessageFetch, markChannelAsRead, markThreadAsRead } from "../../ws-sender";
 import { selectChannel } from "../../selectors";
-import {
-  getMessageKey,
-  setMessages,
-  mergeAndSortMessages,
-} from "../../message-utils";
+import { getMessageKey, setMessages, mergeAndSortMessages } from "../../message-utils";
 
 export function handleMessagesGet(msg: MessagesGet, sUrl: string): void {
   const messageKey = getMessageKey(msg);

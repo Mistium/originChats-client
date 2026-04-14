@@ -18,8 +18,7 @@ export function handleReady(msg: Ready, sUrl: string): void {
     ...currentUserByServer.value,
     [sUrl]: msg.user,
   };
-  if (!usersByServer.value[sUrl])
-    usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
+  if (!usersByServer.value[sUrl]) usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
   usersByServer.value = {
     ...usersByServer.value,
     [sUrl]: {
@@ -48,7 +47,7 @@ export function handleReady(msg: Ready, sUrl: string): void {
           status: myStatus.value.status,
           text: savedStatusText.value,
         },
-        sUrl,
+        sUrl
       );
     }
   }

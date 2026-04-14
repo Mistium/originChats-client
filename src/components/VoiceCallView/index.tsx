@@ -18,8 +18,7 @@ interface VoiceCallViewProps {
 export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
   const state = voiceState.value;
 
-  const myUsername =
-    currentUserByServer.value[serverUrl.value]?.username || "You";
+  const myUsername = currentUserByServer.value[serverUrl.value]?.username || "You";
 
   const {
     currentChannel: channel,
@@ -47,10 +46,7 @@ export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
     : styles.voiceCallView;
 
   return (
-    <div
-      className={rootClass}
-      {...(embedded ? { "data-voice-call-embedded": true } : {})}
-    >
+    <div className={rootClass} {...(embedded ? { "data-voice-call-embedded": true } : {})}>
       <div className={styles.voiceCallHeader}>
         <div className={styles.voiceCallHeaderLeft}>
           <Icon name="Mic" size={20} />
@@ -82,12 +78,7 @@ export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
       {hasVideoStreams && (
         <div className={styles.voiceCallVideoArea}>
           {isScreenSharing && localScreenStream && (
-            <VideoTile
-              stream={localScreenStream}
-              label={`${myUsername} (Screen)`}
-              muted
-              isSelf
-            />
+            <VideoTile stream={localScreenStream} label={`${myUsername} (Screen)`} muted isSelf />
           )}
 
           {isCameraOn && localCameraStream && (
@@ -125,13 +116,9 @@ export function VoiceCallView({ embedded = false }: VoiceCallViewProps) {
         </div>
       )}
 
-      <div
-        className={`${styles.voiceCallParticipants} ${hasVideoStreams ? styles.compact : ""}`}
-      >
+      <div className={`${styles.voiceCallParticipants} ${hasVideoStreams ? styles.compact : ""}`}>
         {participants.map((p) => {
-          const isSelf =
-            (selfPeerId && p.peer_id === selfPeerId) ||
-            p.username === myUsername;
+          const isSelf = (selfPeerId && p.peer_id === selfPeerId) || p.username === myUsername;
           const speaking = isSelf ? isSpeaking : p.speaking;
           const muted = isSelf ? isMuted : p.muted;
           const displayName = isSelf ? `${myUsername} (You)` : p.username;

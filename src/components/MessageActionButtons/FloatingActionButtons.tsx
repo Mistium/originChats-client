@@ -33,7 +33,7 @@ const actionButtonsState = signal<ActionButtonsState>({
 });
 
 export function showActionButtons(
-  state: Omit<ActionButtonsState, "position"> & { element: HTMLElement },
+  state: Omit<ActionButtonsState, "position"> & { element: HTMLElement }
 ) {
   const element = state.element;
   const rect = element.getBoundingClientRect();
@@ -93,9 +93,7 @@ export function hideActionButtons() {
 }
 
 export function FloatingActionButtons() {
-  const [state, setState] = useState<ActionButtonsState>(
-    actionButtonsState.value,
-  );
+  const [state, setState] = useState<ActionButtonsState>(actionButtonsState.value);
 
   useEffect(() => {
     return actionButtonsState.subscribe((newValue) => {
@@ -176,4 +174,3 @@ export function FloatingActionButtons() {
     </div>
   );
 }
-

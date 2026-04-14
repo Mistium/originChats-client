@@ -63,22 +63,13 @@ import {
   translatingMessageId,
 } from "../../lib/ui-signals";
 import { voiceState } from "../../voice";
-import {
-  wsSend,
-  fetchMissingReplyMessage,
-  jumpToMessageAround,
-} from "../../lib/websocket";
+import { wsSend, fetchMissingReplyMessage, jumpToMessageAround } from "../../lib/websocket";
 import {
   highlightCodeInContainer,
   replaceShortcodes,
   convertChannelMentionsToLinks,
 } from "../../lib/markdown";
-import {
-  selectChannel,
-  switchServer,
-  joinThread,
-  selectThread,
-} from "../../lib/actions";
+import { selectChannel, switchServer, joinThread, selectThread } from "../../lib/actions";
 import { loadShortcodes } from "../../lib/shortcodes";
 
 function transformCustomEmojisToUrls(text: string): string {
@@ -205,8 +196,7 @@ let pendingImageUploads: PendingImage[] = [];
 let setPendingImagesRef: ((imgs: PendingImage[]) => void) | null = null;
 
 let pendingAttachmentUploads: PendingAttachment[] = [];
-let setPendingAttachmentsRef: ((atts: PendingAttachment[]) => void) | null =
-  null;
+let setPendingAttachmentsRef: ((atts: PendingAttachment[]) => void) | null = null;
 
 function resetInputHeight() {
   const input = document.getElementById("message-input") as HTMLTextAreaElement;
@@ -223,12 +213,9 @@ let editingMessageRef: Message | null = null;
 
 function commitEditOrSend() {
   if (editingMessageRef) {
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input && input.value.trim()) {
-      const isThread =
-        currentChannel.value?.type === "thread" && currentThread.value;
+      const isThread = currentChannel.value?.type === "thread" && currentThread.value;
       wsSend({
         cmd: "message_edit",
         id: editingMessageRef.id,
@@ -237,11 +224,7 @@ function commitEditOrSend() {
         content: convertChannelMentionsToLinks(
           replaceShortcodes(input.value.trim()),
           serverUrl.value,
-          new Set(
-            channels.value
-              .filter((c) => c.name)
-              .map((c) => c.name.toLowerCase()),
-          ),
+          new Set(channels.value.filter((c) => c.name).map((c) => c.name.toLowerCase()))
         ),
       });
       editingMessageRef = null;
@@ -267,8 +250,7 @@ async function sendMessage() {
       if (raw === undefined || raw === "") continue;
       if (opt.type === "int") typedArgs[opt.name] = parseInt(raw, 10);
       else if (opt.type === "float") typedArgs[opt.name] = parseFloat(raw);
-      else if (opt.type === "bool")
-        typedArgs[opt.name] = raw === "true" || raw === "1";
+      else if (opt.type === "bool") typedArgs[opt.name] = raw === "true" || raw === "1";
       else typedArgs[opt.name] = raw;
     }
     wsSend(
@@ -278,7 +260,7 @@ async function sendMessage() {
         command: cmd.name,
         args: typedArgs,
       },
-      sUrl,
+      sUrl
     );
     dismissSlashCmdRef?.();
     return;
@@ -333,9 +315,7 @@ async function sendMessage() {
     content: convertChannelMentionsToLinks(
       replaceShortcodes(transformCustomEmojisToUrls(finalContent)),
       serverUrl.value,
-      new Set(
-        channels.value.filter((c) => c.name).map((c) => c.name.toLowerCase()),
-      ),
+      new Set(channels.value.filter((c) => c.name).map((c) => c.name.toLowerCase()))
     ),
     ...(isThread
       ? {
@@ -356,17 +336,14 @@ async function sendMessage() {
 
   // Add pending message for optimistic UI
   if (myUsername) {
-    const channelKey = isThread
-      ? currentThread.value?.id
-      : currentChannel.value?.name;
+    const channelKey = isThread ? currentThread.value?.id : currentChannel.value?.name;
     if (channelKey) {
       pendingMessages.add(serverUrl.value, channelKey, {
         user: myUsername,
         content: msg.content,
         timestamp: Date.now(),
         reply_to: msg.reply_to ? { id: msg.reply_to, user: "" } : undefined,
-        attachments:
-          attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       });
       renderMessagesSignal.value++;
     }
@@ -426,9 +403,7 @@ function scrollToMessage(id: string): void {
     if (hasAround && currentChannel.value?.name) {
       const sUrl = serverUrl.value;
       const threadId =
-        currentChannel.value?.type === "thread"
-          ? currentThread.value?.id
-          : undefined;
+        currentChannel.value?.type === "thread" ? currentThread.value?.id : undefined;
       jumpToMessageAround(sUrl, currentChannel.value.name, id, threadId);
     }
   }
@@ -442,29 +417,18 @@ function RightPanelMessageCard({
   onAttachmentContextMenu?: (e: MouseEvent, att: { id: string }) => void;
 }) {
   const caps = serverCapabilities.value;
-  const canPin =
-    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canPin = caps.includes("message_pin") && caps.includes("messages_pinned");
 
   return (
-    <div
-      key={msg.id}
-      className="right-panel-message"
-      onClick={() => scrollToMessage(msg.id)}
-    >
+    <div key={msg.id} className="right-panel-message" onClick={() => scrollToMessage(msg.id)}>
       <div className="right-panel-message-header">
-        <UserAvatar
-          username={msg.user}
-          className="right-panel-avatar"
-          alt={msg.user}
-        />
+        <UserAvatar username={msg.user} className="right-panel-avatar" alt={msg.user} />
         <MessageUsername
           username={msg.user}
           color={users.value[msg.user?.toLowerCase()]?.color ?? undefined}
           className="right-panel-username"
         />
-        <span className="right-panel-time">
-          {formatRelativeTime(msg.timestamp)}
-        </span>
+        <span className="right-panel-time">{formatRelativeTime(msg.timestamp)}</span>
       </div>
       <div className="right-panel-message-content">
         <MessageContent
@@ -493,9 +457,7 @@ function RightPanelMessageCard({
                 channel: currentChannel.value?.name,
                 pinned: false,
               });
-              pinnedMessages.value = pinnedMessages.value.filter(
-                (m) => m.id !== msg.id,
-              );
+              pinnedMessages.value = pinnedMessages.value.filter((m) => m.id !== msg.id);
             }}
             title="Unpin"
           >
@@ -518,8 +480,7 @@ function RightPanel() {
   const panelClass = `right-panel${panelOpen ? " open" : ""}`;
 
   const caps = serverCapabilities.value;
-  const canPin =
-    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canPin = caps.includes("message_pin") && caps.includes("messages_pinned");
   const canSearch = caps.includes("messages_search");
   const canInbox = caps.includes("pings_get");
 
@@ -540,8 +501,7 @@ function RightPanel() {
     const is1on1DM =
       isDMServer &&
       dmUser &&
-      currentChannel.value?.icon ===
-        avatarUrl(currentChannel.value?.display_name ?? "");
+      currentChannel.value?.icon === avatarUrl(currentChannel.value?.display_name ?? "");
 
     if (is1on1DM) {
       return (
@@ -582,9 +542,7 @@ function RightPanel() {
               channel: currentChannel.value?.name,
               pinned: false,
             });
-            pinnedMessages.value = pinnedMessages.value.filter(
-              (m) => m.id !== msg.id,
-            );
+            pinnedMessages.value = pinnedMessages.value.filter((m) => m.id !== msg.id);
           },
         });
       }
@@ -607,15 +565,11 @@ function RightPanel() {
             <Icon name="X" size={18} />
           </button>
         </div>
-        <div
-          className={`right-panel-content ${styles.rightPanelContentMessages}`}
-        >
+        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
           {!canPin ? (
             <div className="right-panel-unsupported">
               <Icon name="Pin" size={32} />
-              <span>
-                This feature doesn't seem to be supported on this server.
-              </span>
+              <span>This feature doesn't seem to be supported on this server.</span>
             </div>
           ) : loading ? (
             <div className="right-panel-empty">
@@ -631,9 +585,7 @@ function RightPanel() {
               <MessageGroupRow
                 key={group.head.id}
                 group={group}
-                onContextMenu={(e: any) =>
-                  handlePinnedMessageContextMenu(e, group.head)
-                }
+                onContextMenu={(e: any) => handlePinnedMessageContextMenu(e, group.head)}
                 translatedMessages={translatedMessages.value}
                 translatingMessageId={translatingMessageId.value}
               />
@@ -693,9 +645,7 @@ function RightPanel() {
             type="text"
             placeholder={`Search in #${currentChannel.value?.name || ""}...`}
             value={searchQuery}
-            onInput={(e) =>
-              setSearchQuery((e.target as HTMLInputElement).value)
-            }
+            onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") performSearch();
             }}
@@ -705,15 +655,11 @@ function RightPanel() {
             <Icon name="Search" size={16} />
           </button>
         </div>
-        <div
-          className={`right-panel-content ${styles.rightPanelContentMessages}`}
-        >
+        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
           {!canSearch ? (
             <div className="right-panel-unsupported">
               <Icon name="Search" size={32} />
-              <span>
-                This feature doesn't seem to be supported on this server.
-              </span>
+              <span>This feature doesn't seem to be supported on this server.</span>
             </div>
           ) : loading ? (
             <div className="right-panel-empty">
@@ -750,9 +696,7 @@ function RightPanel() {
     const loading = pingsInboxLoading.value;
     const offset = pingsInboxOffset.value;
     const hasMore = offset + msgs.length < total;
-    const currentServerData = servers.value.find(
-      (s) => s.url === serverUrl.value,
-    );
+    const currentServerData = servers.value.find((s) => s.url === serverUrl.value);
     const serverName = currentServerData?.name || serverUrl.value;
 
     const loadMore = () => {
@@ -781,9 +725,7 @@ function RightPanel() {
 
     const jumpToMessage = async (msg: any) => {
       const { selectChannel } = await import("../../lib/actions");
-      const targetChannel = channels.value.find(
-        (c: any) => c.name === msg.channel,
-      );
+      const targetChannel = channels.value.find((c: any) => c.name === msg.channel);
 
       const caps = serverCapabilities.value;
       const hasAround = caps.includes("messages_around");
@@ -837,9 +779,7 @@ function RightPanel() {
           <div className={styles.inboxMessageContext}>
             <Icon name="Hash" size={12} />
             <span className={styles.inboxContextChannel}>{msg.channel}</span>
-            <span className={styles.inboxContextTime}>
-              {formatFullDateTime(msg.timestamp)}
-            </span>
+            <span className={styles.inboxContextTime}>{formatFullDateTime(msg.timestamp)}</span>
           </div>
           <MessageGroupRow
             key={msg.id}
@@ -869,15 +809,11 @@ function RightPanel() {
             <Icon name="X" size={18} />
           </button>
         </div>
-        <div
-          className={`right-panel-content ${styles.rightPanelContentMessages}`}
-        >
+        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
           {!canInbox ? (
             <div className="right-panel-unsupported">
               <Icon name="Bell" size={32} />
-              <span>
-                This feature doesn\'t seem to be supported on this server.
-              </span>
+              <span>This feature doesn\'t seem to be supported on this server.</span>
             </div>
           ) : loading && msgs.length === 0 ? (
             <div className="right-panel-empty">
@@ -891,17 +827,10 @@ function RightPanel() {
           ) : (
             <>
               {msgs.map((msg) => (
-                <InboxMessageRow
-                  key={msg.id || `${msg.channel}-${msg.timestamp}`}
-                  msg={msg}
-                />
+                <InboxMessageRow key={msg.id || `${msg.channel}-${msg.timestamp}`} msg={msg} />
               ))}
               {hasMore && (
-                <button
-                  className={styles.inboxPanelLoadMore}
-                  onClick={loadMore}
-                  disabled={loading}
-                >
+                <button className={styles.inboxPanelLoadMore} onClick={loadMore} disabled={loading}>
                   {loading ? "Loading..." : "Load more"}
                 </button>
               )}
@@ -930,18 +859,13 @@ function BlockedMessageBanner({
   const label = count === 1 ? "1 message" : `${count} messages`;
   return (
     <div className={styles.blockedMessageBanner}>
-      <button
-        className={styles.blockedMessageToggle}
-        onClick={() => setExpanded((v) => !v)}
-      >
+      <button className={styles.blockedMessageToggle} onClick={() => setExpanded((v) => !v)}>
         <Icon name={expanded ? "ChevronDown" : "ChevronRight"} size={14} />
         <span>
           {label} from blocked user <strong>{username}</strong>
         </span>
       </button>
-      {expanded && (
-        <div className={styles.blockedMessageContent}>{children}</div>
-      )}
+      {expanded && <div className={styles.blockedMessageContent}>{children}</div>}
     </div>
   );
 }
@@ -964,8 +888,7 @@ export function MessageArea() {
     isLoadingOlder: loadingOlder,
     onOlderLoaded: () => setLoadingOlder(false),
     onLoadOlder: () => {
-      const isThread =
-        currentChannel.value?.type === "thread" && currentThread.value;
+      const isThread = currentChannel.value?.type === "thread" && currentThread.value;
       const threadId = isThread ? currentThread.value!.id : null;
       const ch = isThread
         ? (currentChannel.value as any).parent_channel
@@ -1001,7 +924,7 @@ export function MessageArea() {
                   around: oldestMsg.id,
                   bounds: { above: 0, below: 100 },
                 },
-            sUrl,
+            sUrl
           );
         } else {
           setLoadingOlder(false);
@@ -1021,13 +944,12 @@ export function MessageArea() {
                 start: msgs.length,
                 limit: 100,
               },
-          sUrl,
+          sUrl
         );
       }
     },
     onLoadNewer: () => {
-      const isThread =
-        currentChannel.value?.type === "thread" && currentThread.value;
+      const isThread = currentChannel.value?.type === "thread" && currentThread.value;
       const threadId = isThread ? currentThread.value!.id : null;
       const ch = isThread
         ? (currentChannel.value as any).parent_channel
@@ -1062,7 +984,7 @@ export function MessageArea() {
                   around: newestMsg.id,
                   bounds: { above: 100, below: 0 },
                 },
-            sUrl,
+            sUrl
           );
         } else {
           setLoadingNewer(false);
@@ -1074,8 +996,7 @@ export function MessageArea() {
     isLoadingNewer: loadingNewer,
     onNewerLoaded: () => setLoadingNewer(false),
   });
-  const [editingMessageState, setEditingMessageState] =
-    useState<Message | null>(null);
+  const [editingMessageState, setEditingMessageState] = useState<Message | null>(null);
   const setEditingMessage = (msg: Message | null) => {
     setEditingMessageState(msg);
     editingMessageRef = msg;
@@ -1089,9 +1010,7 @@ export function MessageArea() {
   } | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerTab, setPickerTab] = useState<"emoji" | "gif">("emoji");
-  const [reactingToMessage, setReactingToMessage] = useState<Message | null>(
-    null,
-  );
+  const [reactingToMessage, setReactingToMessage] = useState<Message | null>(null);
   const [reactionModal, setReactionModal] = useState<{
     emoji: string;
     users: string[];
@@ -1103,9 +1022,7 @@ export function MessageArea() {
     { username: string; displayName: string; color?: string | null }[]
   >([]);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
-  const [pendingAttachments, setPendingAttachments] = useState<
-    PendingAttachment[]
-  >([]);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
@@ -1116,9 +1033,7 @@ export function MessageArea() {
   const autocomplete = useInputAutocomplete("message-input");
 
   // ── Slash command mode ─────────────────────────────────────────────────────
-  const [activeSlashCmd, setActiveSlashCmd] = useState<SlashCommand | null>(
-    null,
-  );
+  const [activeSlashCmd, setActiveSlashCmd] = useState<SlashCommand | null>(null);
   const [slashArgs, setSlashArgs] = useState<SlashCommandArgs>({});
 
   const dismissSlashCmd = useCallback(() => {
@@ -1128,9 +1043,7 @@ export function MessageArea() {
     slashArgsRef = {};
     // Return focus to the normal textarea
     setTimeout(() => {
-      (
-        document.getElementById("message-input") as HTMLTextAreaElement | null
-      )?.focus();
+      (document.getElementById("message-input") as HTMLTextAreaElement | null)?.focus();
     }, 0);
   }, []);
 
@@ -1174,10 +1087,7 @@ export function MessageArea() {
   useEffect(() => {
     if (!showPlusMenu) return;
     const onClickOutside = (e: MouseEvent) => {
-      if (
-        plusMenuRef.current &&
-        !plusMenuRef.current.contains(e.target as Node)
-      ) {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
         setShowPlusMenu(false);
       }
     };
@@ -1203,9 +1113,7 @@ export function MessageArea() {
       if (isEditable) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key.length !== 1) return;
-      const input = document.getElementById(
-        "message-input",
-      ) as HTMLTextAreaElement | null;
+      const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
       if (!input) return;
       input.focus();
     };
@@ -1298,7 +1206,7 @@ export function MessageArea() {
           msgs.forEach((msg) => {
             if (msg.content) {
               const urlMatch = msg.content.match(
-                /https?:\/\/[^\s<>"']+\.(?:jpg|jpeg|png|gif|webp|avif)/gi,
+                /https?:\/\/[^\s<>"']+\.(?:jpg|jpeg|png|gif|webp|avif)/gi
               );
               if (urlMatch) imageUrls.push(...urlMatch);
             }
@@ -1306,9 +1214,7 @@ export function MessageArea() {
 
           if (imageUrls.length > 0) {
             const channelId =
-              ch.type === "thread" && currentThread.value
-                ? currentThread.value.id
-                : ch.name;
+              ch.type === "thread" && currentThread.value ? currentThread.value.id : ch.name;
             setChannelLoading(true);
             startChannelLoad(channelId, imageUrls).then(() => {
               setChannelLoading(false);
@@ -1356,11 +1262,7 @@ export function MessageArea() {
   const pendingForChannel = pendingMessages.get(serverUrl.value, messageKey);
   const messagesWithPending = [...currentMessages];
   for (const pm of pendingForChannel) {
-    if (
-      !messagesWithPending.some(
-        (m) => m.content === pm.content && m.user === pm.user && !m.id,
-      )
-    ) {
+    if (!messagesWithPending.some((m) => m.content === pm.content && m.user === pm.user && !m.id)) {
       messagesWithPending.push(pm);
     }
   }
@@ -1369,28 +1271,18 @@ export function MessageArea() {
 
   const messageGroups = groupMessages(messagesWithPending);
 
-  const handleKeyDown = (
-    e: h.JSX.TargetedKeyboardEvent<HTMLTextAreaElement>,
-  ) => {
+  const handleKeyDown = (e: h.JSX.TargetedKeyboardEvent<HTMLTextAreaElement>) => {
     // Intercept Tab/Enter on a slash autocomplete item before the hook's
     // built-in selectItem runs (which would insert text instead of opening
     // the slash command UI).
-    if (
-      autocomplete.state.active &&
-      (e.key === "Tab" || e.key === "Enter") &&
-      !e.shiftKey
-    ) {
+    if (autocomplete.state.active && (e.key === "Tab" || e.key === "Enter") && !e.shiftKey) {
       const item = autocomplete.state.items[autocomplete.state.selectedIndex];
       if (item?.type === "slash") {
         e.preventDefault();
         const sUrl = serverUrl.value;
-        const cmd = (slashCommandsByServer.value[sUrl] || []).find(
-          (c) => c.name === item.label,
-        );
+        const cmd = (slashCommandsByServer.value[sUrl] || []).find((c) => c.name === item.label);
         if (cmd) {
-          const input = document.getElementById(
-            "message-input",
-          ) as HTMLTextAreaElement | null;
+          const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
           if (input) {
             input.value = "";
             resetInputHeight();
@@ -1415,9 +1307,7 @@ export function MessageArea() {
     } else if (e.key === "Escape") {
       if (editingMessage) {
         setEditingMessage(null);
-        const input = document.getElementById(
-          "message-input",
-        ) as HTMLTextAreaElement;
+        const input = document.getElementById("message-input") as HTMLTextAreaElement;
         if (input) {
           input.value = "";
           resetInputHeight();
@@ -1469,7 +1359,7 @@ export function MessageArea() {
         if (file.size > attachmentConfig.max_size) {
           showError(
             `File ${file.name} exceeds maximum size of ${Math.round(attachmentConfig.max_size / 1024 / 1024)}MB`,
-            { autoDismissMs: 5000 },
+            { autoDismissMs: 5000 }
           );
           continue;
         }
@@ -1499,11 +1389,9 @@ export function MessageArea() {
             tempId,
             (progress) => {
               setPendingAttachments((prev) =>
-                prev.map((att) =>
-                  att.id === tempId ? { ...att, progress } : att,
-                ),
+                prev.map((att) => (att.id === tempId ? { ...att, progress } : att))
               );
-            },
+            }
           );
 
           setPendingAttachments((prev) =>
@@ -1517,15 +1405,13 @@ export function MessageArea() {
                     expires_at: result.expires_at,
                     permanent: result.permanent,
                   }
-                : att,
-            ),
+                : att
+            )
           );
         } catch (error: any) {
-          showError(
-            `Failed to upload ${file.name}: ${error.message || "Unknown error"}`,
-          );
+          showError(`Failed to upload ${file.name}: ${error.message || "Unknown error"}`);
           setPendingAttachments((prev) =>
-            prev.filter((att) => att.name !== file.name || !att.uploading),
+            prev.filter((att) => att.name !== file.name || !att.uploading)
           );
         } finally {
           setUploading(false);
@@ -1536,10 +1422,9 @@ export function MessageArea() {
 
     const server = await getEnabledMediaServer();
     if (!server) {
-      showError(
-        "No media server configured. Please add a media server in settings.",
-        { autoDismissMs: 5000 },
-      );
+      showError("No media server configured. Please add a media server in settings.", {
+        autoDismissMs: 5000,
+      });
       return;
     }
 
@@ -1558,9 +1443,7 @@ export function MessageArea() {
           },
         ]);
       } catch (error: any) {
-        showError(
-          `Failed to upload ${file.name}: ${error.message || "Unknown error"}`,
-        );
+        showError(`Failed to upload ${file.name}: ${error.message || "Unknown error"}`);
         return;
       } finally {
         setUploading(false);
@@ -1568,9 +1451,7 @@ export function MessageArea() {
     }
   };
 
-  const handleImageUpload = async (
-    e: h.JSX.TargetedEvent<HTMLInputElement>,
-  ) => {
+  const handleImageUpload = async (e: h.JSX.TargetedEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (!files || files.length === 0) return;
 
@@ -1584,7 +1465,7 @@ export function MessageArea() {
     }
 
     const imageFiles = Array.from(files).filter(
-      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/")
     );
 
     if (imageFiles.length === 0) {
@@ -1608,10 +1489,7 @@ export function MessageArea() {
     e.preventDefault();
     e.stopPropagation();
     const currentTarget = e.currentTarget as HTMLElement | null;
-    if (
-      e.relatedTarget === null ||
-      !currentTarget?.contains(e.relatedTarget as Node)
-    ) {
+    if (e.relatedTarget === null || !currentTarget?.contains(e.relatedTarget as Node)) {
       setIsDragging(false);
     }
   };
@@ -1677,7 +1555,7 @@ export function MessageArea() {
   const handleEmojiSelect = (
     emoji: string,
     isCustom?: boolean,
-    emojiData?: { name: string; serverUrl: string },
+    emojiData?: { name: string; serverUrl: string }
   ) => {
     if (reactingToMessage) {
       // Don't allow custom emoji reactions
@@ -1693,39 +1571,29 @@ export function MessageArea() {
           emoji,
           channel: currentChannel.value?.name,
         },
-        serverUrl.value,
+        serverUrl.value
       );
       setReactingToMessage(null);
       setShowPicker(false);
       return;
     }
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input) {
       const cursorStart = input.selectionStart;
       const cursorEnd = input.selectionEnd;
       const value = input.value;
       const insertText = emoji;
-      const newValue =
-        value.substring(0, cursorStart) +
-        insertText +
-        value.substring(cursorEnd);
+      const newValue = value.substring(0, cursorStart) + insertText + value.substring(cursorEnd);
       input.value = newValue;
       requestAnimationFrame(() => {
         input.focus();
-        input.setSelectionRange(
-          cursorStart + insertText.length,
-          cursorStart + insertText.length,
-        );
+        input.setSelectionRange(cursorStart + insertText.length, cursorStart + insertText.length);
       });
     }
   };
 
   const handleGifSelect = (gifUrl: string) => {
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input) {
       input.value = gifUrl;
       requestAnimationFrame(() => {
@@ -1736,17 +1604,13 @@ export function MessageArea() {
 
   const startReply = (msg: Message) => {
     replyTo.value = msg;
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input) input.focus();
   };
 
   const startEdit = (msg: Message) => {
     setEditingMessage(msg);
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input) {
       input.value = msg.content;
       input.focus();
@@ -1756,9 +1620,7 @@ export function MessageArea() {
 
   const cancelEdit = () => {
     setEditingMessage(null);
-    const input = document.getElementById(
-      "message-input",
-    ) as HTMLTextAreaElement;
+    const input = document.getElementById("message-input") as HTMLTextAreaElement;
     if (input) {
       input.value = "";
       resetInputHeight();
@@ -1784,9 +1646,7 @@ export function MessageArea() {
     }
 
     // #channel-mention — navigate to that channel/thread
-    const channelMention = target.closest(
-      ".channel-mention",
-    ) as HTMLElement | null;
+    const channelMention = target.closest(".channel-mention") as HTMLElement | null;
     if (channelMention) {
       e.preventDefault();
       e.stopPropagation();
@@ -1796,8 +1656,7 @@ export function MessageArea() {
 
       const navigate = () => {
         if (threadId) {
-          const allThreads =
-            threadsByServer.value[targetServerUrl || serverUrl.value] || {};
+          const allThreads = threadsByServer.value[targetServerUrl || serverUrl.value] || {};
           for (const channelThreads of Object.values(allThreads)) {
             const thread = channelThreads.find((t) => t.id === threadId);
             if (thread) {
@@ -1830,9 +1689,7 @@ export function MessageArea() {
       return;
     }
 
-    const img = target.closest(
-      ".message-image, .tenor-gif",
-    ) as HTMLImageElement | null;
+    const img = target.closest(".message-image, .tenor-gif") as HTMLImageElement | null;
     if (img) {
       e.preventDefault();
       e.stopPropagation();
@@ -1845,9 +1702,7 @@ export function MessageArea() {
     if (!msg.id || !msg.content) return;
 
     const targetLang = navigator.language.split("-")[0] || "en";
-    const existingTranslation = msg.id
-      ? translatedMessages.value[msg.id]
-      : null;
+    const existingTranslation = msg.id ? translatedMessages.value[msg.id] : null;
     if (existingTranslation) {
       translatedMessages.value = {
         ...translatedMessages.value,
@@ -1861,7 +1716,7 @@ export function MessageArea() {
 
     try {
       const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(msg.content)}`,
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(msg.content)}`
       );
       const data = await response.json();
       const translatedText = data[0]
@@ -1879,10 +1734,7 @@ export function MessageArea() {
     }
   };
 
-  const handleMessageContextMenu = (
-    e: h.JSX.TargetedMouseEvent<HTMLDivElement>,
-    msg: Message,
-  ) => {
+  const handleMessageContextMenu = (e: h.JSX.TargetedMouseEvent<HTMLDivElement>, msg: Message) => {
     e.preventDefault();
     const replyMsg = getReplyMessage(msg);
     const isOwn = msg.user === currentUser.value?.username;
@@ -1925,13 +1777,9 @@ export function MessageArea() {
       label: "Quote",
       icon: "CornerUpRight",
       fn: () => {
-        const input = document.getElementById(
-          "message-input",
-        ) as HTMLTextAreaElement;
+        const input = document.getElementById("message-input") as HTMLTextAreaElement;
         if (input) {
-          const qt = msg.content
-            ? `> ${msg.content.replace(/\n/g, "\n> ")}`
-            : "> [Attachment]";
+          const qt = msg.content ? `> ${msg.content.replace(/\n/g, "\n> ")}` : "> [Attachment]";
           input.value = qt + "\n\n" + input.value;
           input.focus();
           input.selectionStart = input.selectionEnd = 0;
@@ -1974,11 +1822,9 @@ export function MessageArea() {
         setConfirmDialog({
           isOpen: true,
           title: "Delete Message",
-          message:
-            "Are you sure you want to delete this message? This action cannot be undone.",
+          message: "Are you sure you want to delete this message? This action cannot be undone.",
           onConfirm: () => {
-            const isThread =
-              currentChannel.value?.type === "thread" && currentThread.value;
+            const isThread = currentChannel.value?.type === "thread" && currentThread.value;
             wsSend(
               {
                 cmd: "message_delete",
@@ -1986,7 +1832,7 @@ export function MessageArea() {
                 channel: currentChannel.value?.name,
                 ...(isThread && { thread_id: currentThread.value?.id }),
               },
-              serverUrl.value,
+              serverUrl.value
             );
           },
         }),
@@ -2045,11 +1891,7 @@ export function MessageArea() {
 
   const handleReaction = (msg: Message, emoji: string) => {
     // Don't allow custom emoji reactions (they contain colons or are URLs)
-    if (
-      emoji.includes(":") ||
-      emoji.startsWith("http") ||
-      emoji.startsWith("originChats:")
-    ) {
+    if (emoji.includes(":") || emoji.startsWith("http") || emoji.startsWith("originChats:")) {
       return;
     }
 
@@ -2058,8 +1900,7 @@ export function MessageArea() {
     const liveMsg = channelMsgs.find((m) => m.id === msg.id);
     const liveUsers: string[] = (liveMsg?.reactions?.[emoji] ?? []) as string[];
     const hasReacted = liveUsers.includes(currentUser.value?.username);
-    const isThread =
-      currentChannel.value?.type === "thread" && currentThread.value;
+    const isThread = currentChannel.value?.type === "thread" && currentThread.value;
     wsSend(
       {
         cmd: hasReacted ? "message_react_remove" : "message_react_add",
@@ -2068,7 +1909,7 @@ export function MessageArea() {
         channel: currentChannel.value?.name,
         ...(isThread && { thread_id: currentThread.value?.id }),
       },
-      serverUrl.value,
+      serverUrl.value
     );
   };
 
@@ -2077,11 +1918,7 @@ export function MessageArea() {
     const channelMessages = messages.value[messageKey] || [];
     const replyMsg = channelMessages.find((m) => m.id === msg.reply_to?.id);
     if (!replyMsg && currentChannel.value?.name && msg.reply_to?.id) {
-      fetchMissingReplyMessage(
-        serverUrl.value,
-        currentChannel.value.name,
-        msg.reply_to.id,
-      );
+      fetchMissingReplyMessage(serverUrl.value, currentChannel.value.name, msg.reply_to.id);
     }
     return replyMsg || null;
   };
@@ -2090,11 +1927,7 @@ export function MessageArea() {
     const date = new Date(timestamp * 1000);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const msgDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-    );
+    const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
     const time = date.toLocaleTimeString([], {
       hour: "numeric",
@@ -2187,8 +2020,7 @@ export function MessageArea() {
                   setPickerTab("emoji");
                   setShowPicker(true);
                 },
-                onContextMenu: (e: MouseEvent) =>
-                  handleMessageContextMenu(e as any, msg),
+                onContextMenu: (e: MouseEvent) => handleMessageContextMenu(e as any, msg),
                 canReact,
                 canReply,
                 isOwn,
@@ -2209,9 +2041,7 @@ export function MessageArea() {
                   e.stopPropagation();
                   const replyMsg = getReplyMessage(msg);
                   if (replyMsg) {
-                    const original = document.querySelector(
-                      `[data-msg-id="${replyMsg.id}"]`,
-                    );
+                    const original = document.querySelector(`[data-msg-id="${replyMsg.id}"]`);
                     if (original)
                       original.scrollIntoView({
                         behavior: "smooth",
@@ -2251,13 +2081,9 @@ export function MessageArea() {
                 <Icon name="CornerUpRight" size={20} />
                 <UserAvatar
                   username={interaction.username}
-                  nickname={
-                    users.value[interaction.username?.toLowerCase()]?.nickname
-                  }
+                  nickname={users.value[interaction.username?.toLowerCase()]?.nickname}
                   pfp={users.value[interaction.username?.toLowerCase()]?.pfp}
-                  cracked={
-                    users.value[interaction.username?.toLowerCase()]?.cracked
-                  }
+                  cracked={users.value[interaction.username?.toLowerCase()]?.cracked}
                   className="avatar-small"
                 />
                 <div className="reply-text">
@@ -2268,9 +2094,7 @@ export function MessageArea() {
                     {interaction.username}
                   </span>
                   <span className="reply-content">
-                    <span className="interaction-command">
-                      /{interaction.command}
-                    </span>
+                    <span className="interaction-command">/{interaction.command}</span>
                   </span>
                 </div>
               </div>
@@ -2286,35 +2110,21 @@ export function MessageArea() {
                       cracked={users.value[msg.user?.toLowerCase()]?.cracked}
                       className="avatar clickable"
                       alt={displayName}
-                      onClick={(e: any) =>
-                        !webhook && openUserPopout(e, msg.user)
-                      }
-                      onContextMenu={(e: any) =>
-                        !webhook && showUserMenu(e, msg.user)
-                      }
+                      onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
+                      onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
                     />
                     <div className="message-group-content">
                       <div className="message-header">
                         <span
                           className="username clickable"
-                          style={
-                            webhook
-                              ? undefined
-                              : { color: getUserColor(msg.user) }
-                          }
-                          onClick={(e: any) =>
-                            !webhook && openUserPopout(e, msg.user)
-                          }
-                          onContextMenu={(e: any) =>
-                            !webhook && showUserMenu(e, msg.user)
-                          }
+                          style={webhook ? undefined : { color: getUserColor(msg.user) }}
+                          onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
+                          onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
                         >
                           {displayName}
                         </span>
                         {webhook && <WebhookBadge name={webhook.name} />}
-                        <span className="timestamp">
-                          {formatTimestamp(msg.timestamp)}
-                        </span>
+                        <span className="timestamp">{formatTimestamp(msg.timestamp)}</span>
                       </div>
                       <MessageContent
                         content={msg.content}
@@ -2330,9 +2140,7 @@ export function MessageArea() {
                           hasContent={!!msg.content}
                         />
                       )}
-                      {msg.edited && (
-                        <span className="edited-indicator">(edited)</span>
-                      )}
+                      {msg.edited && <span className="edited-indicator">(edited)</span>}
                       {renderReactions(msg, reactions)}
                     </div>
                   </div>
@@ -2341,42 +2149,25 @@ export function MessageArea() {
                     <UserAvatar
                       username={msg.user}
                       nickname={users.value[msg.user?.toLowerCase()]?.nickname}
-                      pfp={
-                        webhook?.avatar ||
-                        users.value[msg.user?.toLowerCase()]?.pfp
-                      }
+                      pfp={webhook?.avatar || users.value[msg.user?.toLowerCase()]?.pfp}
                       cracked={users.value[msg.user?.toLowerCase()]?.cracked}
                       className="avatar clickable"
                       alt={displayName}
-                      onClick={(e: any) =>
-                        !webhook && openUserPopout(e, msg.user)
-                      }
-                      onContextMenu={(e: any) =>
-                        !webhook && showUserMenu(e, msg.user)
-                      }
+                      onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
+                      onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
                     />
                     <div className="message-group-content">
                       <div className="message-header">
                         <span
                           className="username clickable"
-                          style={
-                            webhook
-                              ? undefined
-                              : { color: getUserColor(msg.user) }
-                          }
-                          onClick={(e: any) =>
-                            !webhook && openUserPopout(e, msg.user)
-                          }
-                          onContextMenu={(e: any) =>
-                            !webhook && showUserMenu(e, msg.user)
-                          }
+                          style={webhook ? undefined : { color: getUserColor(msg.user) }}
+                          onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
+                          onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
                         >
                           {displayName}
                         </span>
                         {webhook && <WebhookBadge name={webhook.name} />}
-                        <span className="timestamp">
-                          {formatTimestamp(msg.timestamp)}
-                        </span>
+                        <span className="timestamp">{formatTimestamp(msg.timestamp)}</span>
                       </div>
                       <MessageContent
                         content={msg.content}
@@ -2393,9 +2184,7 @@ export function MessageArea() {
                           hasContent={!!msg.content}
                         />
                       )}
-                      {msg.edited && (
-                        <span className="edited-indicator">(edited)</span>
-                      )}
+                      {msg.edited && <span className="edited-indicator">(edited)</span>}
                       {renderReactions(msg, reactions)}
                     </div>
                   </>
@@ -2417,9 +2206,7 @@ export function MessageArea() {
                     onContextMenu={handleAttachmentContextMenu}
                   />
                 )}
-                {msg.edited && (
-                  <span className="edited-indicator">(edited)</span>
-                )}
+                {msg.edited && <span className="edited-indicator">(edited)</span>}
                 {renderReactions(msg, reactions)}
               </div>
             )}
@@ -2429,10 +2216,7 @@ export function MessageArea() {
     });
   }
 
-  const renderReactions = (
-    msg: Message,
-    reactions: Record<string, string[]>,
-  ) => {
+  const renderReactions = (msg: Message, reactions: Record<string, string[]>) => {
     if (!canReact) return null;
     if (Object.entries(reactions).length === 0) return null;
     return (
@@ -2450,11 +2234,8 @@ export function MessageArea() {
               onContextMenu={(e: any) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const liveMsg = (messages.value[messageKey] || []).find(
-                  (m) => m.id === msg.id,
-                );
-                const liveUsers: string[] =
-                  (liveMsg?.reactions?.[emoji] as string[]) ?? users;
+                const liveMsg = (messages.value[messageKey] || []).find((m) => m.id === msg.id);
+                const liveUsers: string[] = (liveMsg?.reactions?.[emoji] as string[]) ?? users;
                 setReactionModal({ emoji, users: liveUsers });
               }}
             >
@@ -2466,20 +2247,13 @@ export function MessageArea() {
                   draggable={false}
                 />
               ) : (
-                <span className="reaction-emoji reaction-emoji-system">
-                  {emoji}
-                </span>
+                <span className="reaction-emoji reaction-emoji-system">{emoji}</span>
               )}
               <span className="reaction-count">{users.length}</span>
               <span className="reaction-tooltip">
                 <span className="reaction-tooltip-avatars">
                   {previewUsers.map((u) => (
-                    <UserAvatar
-                      key={u}
-                      username={u}
-                      className="reaction-tooltip-avatar"
-                      alt={u}
-                    />
+                    <UserAvatar key={u} username={u} className="reaction-tooltip-avatar" alt={u} />
                   ))}
                 </span>
                 <span className="reaction-tooltip-names">
@@ -2498,13 +2272,11 @@ export function MessageArea() {
 
   // ── Server capability flags ────────────────────────────────────────────────
   const caps = serverCapabilities.value;
-  const canPin =
-    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canPin = caps.includes("message_pin") && caps.includes("messages_pinned");
   const canSearch = caps.includes("messages_search");
   const canInbox = caps.includes("pings_get");
   const canReply = caps.includes("message_replies");
-  const canReact =
-    caps.includes("message_react_add") && caps.includes("message_react_remove");
+  const canReact = caps.includes("message_react_add") && caps.includes("message_react_remove");
 
   const ch = currentChannel.value;
   const isChatChannel = ch !== null && ch.type === "chat";
@@ -2521,9 +2293,7 @@ export function MessageArea() {
     if (myUsername === "admin") return true;
     return sendPerms.some(
       (r: string) =>
-        myRoles.includes(r) ||
-        r === "user" ||
-        r.toLowerCase() === myUsername?.toLowerCase(),
+        myRoles.includes(r) || r === "user" || r.toLowerCase() === myUsername?.toLowerCase()
     );
   })();
 
@@ -2559,10 +2329,7 @@ export function MessageArea() {
             className={styles.messages}
             onClick={handleMessagesClick as any}
           >
-            <div
-              className={styles.overscrollArea}
-              style={{ height: overscrollPadding }}
-            >
+            <div className={styles.overscrollArea} style={{ height: overscrollPadding }}>
               {loadingOlder && (
                 <div className={styles.skeletonMessagesTop}>
                   <SkeletonMessageList count={4} />
@@ -2592,9 +2359,7 @@ export function MessageArea() {
                   </strong>{" "}
                   channel.
                 </div>
-                <div className="empty-channel-text">
-                  Be the first to send a message!
-                </div>
+                <div className="empty-channel-text">Be the first to send a message!</div>
               </div>
             ) : (
               messageGroups.flatMap((group) => {
@@ -2670,10 +2435,7 @@ export function MessageArea() {
             <div className="pending-attachments-container">
               {pendingAttachments.map((att) => {
                 const daysUntilExpiry = att.expires_at
-                  ? Math.max(
-                      0,
-                      Math.ceil((att.expires_at - Date.now() / 1000) / 86400),
-                    )
+                  ? Math.max(0, Math.ceil((att.expires_at - Date.now() / 1000) / 86400))
                   : null;
                 const showExpiry =
                   !att.permanent &&
@@ -2685,10 +2447,7 @@ export function MessageArea() {
                   <div key={att.id} className="pending-attachment-wrapper">
                     {att.uploading ? (
                       <div className="pending-attachment-loading">
-                        <svg
-                          className="upload-progress-ring"
-                          viewBox="0 0 36 36"
-                        >
+                        <svg className="upload-progress-ring" viewBox="0 0 36 36">
                           <circle
                             className="upload-progress-bg"
                             cx="18"
@@ -2713,11 +2472,7 @@ export function MessageArea() {
                         </span>
                       </div>
                     ) : att.mime_type.startsWith("image/") ? (
-                      <img
-                        src={att.url}
-                        className="pending-attachment-preview"
-                        alt={att.name}
-                      />
+                      <img src={att.url} className="pending-attachment-preview" alt={att.name} />
                     ) : (
                       <div className="pending-attachment-file">
                         <Icon
@@ -2778,12 +2533,12 @@ export function MessageArea() {
                   if (item?.type === "slash") {
                     const sUrl = serverUrl.value;
                     const cmd = (slashCommandsByServer.value[sUrl] || []).find(
-                      (c) => c.name === item.label,
+                      (c) => c.name === item.label
                     );
                     if (cmd) {
                       // Clear the /name text the user typed
                       const input = document.getElementById(
-                        "message-input",
+                        "message-input"
                       ) as HTMLTextAreaElement | null;
                       if (input) {
                         input.value = "";
@@ -2828,17 +2583,11 @@ export function MessageArea() {
                         }}
                       >
                         <Icon
-                          name={
-                            hasCapability("attachment_upload")
-                              ? "File"
-                              : "Image"
-                          }
+                          name={hasCapability("attachment_upload") ? "File" : "Image"}
                           size={16}
                         />
                         <span>
-                          {hasCapability("attachment_upload")
-                            ? "Upload File"
-                            : "Upload Image"}
+                          {hasCapability("attachment_upload") ? "Upload File" : "Upload Image"}
                         </span>
                       </div>
                       <div
@@ -2897,12 +2646,9 @@ export function MessageArea() {
                     hasCapability("attachment_upload")
                       ? (() => {
                           const types =
-                            attachmentConfigByServer.value[serverUrl.value]
-                              ?.allowed_types;
+                            attachmentConfigByServer.value[serverUrl.value]?.allowed_types;
                           if (types && types.includes("*")) return "*/*";
-                          return mimeTypeToAcceptString(
-                            types || ["image/*", "video/*"],
-                          );
+                          return mimeTypeToAcceptString(types || ["image/*", "video/*"]);
                         })()
                       : "image/*,video/*"
                   }
@@ -2938,10 +2684,7 @@ export function MessageArea() {
                 >
                   <Icon name="Smile" />
                 </button>
-                <button
-                  className={`${styles.sendBtn} icon-btn`}
-                  onClick={sendMessage}
-                >
+                <button className={`${styles.sendBtn} icon-btn`} onClick={sendMessage}>
                   <Icon name="Send" />
                 </button>
               </div>
@@ -2962,68 +2705,44 @@ export function MessageArea() {
             )}
             {typingUsers.length === 1 ? (
               <>
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[0].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[0].color ?? undefined }}>
                   {typingUsers[0].displayName}
                 </span>
                 {" is typing..."}
               </>
             ) : typingUsers.length === 2 ? (
               <>
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[0].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[0].color ?? undefined }}>
                   {typingUsers[0].displayName}
                 </span>
                 {" and "}
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[1].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[1].color ?? undefined }}>
                   {typingUsers[1].displayName}
                 </span>
                 {" are typing..."}
               </>
             ) : typingUsers.length === 3 ? (
               <>
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[0].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[0].color ?? undefined }}>
                   {typingUsers[0].displayName}
                 </span>
                 {", "}
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[1].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[1].color ?? undefined }}>
                   {typingUsers[1].displayName}
                 </span>
                 {", and "}
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[2].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[2].color ?? undefined }}>
                   {typingUsers[2].displayName}
                 </span>
                 {" are typing..."}
               </>
             ) : typingUsers.length > 3 ? (
               <>
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[0].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[0].color ?? undefined }}>
                   {typingUsers[0].displayName}
                 </span>
                 {", "}
-                <span
-                  className="typing-name"
-                  style={{ color: typingUsers[1].color ?? undefined }}
-                >
+                <span className="typing-name" style={{ color: typingUsers[1].color ?? undefined }}>
                   {typingUsers[1].displayName}
                 </span>
                 {`, and ${typingUsers.length - 2} others are typing...`}
@@ -3080,9 +2799,7 @@ export function MessageArea() {
           setShowPicker(false);
           setReactingToMessage(null);
           requestAnimationFrame(() => {
-            const input = document.getElementById(
-              "message-input",
-            ) as HTMLTextAreaElement;
+            const input = document.getElementById("message-input") as HTMLTextAreaElement;
             if (input) input.focus();
           });
         }}
@@ -3095,9 +2812,7 @@ export function MessageArea() {
         isOpen={showGiftModal}
         onClose={() => setShowGiftModal(false)}
         onGiftCreated={(giftUrl) => {
-          const input = document.getElementById(
-            "message-input",
-          ) as HTMLTextAreaElement;
+          const input = document.getElementById("message-input") as HTMLTextAreaElement;
           if (input) {
             const currentText = input.value.trim();
             input.value = currentText ? `${currentText}\n${giftUrl}` : giftUrl;
@@ -3105,9 +2820,7 @@ export function MessageArea() {
           }
         }}
       />
-      {showPollModal && (
-        <PollCreateModal onClose={() => setShowPollModal(false)} />
-      )}
+      {showPollModal && <PollCreateModal onClose={() => setShowPollModal(false)} />}
       {reactionModal && (
         <ReactionModal
           emoji={reactionModal.emoji}
@@ -3133,21 +2846,13 @@ function ReplyBar({ replyMessage, editMessage, onClose }: ReplyBarProps) {
   const pingOn = replyPing.value;
 
   return (
-    <div
-      className={`${styles.replyBar} ${isEdit ? styles.editingMode : ""} ${styles.active}`}
-    >
+    <div className={`${styles.replyBar} ${isEdit ? styles.editingMode : ""} ${styles.active}`}>
       <div className={styles.replyBarIcon}>
-        {isEdit ? (
-          <Icon name="Pencil" size={16} />
-        ) : (
-          <Icon name="CornerUpLeft" size={16} />
-        )}
+        {isEdit ? <Icon name="Pencil" size={16} /> : <Icon name="CornerUpLeft" size={16} />}
       </div>
       <div className={styles.replyBarBody}>
         <div className={styles.replyBarLabel}>
-          {isEdit
-            ? "Editing message"
-            : `Replying to ${getDisplayName(msg.user)}`}
+          {isEdit ? "Editing message" : `Replying to ${getDisplayName(msg.user)}`}
         </div>
         <div className={styles.replyBarPreview}>
           <MessageContent
@@ -3165,9 +2870,7 @@ function ReplyBar({ replyMessage, editMessage, onClose }: ReplyBarProps) {
             replyPing.value = !replyPing.value;
           }}
           title={
-            pingOn
-              ? "Ping on: click to suppress notification"
-              : "Ping off: click to notify user"
+            pingOn ? "Ping on: click to suppress notification" : "Ping off: click to notify user"
           }
         >
           <Icon name={pingOn ? "Bell" : "BellOff"} size={14} />
@@ -3225,11 +2928,7 @@ function GiftModal({ isOpen, onClose, onGiftCreated }: GiftModalProps) {
     setError(null);
 
     try {
-      const data = await createGift(
-        numAmount,
-        note || undefined,
-        parseInt(expiryHrs),
-      );
+      const data = await createGift(numAmount, note || undefined, parseInt(expiryHrs));
       const giftUrl = `${ROTUR_GIFT_URL}?code=${data.code}`;
       onGiftCreated(giftUrl);
       handleClose();
@@ -3386,9 +3085,7 @@ function ReactionModal({ emoji, users, onClose }: ReactionModalProps) {
               draggable={false}
             />
           ) : (
-            <span className="reaction-modal-emoji reaction-modal-emoji-system">
-              {emoji}
-            </span>
+            <span className="reaction-modal-emoji reaction-modal-emoji-system">{emoji}</span>
           )}
           <div className="reaction-modal-header-text">
             <span className="reaction-modal-title">Reacted with {emoji}</span>
@@ -3396,11 +3093,7 @@ function ReactionModal({ emoji, users, onClose }: ReactionModalProps) {
               {users.length} {users.length === 1 ? "person" : "people"}
             </span>
           </div>
-          <button
-            className="icon-btn reaction-modal-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
+          <button className="icon-btn reaction-modal-close" onClick={onClose} aria-label="Close">
             <Icon name="X" size={16} />
           </button>
         </div>
@@ -3408,9 +3101,7 @@ function ReactionModal({ emoji, users, onClose }: ReactionModalProps) {
         {users.length === 0 ? (
           <div className="reaction-modal-empty">No reactions yet</div>
         ) : (
-          users.map((username) => (
-            <ReactionUserItem key={username} username={username} />
-          ))
+          users.map((username) => <ReactionUserItem key={username} username={username} />)
         )}
       </div>
     </div>
@@ -3421,11 +3112,7 @@ function ReactionUserItem({ username }: { username: string }) {
   const displayName = useDisplayName(username);
   return (
     <div className="reaction-modal-user">
-      <UserAvatar
-        username={username}
-        className="reaction-modal-avatar"
-        alt={displayName}
-      />
+      <UserAvatar username={username} className="reaction-modal-avatar" alt={displayName} />
       <span className="reaction-modal-username">{displayName}</span>
     </div>
   );

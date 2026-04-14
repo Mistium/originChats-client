@@ -34,17 +34,13 @@ export function ThreadPanel() {
     channel: string;
     content: string;
   } | null>(null);
-  const { showThreadMenu, closeThreadMenu, threadMenu } =
-    useThreadContextMenu();
+  const { showThreadMenu, closeThreadMenu, threadMenu } = useThreadContextMenu();
 
   const ch = currentChannel.value;
   const isForum = ch?.type === "forum";
-  const threads = isForum
-    ? threadsByServer.value[serverUrl.value]?.[ch.name] || []
-    : [];
+  const threads = isForum ? threadsByServer.value[serverUrl.value]?.[ch.name] || [] : [];
 
-  const supportsJoinLeave =
-    hasCapability("thread_join") && hasCapability("thread_leave");
+  const supportsJoinLeave = hasCapability("thread_join") && hasCapability("thread_leave");
 
   useSignalEffect(() => {
     renderChannelsSignal.value;
@@ -63,12 +59,9 @@ export function ThreadPanel() {
   });
 
   useEffect(() => {
-    if (
-      pendingThreadMessage &&
-      threads.length > prevThreadsRef.current.threads.length
-    ) {
+    if (pendingThreadMessage && threads.length > prevThreadsRef.current.threads.length) {
       const newThread = threads.find(
-        (t) => !prevThreadsRef.current.threads.some((pt) => pt.id === t.id),
+        (t) => !prevThreadsRef.current.threads.some((pt) => pt.id === t.id)
       );
       if (newThread) {
         wsSend(
@@ -78,7 +71,7 @@ export function ThreadPanel() {
             thread_id: newThread.id,
             content: pendingThreadMessage.content,
           },
-          serverUrl.value,
+          serverUrl.value
         );
         selectThread(newThread);
         setPendingThreadMessage(null);
@@ -127,8 +120,7 @@ export function ThreadPanel() {
 
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
 
-  const formatTimestamp = (timestamp: number): string =>
-    formatThreadTime(timestamp);
+  const formatTimestamp = (timestamp: number): string => formatThreadTime(timestamp);
 
   return (
     <div className={styles.mainContentWrapper}>
@@ -136,17 +128,12 @@ export function ThreadPanel() {
       <div className={styles.threadPanel}>
         <div className={styles.threadList}>
           {isCreating ? (
-            <form
-              onSubmit={handleCreateThread}
-              className={styles.threadCreateForm}
-            >
+            <form onSubmit={handleCreateThread} className={styles.threadCreateForm}>
               <input
                 type="text"
                 placeholder="Thread title..."
                 value={newThreadName}
-                onInput={(e) =>
-                  setNewThreadName((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setNewThreadName((e.target as HTMLInputElement).value)}
                 autoFocus
                 maxLength={100}
                 className={styles.threadCreateTitle}
@@ -158,8 +145,7 @@ export function ThreadPanel() {
                   const target = e.target as HTMLTextAreaElement;
                   setNewThreadMessage(target.value);
                   target.style.height = "auto";
-                  target.style.height =
-                    Math.min(target.scrollHeight, 150) + "px";
+                  target.style.height = Math.min(target.scrollHeight, 150) + "px";
                 }}
                 maxLength={2000}
                 className={styles.threadCreateMessage}
@@ -187,10 +173,7 @@ export function ThreadPanel() {
               </div>
             </form>
           ) : (
-            <button
-              className={styles.threadCreateBtn}
-              onClick={() => setIsCreating(true)}
-            >
+            <button className={styles.threadCreateBtn} onClick={() => setIsCreating(true)}>
               <Icon name="Plus" size={16} />
               <span>New Thread</span>
             </button>
@@ -205,9 +188,7 @@ export function ThreadPanel() {
           ) : threads.length > 0 ? (
             <div className={styles.threadGrid}>
               {threads.map((thread) => {
-                const isParticipant = thread.participants?.includes(
-                  myUsername || "",
-                );
+                const isParticipant = thread.participants?.includes(myUsername || "");
                 const participantCount = thread.participants?.length || 0;
 
                 return (
@@ -224,9 +205,7 @@ export function ThreadPanel() {
                         alt={thread.created_by}
                       />
                       <div className={styles.threadCardInfo}>
-                        <span className={styles.threadCardUsername}>
-                          {thread.created_by}
-                        </span>
+                        <span className={styles.threadCardUsername}>{thread.created_by}</span>
                         <span className={styles.threadCardTime}>
                           {formatTimestamp(thread.created_at)}
                         </span>
@@ -273,8 +252,7 @@ export function ThreadPanel() {
                               <Icon name="UserPlus" size={14} />
                             </button>
                           ))}
-                        {(thread.created_by === myUsername ||
-                          myUsername === "admin") && (
+                        {(thread.created_by === myUsername || myUsername === "admin") && (
                           <button
                             className={styles.threadCardDelete}
                             onClick={(e) => handleDeleteThread(e, thread.id)}
@@ -306,8 +284,7 @@ export function ThreadPanel() {
 
 function ThreadView() {
   const thread = currentThread.value;
-  const supportsJoinLeave =
-    hasCapability("thread_join") && hasCapability("thread_leave");
+  const supportsJoinLeave = hasCapability("thread_join") && hasCapability("thread_leave");
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
   const isParticipant = thread?.participants?.includes(myUsername || "");
 
@@ -322,10 +299,7 @@ function ThreadView() {
   return (
     <div className={styles.threadView}>
       <div className={styles.threadViewHeader}>
-        <button
-          className={styles.threadViewBack}
-          onClick={() => selectThread(null)}
-        >
+        <button className={styles.threadViewBack} onClick={() => selectThread(null)}>
           <Icon name="ArrowLeft" size={18} />
         </button>
         <div className={styles.threadViewTitle}>
@@ -363,9 +337,7 @@ function ThreadView() {
           </div>
         )}
       </div>
-      <div className={styles.threadViewContent}>
-        Thread messages will appear here...
-      </div>
+      <div className={styles.threadViewContent}>Thread messages will appear here...</div>
     </div>
   );
 }

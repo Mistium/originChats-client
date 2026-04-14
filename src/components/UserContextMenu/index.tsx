@@ -1,10 +1,4 @@
-import {
-  friends,
-  friendRequests,
-  blockedUsers,
-  currentUser,
-  friendNicknames,
-} from "../../state";
+import { friends, friendRequests, blockedUsers, currentUser, friendNicknames } from "../../state";
 import {
   openDMWith,
   sendFriendRequest,
@@ -31,12 +25,7 @@ interface UserContextMenuProps {
   onClose: () => void;
 }
 
-export function UserContextMenu({
-  username,
-  x,
-  y,
-  onClose,
-}: UserContextMenuProps) {
+export function UserContextMenu({ username, x, y, onClose }: UserContextMenuProps) {
   const isSelf = username === currentUser.value?.username;
   const isFriend = friends.value.includes(username);
   const isBlocked = blockedUsers.value.includes(username);
@@ -95,7 +84,7 @@ export function UserContextMenu({
           icon: "X",
           danger: true,
           fn: () => denyFriend(username),
-        },
+        }
       );
     } else if (isFriend || isSelf) {
       items.push({
@@ -140,16 +129,10 @@ export function UserContextMenu({
 
   const header = (
     <>
-      <UserAvatar
-        username={username}
-        className={styles.contextMenuAvatar}
-        alt={displayName}
-      />
+      <UserAvatar username={username} className={styles.contextMenuAvatar} alt={displayName} />
       <div className={styles.contextMenuInfo}>
         <span className={styles.contextMenuName}>{displayName}</span>
-        {currentNickname && (
-          <span className={styles.contextMenuUsername}>{username}</span>
-        )}
+        {currentNickname && <span className={styles.contextMenuUsername}>{username}</span>}
         <span className={styles.contextMenuStatus}>
           {isSelf
             ? "You"
@@ -165,9 +148,7 @@ export function UserContextMenu({
     </>
   );
 
-  return (
-    <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />
-  );
+  return <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />;
 }
 
 type UseUserContextMenuResult = ReturnType<typeof useUserContextMenu>;

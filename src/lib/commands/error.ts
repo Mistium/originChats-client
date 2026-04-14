@@ -7,16 +7,11 @@ import {
   servers,
   wsConnections,
 } from "../../state";
-import {
-  showBanner,
-  showCrackedAuthModal,
-  crackedAuthError,
-} from "../ui-signals";
+import { showBanner, showCrackedAuthModal, crackedAuthError } from "../ui-signals";
 import { closeWebSocket } from "../ws-connection";
 
 export function handleError(msg: ServerError, sUrl: string): void {
-  const errText: string =
-    msg.val || msg.message || msg.error || "The server reported an error.";
+  const errText: string = msg.val || msg.message || msg.error || "The server reported an error.";
 
   if (/^unknown command/i.test(errText)) {
     console.debug(`[${sUrl}] Unsupported command (ignored):`, errText);
@@ -99,7 +94,7 @@ export function handleError(msg: ServerError, sUrl: string): void {
     const existing = servers.value.find((s) => s.url === sUrl);
     if (existing?.crackedCredentials) {
       servers.value = servers.value.map((s) =>
-        s.url === sUrl ? { ...s, crackedCredentials: undefined } : s,
+        s.url === sUrl ? { ...s, crackedCredentials: undefined } : s
       );
     }
     showCrackedAuthModal.value = sUrl;
@@ -121,8 +116,7 @@ export function handleError(msg: ServerError, sUrl: string): void {
   }
 
   if (/registration is disabled/i.test(errText)) {
-    crackedAuthError.value =
-      "Registration is disabled on this server. Please login instead.";
+    crackedAuthError.value = "Registration is disabled on this server. Please login instead.";
     console.warn(`[${sUrl}] Registration disabled:`, errText);
     return;
   }
@@ -134,11 +128,7 @@ export function handleError(msg: ServerError, sUrl: string): void {
     return;
   }
 
-  if (
-    sUrl === DM_SERVER_URL &&
-    pendingDMAddUsername &&
-    /does not exist/i.test(errText)
-  ) {
+  if (sUrl === DM_SERVER_URL && pendingDMAddUsername && /does not exist/i.test(errText)) {
     const attempted = pendingDMAddUsername;
     setPendingDMAddUsername(null);
     showBanner({

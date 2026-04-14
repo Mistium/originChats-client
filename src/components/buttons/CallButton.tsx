@@ -9,15 +9,11 @@ interface CallButtonProps {
   iconSize?: number;
 }
 
-export function CallButton({
-  className = "header-btn",
-  iconSize,
-}: CallButtonProps) {
+export function CallButton({ className = "header-btn", iconSize }: CallButtonProps) {
   const ch = currentChannel.value;
   const voice = voiceState.value;
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
-  const inCallHere =
-    ch !== null && ch.type === "chat" && voice.currentChannel === ch.name;
+  const inCallHere = ch !== null && ch.type === "chat" && voice.currentChannel === ch.name;
 
   const handleClick = () => {
     if (!ch) return;

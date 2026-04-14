@@ -10,8 +10,5 @@ export function handleTyping(msg: Typing, sUrl: string): void {
     };
   if (!typingUsersByServer.value[sUrl][channel])
     typingUsersByServer.value[sUrl][channel] = new Map();
-  (typingUsersByServer.value[sUrl][channel] as Map<string, number>).set(
-    user,
-    Date.now() + 10000,
-  );
+  (typingUsersByServer.value[sUrl][channel] as Map<string, number>).set(user, Date.now() + 10000);
 }

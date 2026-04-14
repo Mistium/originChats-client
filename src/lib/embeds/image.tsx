@@ -16,9 +16,7 @@ export function ImageEmbed({ url }: { url: string }) {
     if (initialSize) return true;
     return null;
   });
-  const [cachedSrc, setCachedSrc] = useState<string | null>(
-    () => initialCached,
-  );
+  const [cachedSrc, setCachedSrc] = useState<string | null>(() => initialCached);
   const [cachedSize, setCachedSize] = useState<{
     width: number;
     height: number;
@@ -35,10 +33,7 @@ export function ImageEmbed({ url }: { url: string }) {
 
       try {
         const urlObj = new URL(url);
-        if (
-          urlObj.hostname === "localhost" ||
-          urlObj.hostname === "127.0.0.1"
-        ) {
+        if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
           setIsValid(false);
           return;
         }
@@ -85,9 +80,7 @@ export function ImageEmbed({ url }: { url: string }) {
     const style = cachedSize
       ? `width: ${Math.min(cachedSize.width, 400)}px; aspect-ratio: ${cachedSize.width} / ${cachedSize.height};`
       : "";
-    return (
-      <div className="embed-container image-embed skeleton" style={style} />
-    );
+    return <div className="embed-container image-embed skeleton" style={style} />;
   }
   if (!isValid)
     return (

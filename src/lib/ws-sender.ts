@@ -1,9 +1,6 @@
 import { serverUrl, wsConnections, serverCapabilitiesByServer } from "../state";
 
-const pendingMessageFetchesByServer: Record<
-  string,
-  Record<string, boolean>
-> = {};
+const pendingMessageFetchesByServer: Record<string, Record<string, boolean>> = {};
 
 export function wsSend(data: any, sUrl?: string): boolean {
   const url = sUrl || serverUrl.value;
@@ -37,11 +34,7 @@ export function cleanupWsSenderAudio(): void {
   }
 }
 
-export function markChannelAsRead(
-  channelName: string,
-  messageId?: string,
-  sUrl?: string,
-): boolean {
+export function markChannelAsRead(channelName: string, messageId?: string, sUrl?: string): boolean {
   const url = sUrl || serverUrl.value;
   const caps = serverCapabilitiesByServer.value[url] || [];
 
@@ -60,11 +53,7 @@ export function markChannelAsRead(
   return wsSend(payload, sUrl);
 }
 
-export function markThreadAsRead(
-  threadId: string,
-  messageId?: string,
-  sUrl?: string,
-): boolean {
+export function markThreadAsRead(threadId: string, messageId?: string, sUrl?: string): boolean {
   const url = sUrl || serverUrl.value;
   const caps = serverCapabilitiesByServer.value[url] || [];
 

@@ -57,9 +57,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
           <div class="hero-badge-spacer" />
           <h1 class="hero-title">Own your conversations.</h1>
           <p class="hero-subtitle">
-            A decentralized chat platform where you control everything.
-            Self-host your servers, build your own clients, or use our public
-            network. The choice is yours.
+            A decentralized chat platform where you control everything. Self-host your servers,
+            build your own clients, or use our public network. The choice is yours.
           </p>
           <div class="hero-actions">
             <button class="btn btn-primary btn-lg" onClick={onOpenApp}>
@@ -94,9 +93,7 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
       <section id="features" class="features-section">
         <div class="section-content">
           <h2 class="section-title">Everything you need.</h2>
-          <p class="section-subtitle">
-            All the features you expect, none of the compromises.
-          </p>
+          <p class="section-subtitle">All the features you expect, none of the compromises.</p>
 
           <div class="features-grid">
             <div class="feature-card">
@@ -105,8 +102,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Privacy-First</h3>
               <p>
-                No data mining, no ads, no tracking. Your conversations stay
-                yours. We cannot read them even if we wanted to.
+                No data mining, no ads, no tracking. Your conversations stay yours. We cannot read
+                them even if we wanted to.
               </p>
             </div>
 
@@ -116,9 +113,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Self-Host Your Server</h3>
               <p>
-                Run your own server with full control. Self-hosting is the
-                recommended way to use originChats for complete data
-                sovereignty.
+                Run your own server with full control. Self-hosting is the recommended way to use
+                originChats for complete data sovereignty.
               </p>
             </div>
 
@@ -128,8 +124,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Build Your Own Client</h3>
               <p>
-                We encourage you to create your own clients. The open API and
-                protocol make it easy to build exactly what you want.
+                We encourage you to create your own clients. The open API and protocol make it easy
+                to build exactly what you want.
               </p>
             </div>
 
@@ -139,8 +135,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Cross-Platform</h3>
               <p>
-                Works everywhere. Web, desktop, and mobile. Your conversations
-                sync seamlessly across all devices.
+                Works everywhere. Web, desktop, and mobile. Your conversations sync seamlessly
+                across all devices.
               </p>
             </div>
 
@@ -150,8 +146,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Community Servers</h3>
               <p>
-                Create servers with text and voice channels. Perfect for
-                communities of any size, from friends to organizations.
+                Create servers with text and voice channels. Perfect for communities of any size,
+                from friends to organizations.
               </p>
             </div>
 
@@ -161,8 +157,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Fast and Lightweight</h3>
               <p>
-                Built for performance. Minimal memory footprint with efficient
-                WebSocket connections. Runs smoothly on any device.
+                Built for performance. Minimal memory footprint with efficient WebSocket
+                connections. Runs smoothly on any device.
               </p>
             </div>
           </div>
@@ -175,15 +171,13 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
             <div class="self-host-content">
               <h2>Your server, your rules.</h2>
               <p>
-                Unlike centralized platforms, originChats is designed for
-                self-hosting. Spin up your own server in minutes and have
-                complete control over your community data.
+                Unlike centralized platforms, originChats is designed for self-hosting. Spin up your
+                own server in minutes and have complete control over your community data.
               </p>
               <ul class="self-host-benefits">
                 <li>
                   <ChevronRight size={16} />
-                  Full data sovereignty. Your data never leaves your
-                  infrastructure.
+                  Full data sovereignty. Your data never leaves your infrastructure.
                 </li>
                 <li>
                   <ChevronRight size={16} />
@@ -241,30 +235,30 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
         <div class="section-content">
           <h2 class="section-title">Built for developers.</h2>
           <p class="section-subtitle">
-            originChats is open source and built with developers in mind. Extend
-            it, modify it, or build something entirely new.
+            originChats is open source and built with developers in mind. Extend it, modify it, or
+            build something entirely new.
           </p>
 
           <div class="dev-features">
             <div class="dev-feature">
               <h3>Open Source</h3>
               <p>
-                Every component is open source. Client, server, protocols, all
-                available on GitHub under permissive licenses.
+                Every component is open source. Client, server, protocols, all available on GitHub
+                under permissive licenses.
               </p>
             </div>
             <div class="dev-feature">
               <h3>WebSocket API</h3>
               <p>
-                Real-time bidirectional communication. Build responsive
-                applications with instant message delivery.
+                Real-time bidirectional communication. Build responsive applications with instant
+                message delivery.
               </p>
             </div>
             <div class="dev-feature">
               <h3>Bot Framework</h3>
               <p>
-                Create powerful bots that interact with servers. Moderation,
-                utilities, games. The possibilities are endless.
+                Create powerful bots that interact with servers. Moderation, utilities, games. The
+                possibilities are endless.
               </p>
             </div>
           </div>
@@ -275,8 +269,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
         <div class="section-content">
           <h2 class="section-title">Build your own client.</h2>
           <p class="section-subtitle">
-            originChats encourages you to create your own clients. Use our
-            existing clients as reference or start from scratch.
+            originChats encourages you to create your own clients. Use our existing clients as
+            reference or start from scratch.
           </p>
 
           <div class="clients-grid">
@@ -285,10 +279,7 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
                 <Code size={32} />
               </div>
               <h3>Official Web Client</h3>
-              <p>
-                The web client you are looking at right now. Full featured and
-                ready to use.
-              </p>
+              <p>The web client you are looking at right now. Full featured and ready to use.</p>
               <a
                 href="https://github.com/originChats/client"
                 class="btn btn-secondary"
@@ -305,8 +296,8 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
               </div>
               <h3>Community Clients</h3>
               <p>
-                Browse community-built clients or submit your own. Desktop,
-                mobile, terminal, and more.
+                Browse community-built clients or submit your own. Desktop, mobile, terminal, and
+                more.
               </p>
               <a
                 href="https://github.com/originChats/server/blob/main/clients.md"
@@ -325,10 +316,7 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
       <section class="cta-section">
         <div class="section-content">
           <h2>Ready to get started?</h2>
-          <p>
-            Join thousands of users who have taken back control of their
-            conversations.
-          </p>
+          <p>Join thousands of users who have taken back control of their conversations.</p>
           <div class="cta-actions">
             <button class="btn btn-primary btn-lg" onClick={onOpenApp}>
               <Globe size={20} />
@@ -365,11 +353,7 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
             </div>
             <div class="footer-column">
               <h4>Developers</h4>
-              <a
-                href="https://github.com/originChats"
-                target="_blank"
-                rel="noopener"
-              >
+              <a href="https://github.com/originChats" target="_blank" rel="noopener">
                 GitHub
               </a>
               <a
@@ -389,18 +373,10 @@ export function LandingPage({ onOpenApp }: LandingPageProps) {
             </div>
             <div class="footer-column">
               <h4>Source Code</h4>
-              <a
-                href="https://github.com/originChats/server"
-                target="_blank"
-                rel="noopener"
-              >
+              <a href="https://github.com/originChats/server" target="_blank" rel="noopener">
                 Server
               </a>
-              <a
-                href="https://github.com/originChats/client"
-                target="_blank"
-                rel="noopener"
-              >
+              <a href="https://github.com/originChats/client" target="_blank" rel="noopener">
                 Client
               </a>
             </div>

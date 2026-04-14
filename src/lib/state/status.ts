@@ -21,11 +21,7 @@ class StatusState {
     return this.byServer.value[serverUrl] || {};
   }
 
-  setStatus(
-    serverUrl: ServerUrl,
-    username: Username,
-    status: UserStatus,
-  ): void {
+  setStatus(serverUrl: ServerUrl, username: Username, status: UserStatus): void {
     const lowerUsername = username.toLowerCase();
     const current = this.byServer.value[serverUrl] || {};
     this.byServer.value = {
@@ -37,19 +33,11 @@ class StatusState {
     };
   }
 
-  updateFromStatusGet(
-    serverUrl: ServerUrl,
-    username: Username,
-    status: UserStatus,
-  ): void {
+  updateFromStatusGet(serverUrl: ServerUrl, username: Username, status: UserStatus): void {
     this.setStatus(serverUrl, username, status);
   }
 
-  updateFromReady(
-    serverUrl: ServerUrl,
-    username: Username,
-    status: UserStatus,
-  ): void {
+  updateFromReady(serverUrl: ServerUrl, username: Username, status: UserStatus): void {
     this.setStatus(serverUrl, username, status);
   }
 

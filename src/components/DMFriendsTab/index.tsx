@@ -23,13 +23,7 @@ import {
   unblockUser,
   sendFriendRequest,
 } from "../../lib/actions";
-import {
-  getMyGroups,
-  searchGroups,
-  joinGroup,
-  leaveGroup,
-  getStatus,
-} from "../../lib/rotur-api";
+import { getMyGroups, searchGroups, joinGroup, leaveGroup, getStatus } from "../../lib/rotur-api";
 import { Icon } from "../Icon";
 import { MessageContent } from "../MessageContent";
 import { UserAvatar } from "../UserAvatar";
@@ -56,10 +50,7 @@ export function DMFriendsTab() {
           <div className="rotur-login-required">
             <Icon name="LogIn" size={48} />
             <h3>Rotur Login Required</h3>
-            <p>
-              You need to be logged in with a Rotur account to access friends,
-              DMs, and groups.
-            </p>
+            <p>You need to be logged in with a Rotur account to access friends, DMs, and groups.</p>
             <button
               className="btn btn-primary"
               onClick={() => {
@@ -85,9 +76,7 @@ export function DMFriendsTab() {
           onClick={() => (currentDMTab.value = "friends")}
         >
           All
-          {friends.value.length > 0 && (
-            <span className="dm-tab-count">{friends.value.length}</span>
-          )}
+          {friends.value.length > 0 && <span className="dm-tab-count">{friends.value.length}</span>}
         </button>
         <button
           className={`dm-tab ${tab === "requests" ? "active" : ""}`}
@@ -95,9 +84,7 @@ export function DMFriendsTab() {
         >
           Pending
           {friendRequests.value.length > 0 && (
-            <span className="dm-tab-count dm-tab-count-pending">
-              {friendRequests.value.length}
-            </span>
+            <span className="dm-tab-count dm-tab-count-pending">{friendRequests.value.length}</span>
           )}
         </button>
         <button
@@ -193,9 +180,7 @@ function FriendsList() {
           </button>
         </div>
         {addError && <div className="dm-add-friend-error">{addError}</div>}
-        {addSuccess && (
-          <div className="dm-add-friend-success">Request sent!</div>
-        )}
+        {addSuccess && <div className="dm-add-friend-success">Request sent!</div>}
       </div>
 
       {list.length === 0 ? (
@@ -252,10 +237,7 @@ function FriendItem({
         onClick={() => (showAccountModal.value = username)}
       />
       <div className="dm-friend-info">
-        <span
-          className="dm-username"
-          onClick={() => (showAccountModal.value = username)}
-        >
+        <span className="dm-username" onClick={() => (showAccountModal.value = username)}>
           {displayName}
         </span>
         {status?.content && (
@@ -268,11 +250,7 @@ function FriendItem({
         <button className="dm-action-btn" title="Message" onClick={onMessage}>
           <Icon name="MessageCircle" size={18} />
         </button>
-        <button
-          className="dm-action-btn dm-action-danger"
-          title="Remove Friend"
-          onClick={onRemove}
-        >
+        <button className="dm-action-btn dm-action-danger" title="Remove Friend" onClick={onRemove}>
           <Icon name="UserX" size={18} />
         </button>
       </div>
@@ -421,14 +399,9 @@ function GroupsList() {
       setActionMsg(`Joined ${tag}!`);
       const joined = searchResults.find((g) => g.tag === tag);
       if (joined) {
-        roturMyGroups.value = [
-          ...roturMyGroups.value,
-          { ...joined, is_member: true },
-        ];
+        roturMyGroups.value = [...roturMyGroups.value, { ...joined, is_member: true }];
       }
-      setSearchResults((prev) =>
-        prev.map((g) => (g.tag === tag ? { ...g, is_member: true } : g)),
-      );
+      setSearchResults((prev) => prev.map((g) => (g.tag === tag ? { ...g, is_member: true } : g)));
     } catch (e: any) {
       setActionMsg(e.message || "Failed to join");
     } finally {
@@ -486,16 +459,11 @@ function GroupsList() {
         <div className="dm-empty">
           <Icon name="Users" size={48} />
           <h3>{search.trim() ? "No groups found" : "No groups yet"}</h3>
-          <p>
-            {search.trim()
-              ? "Try a different search"
-              : "Search to find and join groups"}
-          </p>
+          <p>{search.trim() ? "Try a different search" : "Search to find and join groups"}</p>
         </div>
       ) : (
         displayList.map((group) => {
-          const isMember =
-            group.is_member || myGroups.some((g) => g.tag === group.tag);
+          const isMember = group.is_member || myGroups.some((g) => g.tag === group.tag);
           return (
             <div key={group.tag} className="group-item">
               <div className="group-item-icon">
@@ -508,9 +476,7 @@ function GroupsList() {
               <div className="group-item-info">
                 <span className="group-item-name">{group.name}</span>
                 <span className="group-item-tag">@{group.tag}</span>
-                {group.description && (
-                  <span className="group-item-desc">{group.description}</span>
-                )}
+                {group.description && <span className="group-item-desc">{group.description}</span>}
                 {group.member_count !== undefined && (
                   <span className="group-item-members">
                     <Icon name="Users" size={11} />

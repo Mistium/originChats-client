@@ -3,9 +3,7 @@ import type { Role } from "../types";
 
 function getUserPermissions(serverUrl: string): string[] {
   const myServerUser =
-    usersByServer.value[serverUrl]?.[
-      currentUser.value?.username?.toLowerCase() || ""
-    ];
+    usersByServer.value[serverUrl]?.[currentUser.value?.username?.toLowerCase() || ""];
 
   if (!myServerUser?.roles) return [];
 
@@ -51,9 +49,7 @@ function hasAnyPermission(serverUrl: string, perms: string[]): boolean {
 
 export function isServerOwner(serverUrl: string): boolean {
   const myServerUser =
-    usersByServer.value[serverUrl]?.[
-      currentUser.value?.username?.toLowerCase() || ""
-    ];
+    usersByServer.value[serverUrl]?.[currentUser.value?.username?.toLowerCase() || ""];
   return myServerUser?.roles?.includes("owner") ?? false;
 }
 

@@ -153,10 +153,7 @@ function searchChannels(query: string): AutocompleteItem[] {
   for (const ch of channelList) {
     if (!ch?.name) continue;
     const display = ch.display_name || ch.name;
-    if (
-      ch.name.toLowerCase().includes(q) ||
-      display.toLowerCase().includes(q)
-    ) {
+    if (ch.name.toLowerCase().includes(q) || display.toLowerCase().includes(q)) {
       results.push({
         type: "channel",
         label: display,
@@ -199,9 +196,7 @@ function searchEmojis(query: string): AutocompleteItem[] {
     if (!entry.emoji || !entry.label) continue;
     const label = entry.label.toLowerCase().replace(/ /g, "_");
     const matchesLabel = label.includes(q);
-    const matchesTags = entry.tags?.some((t: string) =>
-      t.toLowerCase().includes(q),
-    );
+    const matchesTags = entry.tags?.some((t: string) => t.toLowerCase().includes(q));
     if (!matchesLabel && !matchesTags) continue;
 
     results.push({
@@ -306,10 +301,7 @@ export function useInputAutocomplete(inputId: string) {
           return 2;
         };
 
-        const sortByPriorityAndRecent = (
-          a: AutocompleteItem,
-          b: AutocompleteItem,
-        ) => {
+        const sortByPriorityAndRecent = (a: AutocompleteItem, b: AutocompleteItem) => {
           const aPriority = getPriority(a);
           const bPriority = getPriority(b);
           if (aPriority !== bPriority) return aPriority - bPriority;
@@ -359,19 +351,14 @@ export function useInputAutocomplete(inputId: string) {
         const key = item.hexcode || `${item.serverUrl}:${item.label}`;
         if (key) {
           const currentRecent = recentEmojis.value;
-          const updated = [
-            key,
-            ...currentRecent.filter((e) => e !== key),
-          ].slice(0, 50);
+          const updated = [key, ...currentRecent.filter((e) => e !== key)].slice(0, 50);
           recentEmojis.value = updated;
         }
       }
 
       const before = input.value.substring(0, current.triggerStart);
       const after = input.value.substring(input.selectionStart);
-      const insertion = item.insertText.endsWith(" ")
-        ? item.insertText
-        : item.insertText + " ";
+      const insertion = item.insertText.endsWith(" ") ? item.insertText : item.insertText + " ";
       input.value = before + insertion + after;
 
       const newCursorPos = before.length + insertion.length;
@@ -380,7 +367,7 @@ export function useInputAutocomplete(inputId: string) {
 
       close();
     },
-    [inputId, close],
+    [inputId, close]
   );
 
   const handleKeyDown = useCallback(
@@ -392,10 +379,7 @@ export function useInputAutocomplete(inputId: string) {
         e.preventDefault();
         setState((prev) => ({
           ...prev,
-          selectedIndex: Math.min(
-            prev.selectedIndex + 1,
-            prev.items.length - 1,
-          ),
+          selectedIndex: Math.min(prev.selectedIndex + 1, prev.items.length - 1),
         }));
         return true;
       }
@@ -423,7 +407,7 @@ export function useInputAutocomplete(inputId: string) {
 
       return false;
     },
-    [selectItem, close],
+    [selectItem, close]
   );
 
   const setSelectedIndex = useCallback((index: number) => {
@@ -446,19 +430,13 @@ interface InputAutocompleteProps {
   onHover: (index: number) => void;
 }
 
-export function InputAutocomplete({
-  state,
-  onSelect,
-  onHover,
-}: InputAutocompleteProps) {
+export function InputAutocomplete({ state, onSelect, onHover }: InputAutocompleteProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const [activeUser, setActiveUser] = useState<string | null>(null);
 
   useEffect(() => {
     if (!listRef.current) return;
-    const selected = listRef.current.children[
-      state.selectedIndex
-    ] as HTMLElement;
+    const selected = listRef.current.children[state.selectedIndex] as HTMLElement;
     if (selected) selected.scrollIntoView({ block: "nearest" });
   }, [state.selectedIndex]);
 
@@ -524,25 +502,18 @@ export function InputAutocomplete({
                     </span>
                   );
                 })()}
-              {item.type === "emoji" &&
-                item.isCustomEmoji &&
-                item.serverUrl &&
-                item.fileName && (
-                  <img
-                    src={`https://${item.serverUrl}/emojis/${item.fileName}`}
-                    alt={`:${item.label}:`}
-                    className="autocomplete-emoji-icon custom-emoji-autocomplete"
-                    draggable={false}
-                  />
-                )}
-              {item.type === "channel" && (
-                <span className="autocomplete-icon-hash">#</span>
+              {item.type === "emoji" && item.isCustomEmoji && item.serverUrl && item.fileName && (
+                <img
+                  src={`https://${item.serverUrl}/emojis/${item.fileName}`}
+                  alt={`:${item.label}:`}
+                  className="autocomplete-emoji-icon custom-emoji-autocomplete"
+                  draggable={false}
+                />
               )}
+              {item.type === "channel" && <span className="autocomplete-icon-hash">#</span>}
               <span className="autocomplete-label">{item.label}</span>
               {item.isCustomEmoji && item.serverName && (
-                <span className="autocomplete-emoji-server">
-                  {item.serverName}
-                </span>
+                <span className="autocomplete-emoji-server">{item.serverName}</span>
               )}
             </div>
           ))}
@@ -556,10 +527,8 @@ export function InputAutocomplete({
   // Collect unique registeredBy users in order of first appearance
   const allUsers = Array.from(
     new Map(
-      state.items
-        .filter((item) => item.registeredBy)
-        .map((item) => [item.registeredBy!, item]),
-    ).entries(),
+      state.items.filter((item) => item.registeredBy).map((item) => [item.registeredBy!, item])
+    ).entries()
   ).map(([username, item]) => ({ username, icon: item.icon }));
 
   // Items filtered to active user (or all if none selected)
@@ -647,9 +616,7 @@ export function InputAutocomplete({
                   <span className="autocomplete-icon-slash">/</span>
                   <span className="autocomplete-label">{item.label}</span>
                   {item.description && (
-                    <span className="autocomplete-description">
-                      {item.description}
-                    </span>
+                    <span className="autocomplete-description">{item.description}</span>
                   )}
                 </div>
               ))}

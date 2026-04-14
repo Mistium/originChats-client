@@ -173,7 +173,7 @@ class VoiceManager {
   async joinChannel(
     channelName: string,
     myUsername?: string,
-    channelType?: string,
+    channelType?: string
   ): Promise<boolean> {
     if (this._currentChannel === channelName) {
       // For chat channels the embedded panel is always visible — toggling
@@ -229,10 +229,7 @@ class VoiceManager {
 
     // Notify server — _currentChannel must be set first so onJoined() isn't
     // dropped if the server responds synchronously before we continue.
-    wsSend(
-      { cmd: "voice_join", channel: channelName, peer_id: peer.id },
-      serverUrl.value,
-    );
+    wsSend({ cmd: "voice_join", channel: channelName, peer_id: peer.id }, serverUrl.value);
 
     // Show self immediately (don't wait for server response)
     if (this._myUsername && peer.id) {
@@ -304,10 +301,7 @@ class VoiceManager {
     this._publish();
   }
 
-  onUserJoined(
-    channel: string,
-    user: { username: string; peer_id: string; muted: boolean },
-  ): void {
+  onUserJoined(channel: string, user: { username: string; peer_id: string; muted: boolean }): void {
     if (this._currentChannel !== channel || !user.peer_id) return;
 
     if (!this._participants.find((p) => p.peer_id === user.peer_id)) {
@@ -334,23 +328,19 @@ class VoiceManager {
     const p = this._participants.find((x) => x.username === username);
     // Filter the participant list first so the subsequent _publish (inside
     // _detachPeer) already reflects the final state — no transient flicker.
-    this._participants = this._participants.filter(
-      (x) => x.username !== username,
-    );
+    this._participants = this._participants.filter((x) => x.username !== username);
     if (p?.peer_id) this._detachPeer(p.peer_id);
     else this._publish(); // nothing to detach, still need a publish
   }
 
   onUserUpdated(
     channel: string,
-    user: { username: string; peer_id?: string; muted: boolean },
+    user: { username: string; peer_id?: string; muted: boolean }
   ): void {
     if (this._currentChannel !== channel) return;
 
     const p = this._participants.find(
-      (x) =>
-        (user.peer_id && x.peer_id === user.peer_id) ||
-        x.username === user.username,
+      (x) => (user.peer_id && x.peer_id === user.peer_id) || x.username === user.username
     );
     if (p) {
       p.muted = user.muted;
@@ -363,19 +353,12 @@ class VoiceManager {
 
   toggleMute(): void {
     this._isMuted = !this._isMuted;
-    this._localAudioStream
-      ?.getAudioTracks()
-      .forEach((t) => (t.enabled = !this._isMuted));
+    this._localAudioStream?.getAudioTracks().forEach((t) => (t.enabled = !this._isMuted));
 
     const me = this._selfParticipant();
     if (me) me.muted = this._isMuted;
 
-    if (
-      !wsSend(
-        { cmd: this._isMuted ? "voice_mute" : "voice_unmute" },
-        serverUrl.value,
-      )
-    ) {
+    if (!wsSend({ cmd: this._isMuted ? "voice_mute" : "voice_unmute" }, serverUrl.value)) {
       vcWarn("Failed to send mute state — WebSocket not open");
     }
 
@@ -557,10 +540,8 @@ class VoiceManager {
   /** Close all OUTBOUND video calls of a specific kind and cancel any retries. */
   private _closeVideoCalls(kind: VideoKind): void {
     const outKey = kind === "screen" ? "outScreenCall" : "outCameraCall";
-    const timerKey =
-      kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
-    const countKey =
-      kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
+    const timerKey = kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
+    const countKey = kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
     for (const conn of this._peers.values()) {
       if (conn[timerKey] !== null) {
         clearTimeout(conn[timerKey]!);
@@ -610,11 +591,7 @@ class VoiceManager {
     this._onOutboundAudioStream(call);
   }
 
-  private _callPeerVideo(
-    peerId: string,
-    kind: VideoKind,
-    stream: MediaStream,
-  ): void {
+  private _callPeerVideo(peerId: string, kind: VideoKind, stream: MediaStream): void {
     if (!this._peer || this._peer.destroyed) return;
 
     // Verify the stream is still live — don't try to call with a dead stream.
@@ -626,10 +603,8 @@ class VoiceManager {
 
     const conn = this._getConn(peerId);
     const outKey = kind === "screen" ? "outScreenCall" : "outCameraCall";
-    const timerKey =
-      kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
-    const countKey =
-      kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
+    const timerKey = kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
+    const countKey = kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
 
     // Cancel any pending retry for this kind — we're about to make a fresh call.
     if (conn[timerKey] !== null) {
@@ -647,9 +622,7 @@ class VoiceManager {
 
     const call = this._peer.call(peerId, stream, { metadata: { kind } });
     if (!call) {
-      vcWarn(
-        `_callPeerVideo(${kind}): peer.call() returned null for ${peerId}`,
-      );
+      vcWarn(`_callPeerVideo(${kind}): peer.call() returned null for ${peerId}`);
       this._scheduleVideoRetry(peerId, kind, stream);
       return;
     }
@@ -672,8 +645,7 @@ class VoiceManager {
       c[outKey] = null;
       // If the stream is still live and we haven't explicitly stopped this
       // kind, schedule a retry so the remote sees the stream again.
-      const localStream =
-        kind === "screen" ? this._localScreenStream : this._localCameraStream;
+      const localStream = kind === "screen" ? this._localScreenStream : this._localCameraStream;
       if (localStream && !this._peer?.destroyed) {
         vcWarn(`Outbound ${kind} call to ${peerId} closed — will retry`);
         this._scheduleVideoRetry(peerId, kind, localStream);
@@ -685,8 +657,7 @@ class VoiceManager {
       const c = this._peers.get(peerId);
       if (!c || c[outKey] !== call) return;
       c[outKey] = null;
-      const localStream =
-        kind === "screen" ? this._localScreenStream : this._localCameraStream;
+      const localStream = kind === "screen" ? this._localScreenStream : this._localCameraStream;
       if (localStream && !this._peer?.destroyed) {
         this._scheduleVideoRetry(peerId, kind, localStream);
       }
@@ -698,23 +669,15 @@ class VoiceManager {
    * backoff capped at VIDEO_RETRY_CAP_MS.  Gives up after VIDEO_RETRY_MAX
    * attempts (the remote may have left, or their client doesn't support it).
    */
-  private _scheduleVideoRetry(
-    peerId: string,
-    kind: VideoKind,
-    stream: MediaStream,
-  ): void {
+  private _scheduleVideoRetry(peerId: string, kind: VideoKind, stream: MediaStream): void {
     const conn = this._peers.get(peerId);
     if (!conn) return; // peer was detached
 
-    const timerKey =
-      kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
-    const countKey =
-      kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
+    const timerKey = kind === "screen" ? "screenRetryTimer" : "cameraRetryTimer";
+    const countKey = kind === "screen" ? "screenRetryCount" : "cameraRetryCount";
 
     if (conn[countKey] >= VIDEO_RETRY_MAX) {
-      vcWarn(
-        `Giving up ${kind} retries for ${peerId} after ${conn[countKey]} attempts`,
-      );
+      vcWarn(`Giving up ${kind} retries for ${peerId} after ${conn[countKey]} attempts`);
       conn[countKey] = 0;
       return;
     }
@@ -726,15 +689,10 @@ class VoiceManager {
     }
 
     const attempt = conn[countKey];
-    const delay = Math.min(
-      VIDEO_RETRY_BASE_MS * 2 ** attempt,
-      VIDEO_RETRY_CAP_MS,
-    );
+    const delay = Math.min(VIDEO_RETRY_BASE_MS * 2 ** attempt, VIDEO_RETRY_CAP_MS);
     conn[countKey] += 1;
 
-    vcWarn(
-      `Scheduling ${kind} retry #${conn[countKey]} for ${peerId} in ${delay}ms`,
-    );
+    vcWarn(`Scheduling ${kind} retry #${conn[countKey]} for ${peerId} in ${delay}ms`);
 
     conn[timerKey] = setTimeout(() => {
       const c = this._peers.get(peerId);
@@ -744,9 +702,7 @@ class VoiceManager {
       // Confirm the stream is still live before retrying.
       const tracks = stream.getVideoTracks();
       if (tracks.length === 0 || tracks[0].readyState === "ended") {
-        vcWarn(
-          `${kind} stream ended before retry #${c[countKey]} for ${peerId}`,
-        );
+        vcWarn(`${kind} stream ended before retry #${c[countKey]} for ${peerId}`);
         c[countKey] = 0;
         return;
       }
@@ -852,11 +808,7 @@ class VoiceManager {
     // misclassify it as a duplicate audio source.
     const meta = (call as any).metadata;
     const isVideoCall = meta?.kind === "screen" || meta?.kind === "camera";
-    call.answer(
-      isVideoCall
-        ? new MediaStream()
-        : (this._localAudioStream ?? new MediaStream()),
-    );
+    call.answer(isVideoCall ? new MediaStream() : (this._localAudioStream ?? new MediaStream()));
 
     call.on("stream", (stream) => {
       const kind: VideoKind | "audio" = this._resolveStreamKind(call, stream);
@@ -925,10 +877,7 @@ class VoiceManager {
    * Determine the kind of stream from call metadata, falling back to track
    * inspection for compatibility with older peers.
    */
-  private _resolveStreamKind(
-    call: MediaConnection,
-    stream: MediaStream,
-  ): VideoKind | "audio" {
+  private _resolveStreamKind(call: MediaConnection, stream: MediaStream): VideoKind | "audio" {
     const meta = (call as any).metadata;
     if (meta?.kind === "screen" || meta?.kind === "camera") return meta.kind;
     if (meta?.kind === "audio") return "audio";
@@ -1151,8 +1100,7 @@ class VoiceManager {
         if (!this._localDetector) return;
         try {
           analyser.getByteFrequencyData(data);
-          const avg =
-            (data.reduce((a, b) => a + b, 0) / data.length) * (100 / 255);
+          const avg = (data.reduce((a, b) => a + b, 0) / data.length) * (100 / 255);
           const speaking = avg > micThresholdSignal.value && !this._isMuted;
           if (speaking !== this._isSpeaking) {
             this._isSpeaking = speaking;
@@ -1182,10 +1130,7 @@ class VoiceManager {
     this._isSpeaking = false;
   }
 
-  private _startRemoteSpeakingDetection(
-    peerId: string,
-    stream: MediaStream,
-  ): void {
+  private _startRemoteSpeakingDetection(peerId: string, stream: MediaStream): void {
     this._stopRemoteSpeakingDetection(peerId);
 
     try {
@@ -1202,12 +1147,9 @@ class VoiceManager {
         if (!this._remoteDetectors.has(peerId)) return;
         try {
           analyser.getByteFrequencyData(data);
-          const avg =
-            (data.reduce((a, b) => a + b, 0) / data.length) * (100 / 255);
+          const avg = (data.reduce((a, b) => a + b, 0) / data.length) * (100 / 255);
           const speaking = avg > 15;
-          const participant = this._participants.find(
-            (p) => p.peer_id === peerId,
-          );
+          const participant = this._participants.find((p) => p.peer_id === peerId);
           if (participant && participant.speaking !== speaking) {
             participant.speaking = speaking;
             this._publish();
@@ -1238,16 +1180,7 @@ class VoiceManager {
 
   private _videoConstraints(): MediaTrackConstraints {
     const h = voiceVideoRes.value;
-    const w =
-      h >= 2160
-        ? 3840
-        : h >= 1440
-          ? 2560
-          : h >= 1080
-            ? 1920
-            : h >= 720
-              ? 1280
-              : 854;
+    const w = h >= 2160 ? 3840 : h >= 1440 ? 2560 : h >= 1080 ? 1920 : h >= 720 ? 1280 : 854;
     const fps = voiceVideoFps.value;
     return {
       width: { ideal: w },

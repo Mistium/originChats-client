@@ -3,7 +3,7 @@ import { wsSend } from "./ws-sender";
 
 export async function subscribeToPushForServer(
   sUrl: string,
-  vapidPublicKey: string,
+  vapidPublicKey: string
 ): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.ready;
@@ -27,7 +27,7 @@ export async function subscribeToPushForServer(
         subscription: subJson,
         vapid_public_key: vapidPublicKey,
       },
-      sUrl,
+      sUrl
     );
 
     offlinePushServers.value = { ...offlinePushServers.value, [sUrl]: true };
@@ -48,7 +48,7 @@ async function disablePushForServer(sUrl: string): Promise<void> {
           cmd: "push_unsubscribe",
           endpoint: subscription.endpoint,
         },
-        sUrl,
+        sUrl
       );
       await subscription.unsubscribe();
     }

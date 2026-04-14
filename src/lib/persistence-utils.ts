@@ -2,10 +2,7 @@ import { getOriginFS } from "../state";
 
 const APP_DATA = "/application data/chats@mistium";
 
-export async function loadJsonFile<T>(
-  filename: string,
-  defaultValue: T,
-): Promise<T> {
+export async function loadJsonFile<T>(filename: string, defaultValue: T): Promise<T> {
   const originFS = getOriginFS();
   if (!originFS) return defaultValue;
   try {
@@ -17,10 +14,7 @@ export async function loadJsonFile<T>(
   }
 }
 
-export async function saveJsonFile<T>(
-  filename: string,
-  data: T,
-): Promise<void> {
+export async function saveJsonFile<T>(filename: string, data: T): Promise<void> {
   const originFS = getOriginFS();
   if (!originFS) return;
   try {

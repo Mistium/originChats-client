@@ -5,11 +5,7 @@ import { Icon } from "../Icon";
 
 function BannerItem({ banner }: { banner: Banner }) {
   const iconName =
-    banner.kind === "error"
-      ? "AlertCircle"
-      : banner.kind === "warning"
-        ? "AlertTriangle"
-        : "Info";
+    banner.kind === "error" ? "AlertCircle" : banner.kind === "warning" ? "AlertTriangle" : "Info";
 
   return (
     <div class={`error-banner active error-banner--${banner.kind}`}>
@@ -25,11 +21,7 @@ function BannerItem({ banner }: { banner: Banner }) {
           {banner.action.label}
         </button>
       )}
-      <button
-        class="error-close"
-        onClick={() => dismissBanner(banner.id)}
-        aria-label="Dismiss"
-      >
+      <button class="error-close" onClick={() => dismissBanner(banner.id)} aria-label="Dismiss">
         <Icon name="X" size={16} />
       </button>
     </div>
@@ -44,7 +36,7 @@ export function ErrorBannerStack() {
   });
 
   const visibleBanners = banners.value.filter(
-    (b) => b.serverUrl === undefined || b.serverUrl === serverUrl.value,
+    (b) => b.serverUrl === undefined || b.serverUrl === serverUrl.value
   );
 
   if (visibleBanners.length === 0) return null;

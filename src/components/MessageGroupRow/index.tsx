@@ -41,15 +41,10 @@ function MessageGroupRowInner({
   const color = useUserColor(headUser);
   const currentUsername = currentUser.value?.username;
 
-  const headTranslation = group.head.id
-    ? translatedMessages[group.head.id]
-    : null;
-  const headIsTranslating =
-    translatingMessageId && group.head.id === translatingMessageId;
+  const headTranslation = group.head.id ? translatedMessages[group.head.id] : null;
+  const headIsTranslating = translatingMessageId && group.head.id === translatingMessageId;
 
-  const replyTo = group.head.reply_to as
-    | { id: string; user: string; content?: string }
-    | undefined;
+  const replyTo = group.head.reply_to as { id: string; user: string; content?: string } | undefined;
   const replyPreview = replyTo?.content
     ? replyTo.content.split("\n")[0].substring(0, 100)
     : replyTo
@@ -62,13 +57,10 @@ function MessageGroupRowInner({
     () =>
       group.following.map((msg) => {
         const translation = msg.id ? translatedMessages[msg.id] : null;
-        const isTranslating =
-          translatingMessageId && msg.id === translatingMessageId;
+        const isTranslating = translatingMessageId && msg.id === translatingMessageId;
         return (
           <div key={msg.id} className={styles.messageSingle}>
-            <span className={styles.timestamp}>
-              {formatRelativeTimeShort(msg.timestamp)}
-            </span>
+            <span className={styles.timestamp}>{formatRelativeTimeShort(msg.timestamp)}</span>
             <div className={styles.messageContentWrapper}>
               <MessageContent
                 content={msg.content}
@@ -78,30 +70,17 @@ function MessageGroupRowInner({
                 pings={msg.pings}
                 messageEmbeds={msg.embeds}
               />
-              {isTranslating && (
-                <div className={styles.translationLoading}>Translating...</div>
-              )}
-              {translation && (
-                <div className={styles.translationResult}>{translation}</div>
-              )}
+              {isTranslating && <div className={styles.translationLoading}>Translating...</div>}
+              {translation && <div className={styles.translationResult}>{translation}</div>}
             </div>
           </div>
         );
       }),
-    [
-      group.following,
-      currentUsername,
-      translatedMessages,
-      translatingMessageId,
-    ],
+    [group.following, currentUsername, translatedMessages, translatingMessageId]
   );
 
   return (
-    <div
-      className={styles.messageGroup}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-    >
+    <div className={styles.messageGroup} onClick={onClick} onContextMenu={onContextMenu}>
       <UserAvatar
         username={headUser}
         className={`${styles.avatar} ${styles.clickable}`}
@@ -113,20 +92,11 @@ function MessageGroupRowInner({
         {showReply && replyTo && replyUser && (
           <div className={styles.replyContext}>
             <Icon name="CornerUpRight" size={14} />
-            <UserAvatar
-              username={replyUser}
-              className={styles.replyAvatar}
-              alt={replyUser}
-            />
-            <span
-              className={styles.replyUsername}
-              style={{ color: replyUserColor }}
-            >
+            <UserAvatar username={replyUser} className={styles.replyAvatar} alt={replyUser} />
+            <span className={styles.replyUsername} style={{ color: replyUserColor }}>
               {replyDisplayUser}
             </span>
-            <span className={styles.replyPreview}>
-              {replyPreview || "Click to see message"}
-            </span>
+            <span className={styles.replyPreview}>{replyPreview || "Click to see message"}</span>
           </div>
         )}
         <div className={styles.messageHeader}>
@@ -137,9 +107,7 @@ function MessageGroupRowInner({
           >
             {displayName}
           </span>
-          <span className={styles.timestamp}>
-            {formatRelativeTimeShort(group.head.timestamp)}
-          </span>
+          <span className={styles.timestamp}>{formatRelativeTimeShort(group.head.timestamp)}</span>
         </div>
         <div className={styles.messageBody}>
           <MessageContent
@@ -150,17 +118,11 @@ function MessageGroupRowInner({
             pings={group.head.pings}
             messageEmbeds={group.head.embeds}
           />
-          {headIsTranslating && (
-            <div className={styles.translationLoading}>Translating...</div>
-          )}
-          {headTranslation && (
-            <div className={styles.translationResult}>{headTranslation}</div>
-          )}
+          {headIsTranslating && <div className={styles.translationLoading}>Translating...</div>}
+          {headTranslation && <div className={styles.translationResult}>{headTranslation}</div>}
         </div>
         {group.following.length > 0 && (
-          <div className={styles.messageGroupFollowing}>
-            {followingMessages}
-          </div>
+          <div className={styles.messageGroupFollowing}>{followingMessages}</div>
         )}
       </div>
     </div>

@@ -64,9 +64,7 @@ export function useScrollLock({
   const stableOnLoadOlder = useStableCallback(onLoadOlder);
   const stableOnOlderLoaded = useStableCallback(onOlderLoaded);
   const stableOnLoadNewer = onLoadNewer ? useStableCallback(onLoadNewer) : null;
-  const stableOnNewerLoaded = onNewerLoaded
-    ? useStableCallback(onNewerLoaded)
-    : null;
+  const stableOnNewerLoaded = onNewerLoaded ? useStableCallback(onNewerLoaded) : null;
   const isLoadingOlderRef = useRef(isLoadingOlder);
   isLoadingOlderRef.current = isLoadingOlder;
   const isLoadingNewerRef = useRef(isLoadingNewer || false);
@@ -139,13 +137,11 @@ export function useScrollLock({
     const onScroll = () => {
       if (isScrollingProgrammatically.current) return;
 
-      const distanceFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight;
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
       const nearBottom = distanceFromBottom < NEAR_BOTTOM_THRESHOLD;
 
       const currentScrollTop = el.scrollTop;
-      const scrollDirection =
-        currentScrollTop < prevScrollTop.current ? "up" : "down";
+      const scrollDirection = currentScrollTop < prevScrollTop.current ? "up" : "down";
       if (scrollDirection !== lastScrollDirection.current) {
         lastScrollDirection.current = scrollDirection;
       }
@@ -189,16 +185,12 @@ export function useScrollLock({
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (
-            entry.isIntersecting &&
-            !isLoadingOlderRef.current &&
-            !pendingOlderLoad.current
-          ) {
+          if (entry.isIntersecting && !isLoadingOlderRef.current && !pendingOlderLoad.current) {
             stableOnLoadOlder();
           }
         }
       },
-      { threshold: 0 },
+      { threshold: 0 }
     );
 
     observer.observe(sentinel);

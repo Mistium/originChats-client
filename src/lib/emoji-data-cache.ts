@@ -39,15 +39,7 @@ class EmojiDataCache {
   private initPromise: Promise<void> | null = null;
   private initStarted = false;
 
-  CATEGORY_ORDER = [
-    "Faces",
-    "Hearts",
-    "Animals",
-    "Food",
-    "Sports",
-    "Hands",
-    "Other",
-  ];
+  CATEGORY_ORDER = ["Faces", "Hearts", "Animals", "Food", "Sports", "Hands", "Other"];
 
   CATEGORY_RULES: Record<string, (label: string) => boolean> = {
     Faces: (l) =>
@@ -59,8 +51,7 @@ class EmojiDataCache {
       l.includes("sad") ||
       l.includes("angry") ||
       l.includes("face"),
-    Hearts: (l) =>
-      l.includes("heart") || l.includes("love") || l.includes("kiss"),
+    Hearts: (l) => l.includes("heart") || l.includes("love") || l.includes("kiss"),
     Animals: (l) =>
       l.includes("cat") ||
       l.includes("dog") ||
@@ -81,8 +72,7 @@ class EmojiDataCache {
       l.includes("game") ||
       l.includes("soccer") ||
       l.includes("basketball"),
-    Hands: (l) =>
-      l.includes("hand") || l.includes("finger") || l.includes("wave"),
+    Hands: (l) => l.includes("hand") || l.includes("finger") || l.includes("wave"),
   };
 
   async initialize(): Promise<void> {
@@ -295,10 +285,7 @@ class EmojiDataCache {
 
       if (label === q) {
         exact.push(entry);
-      } else if (
-        label.startsWith(q) ||
-        label.startsWith(q.replace(/ /g, "_"))
-      ) {
+      } else if (label.startsWith(q) || label.startsWith(q.replace(/ /g, "_"))) {
         prefix.push(entry);
       } else {
         contains.push(entry);
@@ -415,9 +402,7 @@ class EmojiDataCache {
       return (serverA?.name || a).localeCompare(serverB?.name || b);
     });
 
-    this.customEmojiFlatCache = sortedUrls.flatMap(
-      (url) => byServer.get(url) || [],
-    );
+    this.customEmojiFlatCache = sortedUrls.flatMap((url) => byServer.get(url) || []);
     return this.customEmojiFlatCache;
   }
 

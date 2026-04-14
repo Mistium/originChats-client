@@ -28,18 +28,14 @@ import { formatJoinDate } from "../../lib/date-utils";
 import { isCrackedAccount } from "../../utils";
 import { UserAvatar } from "../UserAvatar";
 import { useDisplayName } from "../../lib/useDisplayName";
-import {
-  getProfile as fetchRoturProfile,
-  followUser,
-  unfollowUser,
-} from "../../lib/rotur-api";
+import { getProfile as fetchRoturProfile, followUser, unfollowUser } from "../../lib/rotur-api";
 import styles from "./ProfileCard.module.css";
 
 function useProfile(username: string) {
   const [profile, setProfile] = useState<RoturProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(() =>
-    roturFollowing.value.has(username.toLowerCase()),
+    roturFollowing.value.has(username.toLowerCase())
   );
 
   useEffect(() => {
@@ -73,9 +69,7 @@ function useProfile(username: string) {
           if (profileData.followed) {
             roturFollowing.value = new Set([...roturFollowing.value, lower]);
           } else {
-            roturFollowing.value = new Set(
-              [...roturFollowing.value].filter((u) => u !== lower),
-            );
+            roturFollowing.value = new Set([...roturFollowing.value].filter((u) => u !== lower));
           }
         }
         if (profileData.customStatus) {
@@ -98,9 +92,7 @@ function useProfile(username: string) {
       if (isFollowing) {
         await unfollowUser(username);
         setIsFollowing(false);
-        roturFollowing.value = new Set(
-          [...roturFollowing.value].filter((u) => u !== username),
-        );
+        roturFollowing.value = new Set([...roturFollowing.value].filter((u) => u !== username));
         if (profile) {
           setProfile({
             ...profile,
@@ -151,9 +143,7 @@ export function getUserRoles(username: string): string[] {
   return [];
 }
 
-function getFriendState(
-  username: string,
-): "self" | "friend" | "pending" | "blocked" | "none" {
+function getFriendState(username: string): "self" | "friend" | "pending" | "blocked" | "none" {
   if (username === currentUser.value?.username) return "self";
   if (friends.value.includes(username)) return "friend";
   if (friendRequests.value.includes(username)) return "pending";
@@ -236,11 +226,7 @@ function ProfileActions({
   if (compact) {
     return (
       <div className={`${styles.profileActions} ${styles.compact}`}>
-        <button
-          className={styles.profileActionBtn}
-          onClick={handleMessage}
-          title="Message"
-        >
+        <button className={styles.profileActionBtn} onClick={handleMessage} title="Message">
           <Icon name="MessageCircle" size={16} />
         </button>
         {friendState === "friend" ? (
@@ -252,20 +238,12 @@ function ProfileActions({
             <Icon name="UserX" size={16} />
           </button>
         ) : friendState === "none" ? (
-          <button
-            className={styles.profileActionBtn}
-            onClick={handleFriend}
-            title="Add Friend"
-          >
+          <button className={styles.profileActionBtn} onClick={handleFriend} title="Add Friend">
             <Icon name="UserPlus" size={16} />
           </button>
         ) : null}
         {friendState === "blocked" ? (
-          <button
-            className={styles.profileActionBtn}
-            onClick={handleBlock}
-            title="Unblock"
-          >
+          <button className={styles.profileActionBtn} onClick={handleBlock} title="Unblock">
             <Icon name="ShieldOff" size={16} />
           </button>
         ) : (
@@ -314,10 +292,7 @@ function ProfileActions({
           <span>Unblock</span>
         </button>
       ) : (
-        <button
-          className={`${styles.profileActionBtnWide} ${styles.danger}`}
-          onClick={handleBlock}
-        >
+        <button className={`${styles.profileActionBtnWide} ${styles.danger}`} onClick={handleBlock}>
           <Icon name="ShieldOff" size={16} />
           <span>Block</span>
         </button>
@@ -387,16 +362,12 @@ export function UserProfileCard({
             <UserAvatar
               username={profile.username}
               nickname={
-                usersByServer.value[serverUrl.value]?.[
-                  profile.username?.toLowerCase()
-                ]?.nickname
+                usersByServer.value[serverUrl.value]?.[profile.username?.toLowerCase()]?.nickname
               }
               pfp={profile.pfp}
               alt={profile.username}
             />
-            <div
-              className={`${styles.profileCardStatus} ${styles[statusClass]}`}
-            />
+            <div className={`${styles.profileCardStatus} ${styles[statusClass]}`} />
           </div>
           {profile.system && (
             <div className={styles.profileCardSystemPill}>
@@ -424,20 +395,14 @@ export function UserProfileCard({
                     : "Offline"}
             </span>
           </div>
-          {profile.pronouns && (
-            <div className={styles.profileCardPronouns}>{profile.pronouns}</div>
-          )}
+          {profile.pronouns && <div className={styles.profileCardPronouns}>{profile.pronouns}</div>}
           {customStatus?.content && (
             <div className={styles.profileCardCustomStatus}>
-              <span className={styles.profileCardCustomStatusText}>
-                {customStatus.content}
-              </span>
+              <span className={styles.profileCardCustomStatusText}>{customStatus.content}</span>
             </div>
           )}
           {stateLabel && (
-            <div
-              className={`${styles.profileCardFriendState} ${styles[friendState]}`}
-            >
+            <div className={`${styles.profileCardFriendState} ${styles[friendState]}`}>
               {stateLabel}
             </div>
           )}
@@ -518,16 +483,12 @@ export function UserProfileCard({
             <UserAvatar
               username={profile.username}
               nickname={
-                usersByServer.value[serverUrl.value]?.[
-                  profile.username?.toLowerCase()
-                ]?.nickname
+                usersByServer.value[serverUrl.value]?.[profile.username?.toLowerCase()]?.nickname
               }
               pfp={profile.pfp}
               alt={profile.username}
             />
-            <div
-              className={`${styles.profileCardStatus} ${styles[statusClass]}`}
-            />
+            <div className={`${styles.profileCardStatus} ${styles[statusClass]}`} />
           </div>
         </div>
         <div className={styles.profilePanelInfo}>
@@ -538,21 +499,15 @@ export function UserProfileCard({
             {displayName}
           </div>
           {profile.pronouns && (
-            <div className={styles.profilePanelPronouns}>
-              {profile.pronouns}
-            </div>
+            <div className={styles.profilePanelPronouns}>{profile.pronouns}</div>
           )}
           {customStatus?.content && (
             <div className={styles.profileCardCustomStatus}>
-              <span className={styles.profileCardCustomStatusText}>
-                {customStatus.content}
-              </span>
+              <span className={styles.profileCardCustomStatusText}>{customStatus.content}</span>
             </div>
           )}
           {stateLabel && (
-            <div
-              className={`${styles.profileCardFriendState} ${styles[friendState]}`}
-            >
+            <div className={`${styles.profileCardFriendState} ${styles[friendState]}`}>
               {stateLabel}
             </div>
           )}
@@ -560,15 +515,11 @@ export function UserProfileCard({
 
         <div className={styles.profilePanelStats}>
           <div className={styles.profilePanelStat}>
-            <div className={styles.profilePanelStatValue}>
-              {profile.followers || 0}
-            </div>
+            <div className={styles.profilePanelStatValue}>{profile.followers || 0}</div>
             <div className={styles.profilePanelStatLabel}>Followers</div>
           </div>
           <div className={styles.profilePanelStat}>
-            <div className={styles.profilePanelStatValue}>
-              {profile.following || 0}
-            </div>
+            <div className={styles.profilePanelStatValue}>{profile.following || 0}</div>
             <div className={styles.profilePanelStatLabel}>Following</div>
           </div>
           <div className={styles.profilePanelStat}>
@@ -578,9 +529,7 @@ export function UserProfileCard({
             <div className={styles.profilePanelStatLabel}>Credits</div>
           </div>
           <div className={styles.profilePanelStat}>
-            <div className={styles.profilePanelStatValue}>
-              {profile.subscription || "Free"}
-            </div>
+            <div className={styles.profilePanelStatValue}>{profile.subscription || "Free"}</div>
             <div className={styles.profilePanelStatLabel}>Tier</div>
           </div>
         </div>
@@ -594,9 +543,7 @@ export function UserProfileCard({
           >
             <Icon name={isFollowing ? "UserCheck" : "UserPlus"} size={14} />
             <span>{isFollowing ? "Following" : "Follow"}</span>
-            {profile.follows_me && (
-              <span className={styles.profileFollowsMePill}>Follows you</span>
-            )}
+            {profile.follows_me && <span className={styles.profileFollowsMePill}>Follows you</span>}
           </button>
         )}
 
@@ -649,9 +596,7 @@ export function UserProfileCard({
                   <div className={styles.profileMutualServerIcon}>
                     <ServerIcon server={server} />
                   </div>
-                  <span className={styles.profileMutualServerName}>
-                    {server.name}
-                  </span>
+                  <span className={styles.profileMutualServerName}>{server.name}</span>
                 </div>
               ))}
             </div>

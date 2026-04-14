@@ -7,10 +7,7 @@ interface GitHubUserEmbedProps {
   originalUrl: string;
 }
 
-export function GitHubUserEmbed({
-  username,
-  originalUrl,
-}: GitHubUserEmbedProps) {
+export function GitHubUserEmbed({ username, originalUrl }: GitHubUserEmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,9 +53,7 @@ export function GitHubUserEmbed({
           {data.name ? (
             <>
               <span className="gh-embed__repo">{data.name}</span>
-              <span className="gh-embed__owner gh-embed__owner--sub">
-                @{username}
-              </span>
+              <span className="gh-embed__owner gh-embed__owner--sub">@{username}</span>
             </>
           ) : (
             <span className="gh-embed__repo">{username}</span>

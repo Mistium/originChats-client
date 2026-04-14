@@ -144,19 +144,13 @@ export function ImageViewer({
         )}
       </div>
       <div className="image-modal-buttons">
-        {expiresAt && (
-          <div className="image-modal-expiry">{formatExpiry(expiresAt)}</div>
-        )}
+        {expiresAt && <div className="image-modal-expiry">{formatExpiry(expiresAt)}</div>}
         <button
           className={`modal-fav-btn${isFavorite ? " active" : ""}`}
           onClick={toggleFavorite}
           title={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
-          <Icon
-            name="Star"
-            size={20}
-            fill={isFavorite ? "currentColor" : "none"}
-          />
+          <Icon name="Star" size={20} fill={isFavorite ? "currentColor" : "none"} />
         </button>
         <button className="modal-close-btn" onClick={onClose} title="Close">
           <Icon name="X" size={20} />

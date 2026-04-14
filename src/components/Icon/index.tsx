@@ -19,9 +19,7 @@ export function Icon({
     <IconComponent
       size={size}
       color={color}
-      fill={
-        fill === true || fill === "currentColor" ? "currentColor" : undefined
-      }
+      fill={fill === true || fill === "currentColor" ? "currentColor" : undefined}
     />
   );
 }

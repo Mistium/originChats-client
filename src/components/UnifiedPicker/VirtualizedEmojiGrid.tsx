@@ -1,10 +1,4 @@
-import {
-  useRef,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "preact/hooks";
+import { useRef, useEffect, useState, useMemo, useCallback } from "preact/hooks";
 import { memo } from "preact/compat";
 import { emojiImgUrl } from "../../lib/emoji";
 import { useSystemEmojis } from "../../state";
@@ -34,10 +28,7 @@ interface VirtualizedEmojiGridProps {
   onSelect: (item: EmojiItem) => void;
 }
 
-function VirtualizedEmojiGrid({
-  sections,
-  onSelect,
-}: VirtualizedEmojiGridProps) {
+function VirtualizedEmojiGrid({ sections, onSelect }: VirtualizedEmojiGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(400);
@@ -101,10 +92,7 @@ function VirtualizedEmojiGrid({
       const sectionBottom = sectionTop + layout.height;
 
       // Check if section is visible
-      if (
-        sectionBottom >= scrollTop &&
-        sectionTop <= scrollTop + viewportHeight
-      ) {
+      if (sectionBottom >= scrollTop && sectionTop <= scrollTop + viewportHeight) {
         const visibleSection: (typeof visible)[0] = {
           sectionIndex,
           header: section.header,
@@ -123,14 +111,11 @@ function VirtualizedEmojiGrid({
         const visibleTop = Math.max(0, scrollTop - itemsStartY);
         const visibleBottom = Math.min(
           layout.height - layout.headerSpace,
-          scrollTop + viewportHeight - itemsStartY,
+          scrollTop + viewportHeight - itemsStartY
         );
 
         const startRow = Math.floor(visibleTop / cellSize);
-        const endRow = Math.min(
-          layout.rows - 1,
-          Math.ceil(visibleBottom / cellSize),
-        );
+        const endRow = Math.min(layout.rows - 1, Math.ceil(visibleBottom / cellSize));
 
         // Only render items in visible rows
         for (let row = startRow; row <= endRow; row++) {
@@ -199,11 +184,7 @@ function VirtualizedEmojiGrid({
               {/* Only render visible emoji items */}
               {items.map(({ item, row, col }) => {
                 const x = col * cellSize + EMOJI_PADDING / 2;
-                const y =
-                  sectionTop +
-                  layout.headerSpace +
-                  row * cellSize +
-                  EMOJI_PADDING / 2;
+                const y = sectionTop + layout.headerSpace + row * cellSize + EMOJI_PADDING / 2;
 
                 return (
                   <EmojiButton
@@ -261,12 +242,10 @@ const EmojiButton = memo(function EmojiButton({
           ...style,
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "var(--surface-hover)";
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-hover)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "transparent";
+          (e.currentTarget as HTMLButtonElement).style.background = "transparent";
         }}
       >
         <img
@@ -300,12 +279,10 @@ const EmojiButton = memo(function EmojiButton({
           ...style,
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "var(--surface-hover)";
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-hover)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "transparent";
+          (e.currentTarget as HTMLButtonElement).style.background = "transparent";
         }}
       >
         {item.emoji}
@@ -335,12 +312,10 @@ const EmojiButton = memo(function EmojiButton({
           ...style,
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "var(--surface-hover)";
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-hover)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background =
-            "transparent";
+          (e.currentTarget as HTMLButtonElement).style.background = "transparent";
         }}
       >
         {item.emoji}
@@ -366,8 +341,7 @@ const EmojiButton = memo(function EmojiButton({
         ...style,
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background =
-          "var(--surface-hover)";
+        (e.currentTarget as HTMLButtonElement).style.background = "var(--surface-hover)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLButtonElement).style.background = "transparent";
@@ -385,11 +359,7 @@ const EmojiButton = memo(function EmojiButton({
 
 export const MemoVirtualizedEmojiGrid = memo(VirtualizedEmojiGrid);
 
-export function standardEmojiToItem(
-  emoji: string,
-  hexcode: string,
-  label: string,
-): EmojiItem {
+export function standardEmojiToItem(emoji: string, hexcode: string, label: string): EmojiItem {
   return {
     type: "standard",
     emoji,

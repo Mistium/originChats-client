@@ -813,8 +813,7 @@ body.hide-message-shadows .message-single::before {
 /* Font families */
 body.font-system {
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-    Cantarell, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 body.font-geometric {
@@ -3146,12 +3145,7 @@ body.font-serif {
 }
 
 .user-settings-banner {
-  background: linear-gradient(
-    135deg,
-    var(--primary, #4e5058),
-    #8b5cf6,
-    #6366f1
-  );
+  background: linear-gradient(135deg, var(--primary, #4e5058), #8b5cf6, #6366f1);
   background-size: 200% 200%;
   cursor: pointer;
   height: 160px;

@@ -12,10 +12,7 @@ export function handlePingsGet(msg: PingsGet, sUrl?: string): void {
   if (offset === 0) {
     pingsInboxMessages.value = incoming as any;
   } else {
-    pingsInboxMessages.value = [
-      ...pingsInboxMessages.value,
-      ...incoming,
-    ] as any;
+    pingsInboxMessages.value = [...pingsInboxMessages.value, ...incoming] as any;
   }
   pingsInboxTotal.value = msg.total ?? incoming.length;
   pingsInboxOffset.value = offset;

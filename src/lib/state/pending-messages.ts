@@ -10,9 +10,7 @@ interface PendingMessage extends Message {
   _pendingKey: string;
 }
 
-const _pendingByServer = signal<
-  Record<ServerUrl, Record<ChannelKey, PendingMessage[]>>
->({});
+const _pendingByServer = signal<Record<ServerUrl, Record<ChannelKey, PendingMessage[]>>>({});
 const _version = signal(0);
 
 function generatePendingKey(content: string, user: string): string {
@@ -24,16 +22,11 @@ const PENDING_TIMEOUT_MS = 30000;
 class PendingMessageStore {
   private timeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
-  private getServerMessages(
-    url: ServerUrl,
-  ): Record<ChannelKey, PendingMessage[]> {
+  private getServerMessages(url: ServerUrl): Record<ChannelKey, PendingMessage[]> {
     return _pendingByServer.value[url] || {};
   }
 
-  private getChannelMessages(
-    url: ServerUrl,
-    channel: ChannelKey,
-  ): PendingMessage[] {
+  private getChannelMessages(url: ServerUrl, channel: ChannelKey): PendingMessage[] {
     return this.getServerMessages(url)[channel] || [];
   }
 
@@ -71,12 +64,7 @@ class PendingMessageStore {
     return pendingKey;
   }
 
-  removeByKey(
-    url: ServerUrl,
-    channel: ChannelKey,
-    content: string,
-    user: string,
-  ): boolean {
+  removeByKey(url: ServerUrl, channel: ChannelKey, content: string, user: string): boolean {
     const pendingKey = generatePendingKey(content, user);
     const timeoutKey = `${url}:${channel}:${pendingKey}`;
     const timeoutId = this.timeouts.get(timeoutKey);
@@ -109,7 +97,7 @@ class PendingMessageStore {
     channel: ChannelKey,
     content: string,
     user: string,
-    _realId?: string,
+    _realId?: string
   ): boolean {
     return this.removeByKey(url, channel, content, user);
   }

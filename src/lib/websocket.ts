@@ -147,7 +147,7 @@ const pendingReplyFetchesByServer: Record<string, Set<string>> = {};
 export function fetchMissingReplyMessage(
   sUrl: string,
   channelName: string,
-  replyToId: string,
+  replyToId: string
 ): void {
   if (!pendingReplyFetchesByServer[sUrl]) {
     pendingReplyFetchesByServer[sUrl] = new Set();
@@ -161,7 +161,7 @@ export function jumpToMessageAround(
   sUrl: string,
   channelName: string,
   messageId: string,
-  threadId?: string,
+  threadId?: string
 ): boolean {
   const caps = serverCapabilitiesByServer.value[sUrl] || [];
   const hasAround = caps.includes("messages_around");
@@ -214,10 +214,8 @@ function closeWebSocketInternal(url: string): void {
   const conn = wsConnections[url];
   if (!conn) return;
   if (conn.socket) {
-    if (conn.closeHandler)
-      conn.socket.removeEventListener("close", conn.closeHandler);
-    if (conn.errorHandler)
-      conn.socket.removeEventListener("error", conn.errorHandler);
+    if (conn.closeHandler) conn.socket.removeEventListener("close", conn.closeHandler);
+    if (conn.errorHandler) conn.socket.removeEventListener("error", conn.errorHandler);
     if (conn.socket.readyState !== WebSocket.CLOSED) conn.socket.close();
   }
   delete wsConnections[url];
@@ -226,53 +224,47 @@ function closeWebSocketInternal(url: string): void {
 
 function clearServerState(sUrl: string): void {
   channelsByServer.value = Object.fromEntries(
-    Object.entries(channelsByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(channelsByServer.value).filter(([key]) => key !== sUrl)
   );
 
   messagesByServer.value = Object.fromEntries(
-    Object.entries(messagesByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(messagesByServer.value).filter(([key]) => key !== sUrl)
   );
 
   threadsByServer.value = Object.fromEntries(
-    Object.entries(threadsByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(threadsByServer.value).filter(([key]) => key !== sUrl)
   );
 
   threadMessagesByServer.value = Object.fromEntries(
-    Object.entries(threadMessagesByServer.value).filter(
-      ([key]) => key !== sUrl,
-    ),
+    Object.entries(threadMessagesByServer.value).filter(([key]) => key !== sUrl)
   );
 
   usersByServer.value = Object.fromEntries(
-    Object.entries(usersByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(usersByServer.value).filter(([key]) => key !== sUrl)
   );
 
   currentUserByServer.value = Object.fromEntries(
-    Object.entries(currentUserByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(currentUserByServer.value).filter(([key]) => key !== sUrl)
   );
 
   rolesByServer.value = Object.fromEntries(
-    Object.entries(rolesByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(rolesByServer.value).filter(([key]) => key !== sUrl)
   );
 
   slashCommandsByServer.value = Object.fromEntries(
-    Object.entries(slashCommandsByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(slashCommandsByServer.value).filter(([key]) => key !== sUrl)
   );
 
   typingUsersByServer.value = Object.fromEntries(
-    Object.entries(typingUsersByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(typingUsersByServer.value).filter(([key]) => key !== sUrl)
   );
 
   serverCapabilitiesByServer.value = Object.fromEntries(
-    Object.entries(serverCapabilitiesByServer.value).filter(
-      ([key]) => key !== sUrl,
-    ),
+    Object.entries(serverCapabilitiesByServer.value).filter(([key]) => key !== sUrl)
   );
 
   serverAuthModeByServer.value = Object.fromEntries(
-    Object.entries(serverAuthModeByServer.value).filter(
-      ([key]) => key !== sUrl,
-    ),
+    Object.entries(serverAuthModeByServer.value).filter(([key]) => key !== sUrl)
   );
 
   delete loadedChannelsByServer[sUrl];
@@ -280,7 +272,7 @@ function clearServerState(sUrl: string): void {
   delete pendingReplyFetchesByServer[sUrl];
 
   readTimesByServer.value = Object.fromEntries(
-    Object.entries(readTimesByServer.value).filter(([key]) => key !== sUrl),
+    Object.entries(readTimesByServer.value).filter(([key]) => key !== sUrl)
   );
 
   if (pendingCrackedCredentials.value?.serverUrl === sUrl) {
@@ -375,9 +367,7 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         };
         wsStatus[sUrl] = "connected";
         renderGuildSidebarSignal.value++;
-        ws.addEventListener("message", (event) =>
-          handleMessage(JSON.parse(event.data), sUrl),
-        );
+        ws.addEventListener("message", (event) => handleMessage(JSON.parse(event.data), sUrl));
         ws.addEventListener("error", errorHandler);
         ws.addEventListener("close", closeHandler);
         resolve(true);
@@ -430,10 +420,7 @@ function scheduleReconnect(sUrl: string): void {
   reconnectAttempts[sUrl] = attempt;
 
   const delay =
-    Math.min(
-      RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt - 1),
-      RECONNECT_MAX_DELAY_MS,
-    ) / 2;
+    Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt - 1), RECONNECT_MAX_DELAY_MS) / 2;
 
   const label = serverLabel(sUrl);
 
@@ -485,8 +472,7 @@ export function connectToServer(sUrl: string, _manual = false): void {
         existing.socket.removeEventListener("close", existing.closeHandler);
       if (existing.errorHandler)
         existing.socket.removeEventListener("error", existing.errorHandler);
-      if (existing.socket.readyState !== WebSocket.CLOSED)
-        existing.socket.close();
+      if (existing.socket.readyState !== WebSocket.CLOSED) existing.socket.close();
     }
   }
 
@@ -550,9 +536,7 @@ export function connectToServer(sUrl: string, _manual = false): void {
     errorHandler,
   };
   ws.addEventListener("open", openHandler);
-  ws.addEventListener("message", (event) =>
-    handleMessage(JSON.parse(event.data), sUrl),
-  );
+  ws.addEventListener("message", (event) => handleMessage(JSON.parse(event.data), sUrl));
   ws.addEventListener("error", errorHandler);
   ws.addEventListener("close", closeHandler);
 }
@@ -801,7 +785,7 @@ function refreshCurrentChannel(): void {
         thread_id: threadId,
         limit: 30,
       },
-      sUrl,
+      sUrl
     );
   } else {
     loadedChannelsByServer[sUrl]?.delete(channel.name);
@@ -839,7 +823,7 @@ export function setupVisibilityHandler(): void {
                     status: "idle",
                     text: currentText,
                   },
-                  sUrl,
+                  sUrl
                 );
               }
             }
@@ -863,7 +847,7 @@ export function setupVisibilityHandler(): void {
                   status: "online",
                   text: savedStatusText.value,
                 },
-                sUrl,
+                sUrl
               );
             }
           }

@@ -29,9 +29,7 @@ export async function detectEmbedType(url: string) {
     return { type: "gift", url, giftCode: giftMatch[1] };
   }
 
-  const commitMatch = url.match(
-    /github\.com\/([^/]+)\/([^/]+)\/commit\/([a-f0-9]{7,40})/i,
-  );
+  const commitMatch = url.match(/github\.com\/([^/]+)\/([^/]+)\/commit\/([a-f0-9]{7,40})/i);
   if (commitMatch) {
     return {
       type: "github_commit",
@@ -59,16 +57,12 @@ export async function detectEmbedType(url: string) {
   }
 
   if (/github\.com\/([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9._-]+)?)(?:\/)?$/i.test(url)) {
-    const path = url.match(
-      /github\.com\/([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9._-]+)?)/i,
-    )?.[1];
+    const path = url.match(/github\.com\/([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9._-]+)?)/i)?.[1];
     const type = path?.includes("/") ? "github_repo" : "github_user";
     return { type, url, path };
   }
 
-  const wikiMatch = url.match(
-    /(?:^|\/\/)([a-z]{2,})\.wikipedia\.org\/wiki\/([^#?]+)/i,
-  );
+  const wikiMatch = url.match(/(?:^|\/\/)([a-z]{2,})\.wikipedia\.org\/wiki\/([^#?]+)/i);
   if (wikiMatch) {
     return {
       type: "wikipedia",
@@ -78,11 +72,7 @@ export async function detectEmbedType(url: string) {
     };
   }
 
-  if (
-    /open\.spotify\.com\/(track|album|playlist|episode|artist)\/[A-Za-z0-9]+/i.test(
-      url,
-    )
-  ) {
+  if (/open\.spotify\.com\/(track|album|playlist|episode|artist)\/[A-Za-z0-9]+/i.test(url)) {
     return { type: "spotify", url, spotifyUrl: url };
   }
 
@@ -100,9 +90,7 @@ export async function detectEmbedType(url: string) {
     };
   }
 
-  const originChatsMatch = url.match(
-    /originchats\.mistium\.com\/?\?(?:.*&)?server=([^&]+)/i,
-  );
+  const originChatsMatch = url.match(/originchats\.mistium\.com\/?\?(?:.*&)?server=([^&]+)/i);
   if (originChatsMatch) {
     return {
       type: "originchats_server",
@@ -193,10 +181,7 @@ export function formatDate(date: Date): string {
   return "Just now";
 }
 
-export function isTenorOnlyMessage(
-  embedLinks: string[],
-  content: string,
-): boolean {
+export function isTenorOnlyMessage(embedLinks: string[], content: string): boolean {
   return (
     embedLinks.length === 1 &&
     /tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i.test(embedLinks[0]) &&

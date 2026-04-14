@@ -11,9 +11,7 @@ export function YouTubeEmbed({ videoId, originalUrl }: YouTubeEmbedProps) {
   const [title, setTitle] = useState("");
 
   useEffect(() => {
-    fetch(
-      `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(originalUrl)}`,
-    )
+    fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(originalUrl)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.title) setTitle(data.title);

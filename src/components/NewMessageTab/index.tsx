@@ -38,26 +38,21 @@ export function NewMessageTab() {
           />
         </div>
         <div className="new-message-list">
-          {search.trim() &&
-            !friendsList.some(
-              (f) => f.toLowerCase() === search.toLowerCase(),
-            ) && (
-              <div
-                className="new-message-item new-message-item-direct"
-                onClick={() => startDM(search.trim())}
-              >
-                <div className="new-message-item-avatar">
-                  <Icon name="AtSign" size={20} />
-                </div>
-                <div className="new-message-item-info">
-                  <span className="new-message-item-name">{search.trim()}</span>
-                  <span className="new-message-item-hint">
-                    Send a direct message
-                  </span>
-                </div>
-                <Icon name="ArrowRight" size={16} />
+          {search.trim() && !friendsList.some((f) => f.toLowerCase() === search.toLowerCase()) && (
+            <div
+              className="new-message-item new-message-item-direct"
+              onClick={() => startDM(search.trim())}
+            >
+              <div className="new-message-item-avatar">
+                <Icon name="AtSign" size={20} />
               </div>
-            )}
+              <div className="new-message-item-info">
+                <span className="new-message-item-name">{search.trim()}</span>
+                <span className="new-message-item-hint">Send a direct message</span>
+              </div>
+              <Icon name="ArrowRight" size={16} />
+            </div>
+          )}
           {filtered.length > 0 ? (
             filtered.map((username) => (
               <NewMessageFriendItem
@@ -70,10 +65,7 @@ export function NewMessageTab() {
             <div className="dm-empty">
               <Icon name="Users" size={48} />
               <h3>Your Friends</h3>
-              <p>
-                Select a friend to start a conversation, or type a username
-                above
-              </p>
+              <p>Select a friend to start a conversation, or type a username above</p>
             </div>
           ) : null}
         </div>
@@ -82,21 +74,11 @@ export function NewMessageTab() {
   );
 }
 
-function NewMessageFriendItem({
-  username,
-  onClick,
-}: {
-  username: string;
-  onClick: () => void;
-}) {
+function NewMessageFriendItem({ username, onClick }: { username: string; onClick: () => void }) {
   const displayName = useDisplayName(username);
   return (
     <div className="new-message-item" onClick={onClick}>
-      <UserAvatar
-        username={username}
-        className="new-message-item-avatar"
-        alt={displayName}
-      />
+      <UserAvatar username={username} className="new-message-item-avatar" alt={displayName} />
       <div className="new-message-item-info">
         <span className="new-message-item-name">{displayName}</span>
         <span className="new-message-item-hint">Friend</span>

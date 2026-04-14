@@ -10,10 +10,7 @@ import {
 } from "./media-utils";
 import type { CustomEmoji } from "../types";
 
-async function fetchEmojiFromServer(
-  sUrl: string,
-  emojiId: string,
-): Promise<CustomEmoji | null> {
+async function fetchEmojiFromServer(sUrl: string, emojiId: string): Promise<CustomEmoji | null> {
   try {
     const baseUrl = sUrl.startsWith("http") ? sUrl : `https://${sUrl}`;
     const response = await fetch(`${baseUrl}/emojis/${emojiId}`);
@@ -69,15 +66,9 @@ const MAX_CACHE_SIZE = 500;
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/;
 
-let customEmojiNameIndex: Map<
-  string,
-  { sUrl: string; emoji: CustomEmoji }
-> | null = null;
+let customEmojiNameIndex: Map<string, { sUrl: string; emoji: CustomEmoji }> | null = null;
 
-function getCustomEmojiIndex(): Map<
-  string,
-  { sUrl: string; emoji: CustomEmoji }
-> {
+function getCustomEmojiIndex(): Map<string, { sUrl: string; emoji: CustomEmoji }> {
   if (!customEmojiNameIndex) {
     customEmojiNameIndex = new Map();
     for (const [sUrl, emojis] of Object.entries(customEmojisByServer.value)) {
@@ -130,9 +121,7 @@ export function replaceShortcodes(text: string): string {
     const index = getCustomEmojiIndex();
     const found = index.get(name);
     if (found) {
-      const baseUrl = found.sUrl.startsWith("http")
-        ? found.sUrl
-        : `https://${found.sUrl}`;
+      const baseUrl = found.sUrl.startsWith("http") ? found.sUrl : `https://${found.sUrl}`;
       const url = `${baseUrl}/emojis/${found.emoji.fileName}`;
       return `<img class="custom-emoji" src="${url}" alt=":${found.emoji.name}:" title="${found.emoji.name}" loading="lazy" />`;
     }
@@ -145,7 +134,7 @@ export function replaceShortcodes(text: string): string {
 export function convertChannelMentionsToLinks(
   text: string,
   currentServerUrl: string,
-  validChannels?: Set<string>,
+  validChannels?: Set<string>
 ): string {
   text = text.replace(
     /https:\/\/originchats\.mistium\.com\/app\/([^/\s?#]+)(?:\/([^/\s?#]+)(?:\/([a-f0-9-]+))?)?/gi,
@@ -154,7 +143,7 @@ export function convertChannelMentionsToLinks(
       if (channel) result += `/${channel}`;
       if (thread) result += `/${thread}`;
       return result;
-    },
+    }
   );
   const urlPlaceholders: Array<{ placeholder: string; url: string }> = [];
   text = text.replace(/https?:\/\/[^\s"'\\]+[^\s"']+/g, (match) => {
@@ -187,7 +176,7 @@ export interface MentionContext {
 export function parseMarkdown(
   text: string,
   embedLinks: string[] = [],
-  mentionCtx?: MentionContext,
+  mentionCtx?: MentionContext
 ): string {
   const cacheKey = text;
   const cached = parseCache.get(cacheKey);
@@ -201,17 +190,13 @@ export function parseMarkdown(
     sUrl: string;
     emojiId: string;
   }> = [];
-  text = text.replace(
-    /originChats:<emoji>\/\/([^/\s]+)\/([^\s]+)/g,
-    (match, sUrl, emojiId) => {
-      const placeholder = `§CUSTOMEMOJI_${customEmojiPlaceholders.length}§${Math.random().toString(36).substring(2, 8)}§`;
-      customEmojiPlaceholders.push({ placeholder, sUrl, emojiId });
-      return placeholder;
-    },
-  );
+  text = text.replace(/originChats:<emoji>\/\/([^/\s]+)\/([^\s]+)/g, (match, sUrl, emojiId) => {
+    const placeholder = `§CUSTOMEMOJI_${customEmojiPlaceholders.length}§${Math.random().toString(36).substring(2, 8)}§`;
+    customEmojiPlaceholders.push({ placeholder, sUrl, emojiId });
+    return placeholder;
+  });
 
-  const codeBlocks: Array<{ placeholder: string; lang: string; code: string }> =
-    [];
+  const codeBlocks: Array<{ placeholder: string; lang: string; code: string }> = [];
 
   text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
     const language = lang || "plaintext";
@@ -256,7 +241,7 @@ export function parseMarkdown(
       const placeholder = `§URL_${urlPlaceholders.length}§${Math.random().toString(36).substring(2, 11)}§`;
       urlPlaceholders.push({ placeholder, url });
       return placeholder;
-    },
+    }
   );
 
   // Extract blockquotes before HTML escaping so > is preserved
@@ -271,10 +256,7 @@ export function parseMarkdown(
   });
 
   // Escape raw HTML in the remaining plain text portions
-  text = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   // Restore custom emoji placeholders as actual <img> tags
   for (const { placeholder, sUrl, emojiId } of customEmojiPlaceholders) {
@@ -288,14 +270,14 @@ export function parseMarkdown(
       const url = `${baseUrl}/emojis/${emojiId}`;
       text = text.replace(
         placeholder,
-        `<img class="custom-emoji custom-emoji-remote" data-surl="${sUrl}" data-emoji-id="${emojiId}" data-base-url="${baseUrl}" src="${url}" alt=":${emojiId}:" title="${emojiId}" loading="lazy" />`,
+        `<img class="custom-emoji custom-emoji-remote" data-surl="${sUrl}" data-emoji-id="${emojiId}" data-base-url="${baseUrl}" src="${url}" alt=":${emojiId}:" title="${emojiId}" loading="lazy" />`
       );
       continue;
     }
     const url = `${baseUrl}/emojis/${emoji.fileName}`;
     text = text.replace(
       placeholder,
-      `<img class="custom-emoji" src="${url}" alt=":${emoji.name}:" title="${emoji.name}" loading="lazy" />`,
+      `<img class="custom-emoji" src="${url}" alt=":${emoji.name}:" title="${emoji.name}" loading="lazy" />`
     );
   }
 
@@ -308,49 +290,31 @@ export function parseMarkdown(
 
   // Restore blockquotes
   for (const { placeholder, content } of blockquotePlaceholders) {
-    text = text.replace(
-      placeholder,
-      `<blockquote>${content.replace(/^>+\s*/, "")}</blockquote>`,
-    );
+    text = text.replace(placeholder, `<blockquote>${content.replace(/^>+\s*/, "")}</blockquote>`);
   }
 
   text = text.replace(/~~(.+?)~~/g, (_, content) => `<s>${content}</s>`);
 
   text = text.replace(/^-# (.*)$/gm, (_, content) => `<sub>${content}</sub>`);
 
-  text = text.replace(
-    /\*\*\*(.+?)\*\*\*/g,
-    (_, content) => `<strong><em>${content}</em></strong>`,
-  );
-  text = text.replace(
-    /___(.+?)___/g,
-    (_, content) => `<strong><em>${content}</em></strong>`,
-  );
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, (_, content) => `<strong><em>${content}</em></strong>`);
+  text = text.replace(/___(.+?)___/g, (_, content) => `<strong><em>${content}</em></strong>`);
 
-  text = text.replace(
-    /\*\*(.+?)\*\*/g,
-    (_, content) => `<strong>${content}</strong>`,
-  );
-  text = text.replace(
-    /__(.+?)__/g,
-    (_, content) => `<strong>${content}</strong>`,
-  );
+  text = text.replace(/\*\*(.+?)\*\*/g, (_, content) => `<strong>${content}</strong>`);
+  text = text.replace(/__(.+?)__/g, (_, content) => `<strong>${content}</strong>`);
 
   text = text.replace(
     /(^|\s)\*([^\s*](?:.*?[^\s*])?)\*(?=$|\s)/g,
-    (_, prefix, content) => `${prefix}<em>${content}</em>`,
+    (_, prefix, content) => `${prefix}<em>${content}</em>`
   );
   text = text.replace(
     /(^|\s)_([^\s_](?:.*?[^\s_])?)_(?=$|\s)/g,
-    (_, prefix, content) => `${prefix}<em>${content}</em>`,
+    (_, prefix, content) => `${prefix}<em>${content}</em>`
   );
 
   // Restore inline code with proper escaping
   for (const { placeholder, code } of inlineCodeBlocks) {
-    const escapedCode = code
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    const escapedCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     text = text.replace(placeholder, `<code>${escapedCode}</code>`);
   }
 
@@ -377,7 +341,7 @@ export function parseMarkdown(
       const safeName = restoreInlineCode(escapeHtml(name));
       text = text.replace(
         placeholder,
-        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>`,
+        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>`
       );
     } else {
       text = text.replace(placeholder, `[${name}](${url})`);
@@ -392,7 +356,7 @@ export function parseMarkdown(
     const safeDisplayText = escapeHtml(rawUrl);
 
     const originChatsMatch = rawUrl.match(
-      /^originChats:\/\/([A-Za-z\d.]+\.[A-Za-z\d]+)(?:\/([^/\s?#<>]+)(?:\/([a-f0-9-<>]+))?)?$/,
+      /^originChats:\/\/([A-Za-z\d.]+\.[A-Za-z\d]+)(?:\/([^/\s?#<>]+)(?:\/([a-f0-9-<>]+))?)?$/
     );
     if (originChatsMatch) {
       const linkServerUrl = originChatsMatch[1];
@@ -418,7 +382,7 @@ export function parseMarkdown(
           : `${serverDisplay}: #${threadName || "unknown thread"}`;
         text = text.replace(
           placeholder,
-          `<span class="channel-mention" data-channel="${escapeAttribute(linkChannelName || "")}" data-server="${escapeAttribute(linkServerUrl)}" data-thread="${escapeAttribute(linkThreadId)}">${escapeHtml(displayText)}</span>`,
+          `<span class="channel-mention" data-channel="${escapeAttribute(linkChannelName || "")}" data-server="${escapeAttribute(linkServerUrl)}" data-thread="${escapeAttribute(linkThreadId)}">${escapeHtml(displayText)}</span>`
         );
         continue;
       }
@@ -429,7 +393,7 @@ export function parseMarkdown(
           : `${serverDisplay}: #${linkChannelName}`;
         text = text.replace(
           placeholder,
-          `<span class="channel-mention" data-channel="${escapeAttribute(linkChannelName)}" data-server="${escapeAttribute(linkServerUrl)}">${escapeHtml(displayText).replace(/#/g, "&#35;")}</span>`,
+          `<span class="channel-mention" data-channel="${escapeAttribute(linkChannelName)}" data-server="${escapeAttribute(linkServerUrl)}">${escapeHtml(displayText).replace(/#/g, "&#35;")}</span>`
         );
         continue;
       }
@@ -438,7 +402,7 @@ export function parseMarkdown(
     if (YOUTUBE_REGEX.test(rawUrl)) {
       text = text.replace(
         placeholder,
-        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`,
+        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`
       );
       continue;
     }
@@ -446,7 +410,7 @@ export function parseMarkdown(
     if (rawUrl.match(/tenor\.com\/view\/[\w-]+-\d+(?:\?.*)?$/i)) {
       text = text.replace(
         placeholder,
-        `<a href="${safeUrl}" class="tenor-embed" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`,
+        `<a href="${safeUrl}" class="tenor-embed" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`
       );
       continue;
     }
@@ -454,7 +418,7 @@ export function parseMarkdown(
     if (hasExtension(rawUrl, VIDEO_EXTENSIONS)) {
       text = text.replace(
         placeholder,
-        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`,
+        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeDisplayText}</a>`
       );
       continue;
     }
@@ -462,14 +426,14 @@ export function parseMarkdown(
     if (hasExtension(rawUrl, IMAGE_EXTENSIONS)) {
       text = text.replace(
         placeholder,
-        `<div class="image-placeholder" data-image-url="${safeUrl}"></div>`,
+        `<div class="image-placeholder" data-image-url="${safeUrl}"></div>`
       );
       continue;
     }
 
     text = text.replace(
       placeholder,
-      `<a href="${safeUrl}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${safeDisplayText}">${safeDisplayText}</a>`,
+      `<a href="${safeUrl}" class="potential-image" target="_blank" rel="noopener noreferrer" data-image-url="${safeDisplayText}">${safeDisplayText}</a>`
     );
   }
 
@@ -494,10 +458,7 @@ export function parseMarkdown(
   });
 
   text = text.replace(/#([a-zA-Z0-9_-]+)/g, (match, channelName) => {
-    if (
-      mentionCtx &&
-      !mentionCtx.validChannels.has(channelName.toLowerCase())
-    ) {
+    if (mentionCtx && !mentionCtx.validChannels.has(channelName.toLowerCase())) {
       return match;
     }
     return `<span class="channel-mention" data-channel="${escapeAttribute(channelName)}">#${channelName}</span>`;
@@ -518,15 +479,12 @@ export function parseMarkdown(
     const innerHtml = parseMarkdown(spoiler.inner, [], mentionCtx);
     text = text.replace(
       spoiler.placeholder,
-      `<span class="spoiler" role="button" tabindex="0" aria-label="Spoiler">${innerHtml}</span>`,
+      `<span class="spoiler" role="button" tabindex="0" aria-label="Spoiler">${innerHtml}</span>`
     );
   }
 
   if (parseCache.size > MAX_CACHE_SIZE) {
-    const keysToDelete = [...parseCache.keys()].slice(
-      0,
-      parseCache.size - MAX_CACHE_SIZE,
-    );
+    const keysToDelete = [...parseCache.keys()].slice(0, parseCache.size - MAX_CACHE_SIZE);
     keysToDelete.forEach((k) => parseCache.delete(k));
   }
   parseCache.set(cacheKey, { result: text, embedLinks: [...embedLinks] });
@@ -538,9 +496,7 @@ export function highlightCodeInContainer(container: HTMLElement): void {
   container.querySelectorAll("pre code").forEach((block) => {
     const el = block as HTMLElement;
     if (el.dataset.highlighted) return;
-    const langClass = Array.from(el.classList).find((c) =>
-      c.startsWith("language-"),
-    );
+    const langClass = Array.from(el.classList).find((c) => c.startsWith("language-"));
     const lang = langClass?.slice("language-".length);
     if (lang && !hljs.getLanguage(lang)) return;
     hljs.highlightElement(el);

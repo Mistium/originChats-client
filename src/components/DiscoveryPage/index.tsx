@@ -51,9 +51,7 @@ export function DiscoveryPage() {
   const [activeTab, setActiveTab] = useState<"browse" | "conditions">("browse");
   const [joiningUrl, setJoiningUrl] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [serverInfoMap, setServerInfoMap] = useState<
-    Record<string, ServerInfoResponse>
-  >({});
+  const [serverInfoMap, setServerInfoMap] = useState<Record<string, ServerInfoResponse>>({});
   const [sortBy, setSortBy] = useState<"members" | "newest">("newest");
   const [featuredIndex, setFeaturedIndex] = useState(0);
 
@@ -61,9 +59,7 @@ export function DiscoveryPage() {
     const usersMap = usersByServer.value[url] || {};
     const allUsers = Object.values(usersMap);
     const totalUsers = allUsers.length;
-    const onlineUsers = allUsers.filter(
-      (u) => u.status && u.status.status !== "offline",
-    ).length;
+    const onlineUsers = allUsers.filter((u) => u.status && u.status.status !== "offline").length;
     return { totalUsers, onlineUsers };
   };
 
@@ -99,7 +95,7 @@ export function DiscoveryPage() {
 
     const fetchServerInfo = async () => {
       const unjoinedServers = serverList.filter(
-        (s) => !servers.value.some((sv) => sv.url === s.url),
+        (s) => !servers.value.some((sv) => sv.url === s.url)
       );
 
       for (const server of unjoinedServers) {
@@ -136,10 +132,7 @@ export function DiscoveryPage() {
       setJoiningUrl(null);
       return;
     }
-    servers.value = [
-      ...servers.value,
-      { name: normalized, url: normalized, icon: null },
-    ];
+    servers.value = [...servers.value, { name: normalized, url: normalized, icon: null }];
     await saveServers();
     setJoiningUrl(null);
     selectHomeChannel();
@@ -254,9 +247,7 @@ export function DiscoveryPage() {
                           )}
                         </div>
                         <div className="discovery-featured-content">
-                          <h3 className="discovery-featured-name">
-                            {server.name}
-                          </h3>
+                          <h3 className="discovery-featured-name">{server.name}</h3>
                           <p className="discovery-featured-url">{server.url}</p>
                           <div className="discovery-featured-stats">
                             <span>
@@ -266,10 +257,7 @@ export function DiscoveryPage() {
                           </div>
                         </div>
                         <div className="discovery-featured-owner">
-                          <UserAvatar
-                            username={server.owner}
-                            alt={server.owner}
-                          />
+                          <UserAvatar username={server.owner} alt={server.owner} />
                         </div>
                         <button
                           className="discovery-featured-dot"
@@ -349,14 +337,11 @@ export function DiscoveryPage() {
                 <div className="discovery-page-grid">
                   {visibleServers.map((s) => {
                     const tags = s.tags;
-                    const alreadyJoined = servers.value.some(
-                      (sv) => sv.url === s.url,
-                    );
+                    const alreadyJoined = servers.value.some((sv) => sv.url === s.url);
                     const isJoining = joiningUrl === s.url;
                     const hasError = joinError === s.url;
                     const serverStats = getServerStats(s.url);
-                    const ownerName =
-                      serverInfoMap[s.url]?.server?.owner?.name || s.owner;
+                    const ownerName = serverInfoMap[s.url]?.server?.owner?.name || s.owner;
                     return (
                       <div key={s.url} className="discovery-page-card">
                         <div className="discovery-page-card-header">
@@ -368,19 +353,13 @@ export function DiscoveryPage() {
                             )}
                           </div>
                           <div className="discovery-page-card-meta">
-                            <h3 className="discovery-page-card-name">
-                              {s.name}
-                            </h3>
-                            <div className="discovery-page-card-url">
-                              {s.url}
-                            </div>
+                            <h3 className="discovery-page-card-name">{s.name}</h3>
+                            <div className="discovery-page-card-url">{s.url}</div>
                           </div>
                         </div>
 
                         {s.description && (
-                          <p className="discovery-page-card-desc">
-                            {s.description}
-                          </p>
+                          <p className="discovery-page-card-desc">{s.description}</p>
                         )}
 
                         <div className="discovery-page-card-tags">
@@ -406,9 +385,7 @@ export function DiscoveryPage() {
                             {!alreadyJoined && serverInfoMap[s.url]?.stats && (
                               <span>
                                 <Icon name="Users" size={12} />
-                                {serverInfoMap[s.url].stats?.total_users ??
-                                  0}{" "}
-                                members
+                                {serverInfoMap[s.url].stats?.total_users ?? 0} members
                               </span>
                             )}
                             {alreadyJoined && serverStats.onlineUsers > 0 && (
@@ -420,16 +397,11 @@ export function DiscoveryPage() {
                             {!alreadyJoined && serverInfoMap[s.url]?.stats && (
                               <span>
                                 <Icon name="Radio" size={12} />
-                                {serverInfoMap[s.url].stats?.online_users ??
-                                  0}{" "}
-                                online
+                                {serverInfoMap[s.url].stats?.online_users ?? 0} online
                               </span>
                             )}
                             <span className="discovery-page-card-owner-info">
-                              <UserAvatar
-                                username={ownerName}
-                                alt={ownerName}
-                              />
+                              <UserAvatar username={ownerName} alt={ownerName} />
                               {ownerName}
                             </span>
                             <span>
@@ -443,11 +415,7 @@ export function DiscoveryPage() {
                             disabled={isJoining}
                             onClick={() => handleJoin(s.url)}
                           >
-                            {isJoining
-                              ? "Joining…"
-                              : alreadyJoined
-                                ? "Visit"
-                                : "Join"}
+                            {isJoining ? "Joining…" : alreadyJoined ? "Visit" : "Join"}
                           </button>
                         </div>
                         {hasError && (
@@ -469,48 +437,41 @@ export function DiscoveryPage() {
                 <Icon name="CheckCircle" size={18} />
                 Requirements
               </h2>
-              <p>
-                To be listed in discovery, a server must meet all of the
-                following conditions:
-              </p>
+              <p>To be listed in discovery, a server must meet all of the following conditions:</p>
               <ul>
                 <li>
                   <Icon name="Check" size={14} />
                   <span>
-                    <strong>Publicly accessible</strong> — the server must
-                    accept connections from any user without an invite or
-                    whitelist.
+                    <strong>Publicly accessible</strong> — the server must accept connections from
+                    any user without an invite or whitelist.
                   </span>
                 </li>
                 <li>
                   <Icon name="Check" size={14} />
                   <span>
-                    <strong>Actively maintained</strong> — the server must be
-                    online and responsive. Servers that go offline for extended
-                    periods will be removed.
+                    <strong>Actively maintained</strong> — the server must be online and responsive.
+                    Servers that go offline for extended periods will be removed.
                   </span>
                 </li>
                 <li>
                   <Icon name="Check" size={14} />
                   <span>
-                    <strong>Running OriginChats</strong> — the server must be a
-                    valid OriginChats-compatible WebSocket server.
+                    <strong>Running OriginChats</strong> — the server must be a valid
+                    OriginChats-compatible WebSocket server.
                   </span>
                 </li>
                 <li>
                   <Icon name="Check" size={14} />
                   <span>
-                    <strong>Safe for general audiences</strong> — NSFW content,
-                    harassment, hate speech, and illegal material are not
-                    permitted on listed servers.
+                    <strong>Safe for general audiences</strong> — NSFW content, harassment, hate
+                    speech, and illegal material are not permitted on listed servers.
                   </span>
                 </li>
                 <li>
                   <Icon name="Check" size={14} />
                   <span>
-                    <strong>Owned by a real account</strong> — the listed owner
-                    must be a valid rotur.dev account that can be contacted if
-                    needed.
+                    <strong>Owned by a real account</strong> — the listed owner must be a valid
+                    rotur.dev account that can be contacted if needed.
                   </span>
                 </li>
               </ul>
@@ -521,16 +482,11 @@ export function DiscoveryPage() {
                 <Icon name="PlusCircle" size={18} />
                 How to submit your server
               </h2>
-              <p>
-                Discovery is curated manually. To request that your server is
-                added:
-              </p>
+              <p>Discovery is curated manually. To request that your server is added:</p>
               <ol>
                 <li>
                   <span className="discovery-conditions-step">1</span>
-                  <span>
-                    Make sure your server meets all the requirements above.
-                  </span>
+                  <span>Make sure your server meets all the requirements above.</span>
                 </li>
                 <li>
                   <span className="discovery-conditions-step">2</span>
@@ -543,24 +499,22 @@ export function DiscoveryPage() {
                     >
                       originChats-client
                     </a>{" "}
-                    repository adding your server to <code>discovery.json</code>
-                    .
+                    repository adding your server to <code>discovery.json</code>.
                   </span>
                 </li>
                 <li>
                   <span className="discovery-conditions-step">3</span>
                   <span>
-                    Include your server's <code>url</code>, <code>name</code>,{" "}
-                    <code>owner</code> (your rotur.dev username), and an{" "}
-                    <code>icon</code> URL (square image, at least 128×128px).
+                    Include your server's <code>url</code>, <code>name</code>, <code>owner</code>{" "}
+                    (your rotur.dev username), and an <code>icon</code> URL (square image, at least
+                    128×128px).
                   </span>
                 </li>
                 <li>
                   <span className="discovery-conditions-step">4</span>
                   <span>
-                    A maintainer will review your submission. Servers that pass
-                    the conditions will be merged and appear in discovery on the
-                    next release.
+                    A maintainer will review your submission. Servers that pass the conditions will
+                    be merged and appear in discovery on the next release.
                   </span>
                 </li>
               </ol>
@@ -572,10 +526,9 @@ export function DiscoveryPage() {
                 Removal
               </h2>
               <p>
-                A server may be removed from discovery at any time if it no
-                longer meets the requirements, becomes inaccessible, or receives
-                reports of harmful content. Server owners will be contacted
-                before removal where possible.
+                A server may be removed from discovery at any time if it no longer meets the
+                requirements, becomes inaccessible, or receives reports of harmful content. Server
+                owners will be contacted before removal where possible.
               </p>
             </div>
           </div>

@@ -40,9 +40,7 @@ export function LinkPreviewEmbed({
   }, [image]);
 
   const truncatedDescription =
-    description && description.length > 200
-      ? description.slice(0, 197) + "..."
-      : description;
+    description && description.length > 200 ? description.slice(0, 197) + "..." : description;
 
   const displaySiteName = siteName
     ? siteName
@@ -57,8 +55,7 @@ export function LinkPreviewEmbed({
 
   const isLargeImage =
     imageSize &&
-    (imageSize.width > LARGE_IMAGE_THRESHOLD ||
-      imageSize.height > LARGE_IMAGE_THRESHOLD);
+    (imageSize.width > LARGE_IMAGE_THRESHOLD || imageSize.height > LARGE_IMAGE_THRESHOLD);
 
   const contentClassName = isLargeImage
     ? `${styles.content} ${styles["content--largeImage"]}`
@@ -68,56 +65,30 @@ export function LinkPreviewEmbed({
     ? `${styles.imageWrapper} ${styles["imageWrapper--large"]}`
     : styles.imageWrapper;
 
-  const imageClassName = isLargeImage
-    ? `${styles.image} ${styles["image--large"]}`
-    : styles.image;
+  const imageClassName = isLargeImage ? `${styles.image} ${styles["image--large"]}` : styles.image;
 
   return (
-    <a
-      href={originalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.embed}
-    >
+    <a href={originalUrl} target="_blank" rel="noopener noreferrer" className={styles.embed}>
       <div className={contentClassName}>
         <div className={styles.text}>
           <div className={styles.header}>
             {favicon && (
-              <img
-                src={proxyImageUrl(favicon)}
-                alt=""
-                className={styles.favicon}
-                loading="lazy"
-              />
+              <img src={proxyImageUrl(favicon)} alt="" className={styles.favicon} loading="lazy" />
             )}
-            {displaySiteName && (
-              <span className={styles.site}>{displaySiteName}</span>
-            )}
+            {displaySiteName && <span className={styles.site}>{displaySiteName}</span>}
           </div>
           <h3 className={styles.title}>{title}</h3>
-          {truncatedDescription && (
-            <p className={styles.description}>{truncatedDescription}</p>
-          )}
+          {truncatedDescription && <p className={styles.description}>{truncatedDescription}</p>}
         </div>
         {image && !isLargeImage && (
           <div className={imageWrapperClassName}>
-            <img
-              src={proxyImageUrl(image)}
-              alt=""
-              className={imageClassName}
-              loading="lazy"
-            />
+            <img src={proxyImageUrl(image)} alt="" className={imageClassName} loading="lazy" />
           </div>
         )}
       </div>
       {image && isLargeImage && (
         <div className={imageWrapperClassName}>
-          <img
-            src={proxyImageUrl(image)}
-            alt=""
-            className={imageClassName}
-            loading="lazy"
-          />
+          <img src={proxyImageUrl(image)} alt="" className={imageClassName} loading="lazy" />
         </div>
       )}
     </a>

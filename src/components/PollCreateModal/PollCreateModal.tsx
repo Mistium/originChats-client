@@ -36,9 +36,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
   };
 
   const updateOption = (id: string, field: "text" | "emoji", value: string) => {
-    setOptions(
-      options.map((o) => (o.id === id ? { ...o, [field]: value } : o)),
-    );
+    setOptions(options.map((o) => (o.id === id ? { ...o, [field]: value } : o)));
   };
 
   const handleSubmit = () => {
@@ -73,9 +71,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
     onClose();
   };
 
-  const isValid =
-    question.trim().length > 0 &&
-    options.filter((o) => o.text.trim()).length >= 2;
+  const isValid = question.trim().length > 0 && options.filter((o) => o.text.trim()).length >= 2;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -109,11 +105,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
                     type="text"
                     value={option.emoji}
                     onInput={(e) =>
-                      updateOption(
-                        option.id,
-                        "emoji",
-                        (e.target as HTMLInputElement).value,
-                      )
+                      updateOption(option.id, "emoji", (e.target as HTMLInputElement).value)
                     }
                     placeholder="🗳️"
                     className={styles.emojiInput}
@@ -123,21 +115,14 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
                     type="text"
                     value={option.text}
                     onInput={(e) =>
-                      updateOption(
-                        option.id,
-                        "text",
-                        (e.target as HTMLInputElement).value,
-                      )
+                      updateOption(option.id, "text", (e.target as HTMLInputElement).value)
                     }
                     placeholder={`Option ${index + 1}`}
                     className={styles.textInput}
                     maxLength={100}
                   />
                   {options.length > 2 && (
-                    <button
-                      className={styles.removeBtn}
-                      onClick={() => removeOption(option.id)}
-                    >
+                    <button className={styles.removeBtn} onClick={() => removeOption(option.id)}>
                       <Icon name="X" size={14} />
                     </button>
                   )}
@@ -156,9 +141,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
               <input
                 type="checkbox"
                 checked={allowMultiselect}
-                onChange={(e) =>
-                  setAllowMultiselect((e.target as HTMLInputElement).checked)
-                }
+                onChange={(e) => setAllowMultiselect((e.target as HTMLInputElement).checked)}
               />
               Allow multiple selections
             </label>
@@ -169,9 +152,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
               <input
                 type="checkbox"
                 checked={hasExpiration}
-                onChange={(e) =>
-                  setHasExpiration((e.target as HTMLInputElement).checked)
-                }
+                onChange={(e) => setHasExpiration((e.target as HTMLInputElement).checked)}
               />
               Set expiration time
             </label>
@@ -184,9 +165,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
                 type="number"
                 value={durationHours}
                 onInput={(e) =>
-                  setDurationHours(
-                    parseInt((e.target as HTMLInputElement).value) || 0,
-                  )
+                  setDurationHours(parseInt((e.target as HTMLInputElement).value) || 0)
                 }
                 min={1}
                 max={168}
@@ -200,11 +179,7 @@ export function PollCreateModal({ onClose }: PollCreateModalProps) {
           <button className={styles.cancelBtn} onClick={onClose}>
             Cancel
           </button>
-          <button
-            className={styles.createBtn}
-            onClick={handleSubmit}
-            disabled={!isValid}
-          >
+          <button className={styles.createBtn} onClick={handleSubmit} disabled={!isValid}>
             Create Poll
           </button>
         </div>

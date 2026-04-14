@@ -61,7 +61,7 @@ export async function uploadAttachment(
   file: File,
   channel: string,
   tempId: string,
-  onProgress?: (progress: number) => void,
+  onProgress?: (progress: number) => void
 ): Promise<UploadedAttachment> {
   const sUrl = serverUrl.value;
   const validatorKey = serverValidatorKeys[sUrl];
@@ -112,12 +112,8 @@ export async function uploadAttachment(
         errorMessage = errorData.error || errorMessage;
         if (response.status === 413) {
           const maxBytesMatch = errorMessage.match(/\(max (\d+) bytes\)/);
-          const maxBytes = maxBytesMatch
-            ? parseInt(maxBytesMatch[1], 10)
-            : null;
-          const maxMB = maxBytes
-            ? (maxBytes / (1024 * 1024)).toFixed(1)
-            : "unknown";
+          const maxBytes = maxBytesMatch ? parseInt(maxBytesMatch[1], 10) : null;
+          const maxMB = maxBytes ? (maxBytes / (1024 * 1024)).toFixed(1) : "unknown";
           throw new Error(`File too large (max ${maxMB} MB)`);
         }
       } catch (e) {
@@ -142,10 +138,7 @@ export function mimeTypeToAcceptString(types: string[]): string {
   return types.join(",");
 }
 
-export function isMimeTypeAllowed(
-  mimeType: string,
-  allowedTypes: string[],
-): boolean {
+export function isMimeTypeAllowed(mimeType: string, allowedTypes: string[]): boolean {
   for (const pattern of allowedTypes) {
     if (pattern === "*" || pattern === "*/*") return true;
     if (pattern.endsWith("/*")) {

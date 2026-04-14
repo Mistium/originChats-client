@@ -57,11 +57,7 @@ import { Checkbox } from "../Checkbox";
 import { LoadingButton } from "../LoadingButton";
 import { showUIError, showInfo } from "../../lib/ui-signals";
 import { getCharacterCountColor } from "../../lib/validation";
-import {
-  switchServer,
-  logout,
-  selectDiscoveryChannel,
-} from "../../lib/actions";
+import { switchServer, logout, selectDiscoveryChannel } from "../../lib/actions";
 import type { RoturAccount, RoturProfile } from "../../types";
 import { avatarUrl, isCrackedAccount } from "../../utils";
 import { formatJoinDate } from "../../lib/date-utils";
@@ -146,8 +142,7 @@ export function SettingsModal() {
         setSaveMsg("Saved!");
         showInfo("Profile picture updated", { autoDismissMs: 2000 });
         if (user?.username) {
-          const currentUserInServer =
-            currentUserByServer.value[serverUrl.value];
+          const currentUserInServer = currentUserByServer.value[serverUrl.value];
           if (currentUserInServer) {
             currentUserInServer.pfp = value;
             currentUserByServer.value = { ...currentUserByServer.value };
@@ -208,11 +203,7 @@ export function SettingsModal() {
       try {
         const ct = await getClaimTime();
         const hrs = ct.hours ?? ct.time_remaining_hours ?? null;
-        setDailyMsg(
-          hrs !== null
-            ? `Next claim in ${hrs}h`
-            : e.message || "Already claimed today",
-        );
+        setDailyMsg(hrs !== null ? `Next claim in ${hrs}h` : e.message || "Already claimed today");
       } catch {
         setDailyMsg(e.message || "Already claimed today");
       }
@@ -229,9 +220,7 @@ export function SettingsModal() {
         if (e.target === e.currentTarget) showSettingsModal.value = false;
       }}
     >
-      <div
-        className={`server-settings-modal${mobileShowNav ? " mobile-show-nav" : ""}`}
-      >
+      <div className={`server-settings-modal${mobileShowNav ? " mobile-show-nav" : ""}`}>
         <div className="server-settings-sidebar">
           <div className="server-settings-header">
             <div className="server-settings-icon user-settings-icon">
@@ -244,9 +233,7 @@ export function SettingsModal() {
               )}
             </div>
             <div className="server-settings-title">
-              <div className="server-settings-name">
-                {currentUser.value?.username || "User"}
-              </div>
+              <div className="server-settings-name">{currentUser.value?.username || "User"}</div>
               <div className="server-settings-url">User Settings</div>
             </div>
             <button
@@ -258,9 +245,7 @@ export function SettingsModal() {
           </div>
           <nav className="server-settings-nav">
             {/* Desktop section labels — hidden on mobile */}
-            <div className="settings-nav-section-label settings-nav-label-desktop">
-              User
-            </div>
+            <div className="settings-nav-section-label settings-nav-label-desktop">User</div>
             <button
               className={`server-nav-item ${tab === "profile" ? "active" : ""}`}
               onClick={() => {
@@ -473,8 +458,7 @@ export function SettingsModal() {
                   accept="image/*"
                   style={{ display: "none" }}
                   onChange={(e: any) => {
-                    if (e.target.files?.[0])
-                      handleImageUpload("banner", e.target.files[0]);
+                    if (e.target.files?.[0]) handleImageUpload("banner", e.target.files[0]);
                   }}
                 />
                 <div className="user-settings-avatar-area">
@@ -488,8 +472,7 @@ export function SettingsModal() {
                       }
                     }}
                     style={
-                      currentUser.value &&
-                      isCrackedAccount(currentUser.value.username)
+                      currentUser.value && isCrackedAccount(currentUser.value.username)
                         ? { cursor: "default" }
                         : {}
                     }
@@ -499,10 +482,7 @@ export function SettingsModal() {
                       pfp={profile?.pfp}
                       alt=""
                     />
-                    {!(
-                      currentUser.value &&
-                      isCrackedAccount(currentUser.value.username)
-                    ) && (
+                    {!(currentUser.value && isCrackedAccount(currentUser.value.username)) && (
                       <div className="user-settings-avatar-overlay">
                         <Icon name="Camera" size={16} />
                       </div>
@@ -514,48 +494,39 @@ export function SettingsModal() {
                     accept="image/*"
                     style={{ display: "none" }}
                     onChange={(e: any) => {
-                      if (e.target.files?.[0])
-                        handleImageUpload("pfp", e.target.files[0]);
+                      if (e.target.files?.[0]) handleImageUpload("pfp", e.target.files[0]);
                     }}
                   />
                   <div className="user-settings-name-area">
-                    <div className="user-settings-display-name">
-                      {profile?.username}
-                    </div>
+                    <div className="user-settings-display-name">{profile?.username}</div>
                     {profile?.pronouns && (
-                      <div className="user-settings-pronouns">
-                        {profile.pronouns}
-                      </div>
+                      <div className="user-settings-pronouns">{profile.pronouns}</div>
                     )}
                   </div>
                 </div>
-                {currentUser.value &&
-                  isCrackedAccount(currentUser.value.username) && (
-                    <div
-                      className="settings-field"
-                      style={{ marginTop: "12px" }}
-                    >
-                      <label>Profile Picture URL</label>
-                      <input
-                        type="text"
-                        className="settings-input"
-                        placeholder="https://example.com/avatar.png"
-                        value={profile?.pfp || ""}
-                        onInput={(e: any) => {
-                          const value = e.target.value;
-                          if (profile) {
-                            setProfile({ ...profile, pfp: value });
-                          }
-                        }}
-                        onBlur={(e: any) => {
-                          const value = e.target.value;
-                          if (value) {
-                            updateField("pfp", value);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+                {currentUser.value && isCrackedAccount(currentUser.value.username) && (
+                  <div className="settings-field" style={{ marginTop: "12px" }}>
+                    <label>Profile Picture URL</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      placeholder="https://example.com/avatar.png"
+                      value={profile?.pfp || ""}
+                      onInput={(e: any) => {
+                        const value = e.target.value;
+                        if (profile) {
+                          setProfile({ ...profile, pfp: value });
+                        }
+                      }}
+                      onBlur={(e: any) => {
+                        const value = e.target.value;
+                        if (value) {
+                          updateField("pfp", value);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="settings-field">
@@ -563,9 +534,7 @@ export function SettingsModal() {
                 <textarea
                   className="settings-textarea"
                   value={bio}
-                  onInput={(e) =>
-                    setBio((e.target as HTMLTextAreaElement).value)
-                  }
+                  onInput={(e) => setBio((e.target as HTMLTextAreaElement).value)}
                   placeholder="Tell the world about yourself..."
                   rows={3}
                   maxLength={1000}
@@ -592,9 +561,7 @@ export function SettingsModal() {
                 <input
                   type="text"
                   value={pronouns}
-                  onInput={(e) =>
-                    setPronouns((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setPronouns((e.target as HTMLInputElement).value)}
                   placeholder="e.g. they/them, she/her, he/him"
                 />
                 <div className="settings-field-footer">
@@ -610,9 +577,7 @@ export function SettingsModal() {
               </div>
 
               {saveMsg && (
-                <div
-                  className={`settings-save-msg ${saveMsg === "Saved!" ? "success" : "error"}`}
-                >
+                <div className={`settings-save-msg ${saveMsg === "Saved!" ? "success" : "error"}`}>
                   {saveMsg}
                 </div>
               )}
@@ -621,15 +586,11 @@ export function SettingsModal() {
             <div className="server-section-body">
               <div className="settings-field">
                 <label>Username</label>
-                <div className="settings-value">
-                  {currentUser.value?.username}
-                </div>
+                <div className="settings-value">{currentUser.value?.username}</div>
               </div>
               <div className="settings-field">
                 <label>Subscription</label>
-                <div className="settings-value">
-                  {profile?.subscription || "Free"}
-                </div>
+                <div className="settings-value">{profile?.subscription || "Free"}</div>
               </div>
               <div className="settings-field">
                 <label>Credits (RC)</label>
@@ -745,13 +706,9 @@ function MediaServersTab() {
   const [formResponsePath, setFormResponsePath] = useState("");
   const [formUrlTemplate, setFormUrlTemplate] = useState("");
   const [formRequiresAuth, setFormRequiresAuth] = useState(false);
-  const [formAuthType, setFormAuthType] = useState<
-    "session" | "token" | "apiKey"
-  >("session");
+  const [formAuthType, setFormAuthType] = useState<"session" | "token" | "apiKey">("session");
   const [formApiKey, setFormApiKey] = useState("");
-  const [formHeaders, setFormHeaders] = useState<
-    Array<{ key: string; value: string }>
-  >([]);
+  const [formHeaders, setFormHeaders] = useState<Array<{ key: string; value: string }>>([]);
   const [formSaving, setFormSaving] = useState(false);
 
   const refresh = () => setServersList(getMediaServers());
@@ -783,9 +740,7 @@ function MediaServersTab() {
     setServerType(isRotur ? "rotur" : "custom");
 
     if (isRotur) {
-      const baseUrl = server.uploadUrl
-        .replace("/api/image/upload", "")
-        .replace(/\/$/, "");
+      const baseUrl = server.uploadUrl.replace("/api/image/upload", "").replace(/\/$/, "");
       setFormUrl(baseUrl || "https://photos.rotur.dev");
       setFormName(server.name);
     } else {
@@ -877,18 +832,14 @@ function MediaServersTab() {
   if (showForm) {
     return (
       <div className="server-section-body">
-        <h3 style={{ marginBottom: 16 }}>
-          {editing ? "Edit Server" : "Add Server"}
-        </h3>
+        <h3 style={{ marginBottom: 16 }}>{editing ? "Edit Server" : "Add Server"}</h3>
 
         <div className="settings-field">
           <label>Server Type</label>
           <select
             className="settings-input"
             value={serverType}
-            onChange={(e) =>
-              setServerType((e.target as HTMLSelectElement).value as any)
-            }
+            onChange={(e) => setServerType((e.target as HTMLSelectElement).value as any)}
           >
             <option value="rotur">roturPhotos</option>
             <option value="custom">Custom</option>
@@ -903,9 +854,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formUrl}
-                onInput={(e) =>
-                  setFormUrl((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormUrl((e.target as HTMLInputElement).value)}
                 placeholder="https://photos.rotur.dev"
               />
             </div>
@@ -915,9 +864,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formName}
-                onInput={(e) =>
-                  setFormName((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormName((e.target as HTMLInputElement).value)}
                 placeholder="roturPhotos"
               />
             </div>
@@ -930,9 +877,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formName}
-                onInput={(e) =>
-                  setFormName((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormName((e.target as HTMLInputElement).value)}
                 placeholder="e.g., Imgur"
               />
             </div>
@@ -942,9 +887,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formUploadUrl}
-                onInput={(e) =>
-                  setFormUploadUrl((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormUploadUrl((e.target as HTMLInputElement).value)}
                 placeholder="https://api.example.com/upload"
               />
             </div>
@@ -953,9 +896,7 @@ function MediaServersTab() {
               <select
                 className="settings-input"
                 value={formMethod}
-                onChange={(e) =>
-                  setFormMethod((e.target as HTMLSelectElement).value)
-                }
+                onChange={(e) => setFormMethod((e.target as HTMLSelectElement).value)}
               >
                 <option value="POST">POST</option>
                 <option value="PUT">PUT</option>
@@ -968,9 +909,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formFileParam}
-                onInput={(e) =>
-                  setFormFileParam((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormFileParam((e.target as HTMLInputElement).value)}
                 placeholder="Leave empty for raw body"
               />
             </div>
@@ -980,9 +919,7 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formResponsePath}
-                onInput={(e) =>
-                  setFormResponsePath((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormResponsePath((e.target as HTMLInputElement).value)}
                 placeholder="$.data.link"
               />
             </div>
@@ -992,14 +929,11 @@ function MediaServersTab() {
                 className="settings-input"
                 type="text"
                 value={formUrlTemplate}
-                onInput={(e) =>
-                  setFormUrlTemplate((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => setFormUrlTemplate((e.target as HTMLInputElement).value)}
                 placeholder="https://example.com/{id}"
               />
               <small style={{ color: "var(--text-dim)", fontSize: 12 }}>
-                Placeholders: {"{id}"}, {"{url}"}, {"{username}"}, {"{name}"},{" "}
-                {"{timestamp}"}
+                Placeholders: {"{id}"}, {"{url}"}, {"{username}"}, {"{name}"}, {"{timestamp}"}
               </small>
             </div>
             <div className="settings-field">
@@ -1008,9 +942,7 @@ function MediaServersTab() {
                 className="settings-input"
                 value={formRequiresAuth ? "yes" : "no"}
                 onChange={(e) =>
-                  setFormRequiresAuth(
-                    (e.target as HTMLSelectElement).value === "yes",
-                  )
+                  setFormRequiresAuth((e.target as HTMLSelectElement).value === "yes")
                 }
               >
                 <option value="no">No</option>
@@ -1024,11 +956,7 @@ function MediaServersTab() {
                   <select
                     className="settings-input"
                     value={formAuthType}
-                    onChange={(e) =>
-                      setFormAuthType(
-                        (e.target as HTMLSelectElement).value as any,
-                      )
-                    }
+                    onChange={(e) => setFormAuthType((e.target as HTMLSelectElement).value as any)}
                   >
                     <option value="session">Session Cookie</option>
                     <option value="token">Bearer Token</option>
@@ -1037,16 +965,12 @@ function MediaServersTab() {
                 </div>
                 {formAuthType !== "session" && (
                   <div className="settings-field">
-                    <label>
-                      {formAuthType === "token" ? "Bearer Token" : "API Key"}
-                    </label>
+                    <label>{formAuthType === "token" ? "Bearer Token" : "API Key"}</label>
                     <input
                       className="settings-input"
                       type="password"
                       value={formApiKey}
-                      onInput={(e) =>
-                        setFormApiKey((e.target as HTMLInputElement).value)
-                      }
+                      onInput={(e) => setFormApiKey((e.target as HTMLInputElement).value)}
                       placeholder="Enter your key..."
                     />
                   </div>
@@ -1056,21 +980,12 @@ function MediaServersTab() {
             <div className="settings-field">
               <label>Custom Headers</label>
               {formHeaders.map((h, i) => (
-                <div
-                  key={i}
-                  style={{ display: "flex", gap: 8, marginBottom: 8 }}
-                >
+                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <input
                     className="settings-input"
                     type="text"
                     value={h.key}
-                    onInput={(e) =>
-                      updateHeader(
-                        i,
-                        "key",
-                        (e.target as HTMLInputElement).value,
-                      )
-                    }
+                    onInput={(e) => updateHeader(i, "key", (e.target as HTMLInputElement).value)}
                     placeholder="Header name"
                     style={{ flex: 1 }}
                   />
@@ -1078,13 +993,7 @@ function MediaServersTab() {
                     className="settings-input"
                     type="text"
                     value={h.value}
-                    onInput={(e) =>
-                      updateHeader(
-                        i,
-                        "value",
-                        (e.target as HTMLInputElement).value,
-                      )
-                    }
+                    onInput={(e) => updateHeader(i, "value", (e.target as HTMLInputElement).value)}
                     placeholder="Header value"
                     style={{ flex: 1 }}
                   />
@@ -1097,11 +1006,7 @@ function MediaServersTab() {
                   </button>
                 </div>
               ))}
-              <button
-                className="btn btn-secondary"
-                onClick={addHeader}
-                style={{ marginTop: 4 }}
-              >
+              <button className="btn btn-secondary" onClick={addHeader} style={{ marginTop: 4 }}>
                 <Icon name="Plus" size={14} /> Add Header
               </button>
             </div>
@@ -1129,11 +1034,7 @@ function MediaServersTab() {
       <p style={{ color: "var(--text-dim)", marginBottom: 16 }}>
         Configure where your images and media files are uploaded.
       </p>
-      <button
-        className="btn btn-primary"
-        onClick={openAddForm}
-        style={{ marginBottom: 16 }}
-      >
+      <button className="btn btn-primary" onClick={openAddForm} style={{ marginBottom: 16 }}>
         <Icon name="Plus" size={16} /> Add Server
       </button>
       {serversList.map((server) => (
@@ -1162,15 +1063,9 @@ function MediaServersTab() {
             <input
               type="checkbox"
               checked={server.enabled}
-              onChange={(e) =>
-                handleToggle(server.id, (e.target as HTMLInputElement).checked)
-              }
+              onChange={(e) => handleToggle(server.id, (e.target as HTMLInputElement).checked)}
             />
-            <button
-              className="icon-btn"
-              onClick={() => openEditForm(server)}
-              title="Edit"
-            >
+            <button className="icon-btn" onClick={() => openEditForm(server)} title="Edit">
               <Icon name="Edit3" size={16} />
             </button>
             {server.id !== "roturphotos" && (
@@ -1272,10 +1167,7 @@ function AppearanceTab() {
               }}
               title={opt.label}
             >
-              <div
-                className="appearance-theme-preview"
-                style={{ background: opt.preview[0] }}
-              >
+              <div className="appearance-theme-preview" style={{ background: opt.preview[0] }}>
                 <div
                   className="appearance-theme-preview-surface"
                   style={{ background: opt.preview[1] }}
@@ -1300,8 +1192,8 @@ function AppearanceTab() {
       <div className="settings-field">
         <label>Accent Colour</label>
         <p className="settings-field-hint">
-          Overrides the primary colour for buttons and highlights. Leave blank
-          to use the theme default.
+          Overrides the primary colour for buttons and highlights. Leave blank to use the theme
+          default.
         </p>
         <div
           style={{
@@ -1334,8 +1226,7 @@ function AppearanceTab() {
             style={{ flex: 1 }}
             onInput={(e) => {
               const v = (e.target as HTMLInputElement).value;
-              if (/^#[0-9a-fA-F]{6}$/.test(v) || v === "")
-                accentColor.value = v;
+              if (/^#[0-9a-fA-F]{6}$/.test(v) || v === "") accentColor.value = v;
             }}
           />
           {currentAccent && (
@@ -1356,8 +1247,8 @@ function AppearanceTab() {
       <div className="settings-field">
         <label>Ping Highlight Colour</label>
         <p className="settings-field-hint">
-          Colour used to highlight messages that mention or ping you. Leave
-          blank to use the default purple.
+          Colour used to highlight messages that mention or ping you. Leave blank to use the default
+          purple.
         </p>
         <div
           style={{
@@ -1390,8 +1281,7 @@ function AppearanceTab() {
             style={{ flex: 1 }}
             onInput={(e) => {
               const v = (e.target as HTMLInputElement).value;
-              if (/^#[0-9a-fA-F]{6}$/.test(v) || v === "")
-                pingHighlightColor.value = v;
+              if (/^#[0-9a-fA-F]{6}$/.test(v) || v === "") pingHighlightColor.value = v;
             }}
           />
           {currentPingHighlight && (
@@ -1466,10 +1356,7 @@ function AppearanceTab() {
           value={currentBubbleRadius}
           style={{ width: "100%", marginTop: 8 }}
           onInput={(e) => {
-            bubbleRadius.value = parseInt(
-              (e.target as HTMLInputElement).value,
-              10,
-            );
+            bubbleRadius.value = parseInt((e.target as HTMLInputElement).value, 10);
           }}
         />
       </div>
@@ -1567,9 +1454,7 @@ function previewPingSound(type: PingSoundType, volume: number) {
     return;
   }
   try {
-    const ctx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -1592,9 +1477,7 @@ function previewPingSound(type: PingSoundType, volume: number) {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
     }
     osc.start(ctx.currentTime);
-    osc.stop(
-      ctx.currentTime + (type === "pop" ? 0.08 : type === "bell" ? 0.6 : 0.4),
-    );
+    osc.stop(ctx.currentTime + (type === "pop" ? 0.08 : type === "bell" ? 0.6 : 0.4));
   } catch (e) {
     console.warn("Failed to play default ping sound:", e);
   }
@@ -1633,8 +1516,8 @@ function StandingTab() {
       <div className="settings-field">
         <label>Your Rotur Standing</label>
         <p className="settings-field-hint">
-          Your standing reflects your account health on Rotur. It affects what
-          you can do across the platform.
+          Your standing reflects your account health on Rotur. It affects what you can do across the
+          platform.
         </p>
         {loading ? (
           <div className="standing-loading">
@@ -1690,11 +1573,9 @@ function NotificationsTab() {
     if ("Notification" in window) {
       setNotifPermission(Notification.permission);
       const check = () => setNotifPermission(Notification.permission);
-      navigator.permissions
-        ?.query?.({ name: "notifications" })
-        .then((status) => {
-          status.onchange = check;
-        });
+      navigator.permissions?.query?.({ name: "notifications" }).then((status) => {
+        status.onchange = check;
+      });
     }
   }, []);
 
@@ -1732,11 +1613,7 @@ function NotificationsTab() {
               : "Enable push notifications to receive alerts for mentions and DMs even when the tab is closed."}
           </p>
           {notifPermission !== "denied" && (
-            <button
-              className="btn btn-primary"
-              onClick={handleEnablePush}
-              style={{ marginTop: 8 }}
-            >
+            <button className="btn btn-primary" onClick={handleEnablePush} style={{ marginTop: 8 }}>
               Enable Push Notifications
             </button>
           )}
@@ -1759,9 +1636,7 @@ function NotificationsTab() {
             >
               <div className="notifications-sound-info">
                 <span className="notifications-sound-name">{opt.label}</span>
-                <span className="notifications-sound-desc">
-                  {opt.description}
-                </span>
+                <span className="notifications-sound-desc">{opt.description}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {opt.value !== "none" && opt.value !== "custom" && (
@@ -1797,12 +1672,8 @@ function NotificationsTab() {
             style={{ display: "none" }}
             onInput={handleMp3Upload}
           />
-          <button
-            className="btn btn-secondary"
-            onClick={() => mp3InputRef.current?.click()}
-          >
-            <Icon name="Upload" size={14} />{" "}
-            {customUri ? "Replace file" : "Upload file"}
+          <button className="btn btn-secondary" onClick={() => mp3InputRef.current?.click()}>
+            <Icon name="Upload" size={14} /> {customUri ? "Replace file" : "Upload file"}
           </button>
           {customUri && (
             <>
@@ -1864,13 +1735,12 @@ function NotificationsTab() {
       <div className="settings-field">
         <label>Server Notifications</label>
         <p className="settings-field-hint">
-          Override notification level per server. Channel overrides take
-          priority over server overrides.
+          Override notification level per server. Channel overrides take priority over server
+          overrides.
         </p>
         <div className="notif-override-list">
           {servers.value.map((server) => {
-            const level: NotificationLevel =
-              serverNotifSettings.value[server.url] ?? "mentions";
+            const level: NotificationLevel = serverNotifSettings.value[server.url] ?? "mentions";
             return (
               <div key={server.url} className="notif-override-row">
                 <span className="notif-override-name">{server.name}</span>
@@ -1878,8 +1748,7 @@ function NotificationsTab() {
                   className="notif-override-select"
                   value={level}
                   onChange={(e) => {
-                    const v = (e.target as HTMLSelectElement)
-                      .value as NotificationLevel;
+                    const v = (e.target as HTMLSelectElement).value as NotificationLevel;
                     if (v === "mentions") {
                       const next = { ...serverNotifSettings.value };
                       delete next[server.url];
@@ -1890,9 +1759,8 @@ function NotificationsTab() {
                         [server.url]: v,
                       };
                     }
-                    import("../../lib/persistence").then(
-                      ({ saveNotifSettings }) =>
-                        saveNotifSettings().catch(() => {}),
+                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                      saveNotifSettings().catch(() => {})
                     );
                   }}
                 >
@@ -1903,9 +1771,7 @@ function NotificationsTab() {
               </div>
             );
           })}
-          {servers.value.length === 0 && (
-            <p className="settings-field-hint">No servers joined.</p>
-          )}
+          {servers.value.length === 0 && <p className="settings-field-hint">No servers joined.</p>}
         </div>
       </div>
 
@@ -1913,8 +1779,7 @@ function NotificationsTab() {
       <div className="settings-field">
         <label>Channel Overrides</label>
         <p className="settings-field-hint">
-          Channels with a custom notification level. Right-click any channel to
-          change its setting.
+          Channels with a custom notification level. Right-click any channel to change its setting.
         </p>
         <div className="notif-override-list">
           {Object.entries(channelNotifSettings.value).map(([key, level]) => {
@@ -1925,15 +1790,13 @@ function NotificationsTab() {
             return (
               <div key={key} className="notif-override-row">
                 <span className="notif-override-name">
-                  <span className="notif-override-server">{serverName}</span>#
-                  {channelName}
+                  <span className="notif-override-server">{serverName}</span>#{channelName}
                 </span>
                 <select
                   className="notif-override-select"
                   value={level}
                   onChange={(e) => {
-                    const v = (e.target as HTMLSelectElement)
-                      .value as NotificationLevel;
+                    const v = (e.target as HTMLSelectElement).value as NotificationLevel;
                     if (v === "mentions") {
                       const next = { ...channelNotifSettings.value };
                       delete next[key];
@@ -1944,9 +1807,8 @@ function NotificationsTab() {
                         [key]: v,
                       };
                     }
-                    import("../../lib/persistence").then(
-                      ({ saveNotifSettings }) =>
-                        saveNotifSettings().catch(() => {}),
+                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                      saveNotifSettings().catch(() => {})
                     );
                   }}
                 >
@@ -1961,9 +1823,8 @@ function NotificationsTab() {
                     const next = { ...channelNotifSettings.value };
                     delete next[key];
                     channelNotifSettings.value = next;
-                    import("../../lib/persistence").then(
-                      ({ saveNotifSettings }) =>
-                        saveNotifSettings().catch(() => {}),
+                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                      saveNotifSettings().catch(() => {})
                     );
                   }}
                 >
@@ -2001,10 +1862,7 @@ function ChatTab() {
           value={currentFontSize}
           style={{ width: "100%", marginTop: 8 }}
           onInput={(e) => {
-            messageFontSize.value = parseInt(
-              (e.target as HTMLInputElement).value,
-              10,
-            );
+            messageFontSize.value = parseInt((e.target as HTMLInputElement).value, 10);
           }}
         />
       </div>
@@ -2020,10 +1878,7 @@ function ChatTab() {
           value={currentImageWidth}
           style={{ width: "100%", marginTop: 8 }}
           onInput={(e) => {
-            maxInlineImageWidth.value = parseInt(
-              (e.target as HTMLInputElement).value,
-              10,
-            );
+            maxInlineImageWidth.value = parseInt((e.target as HTMLInputElement).value, 10);
           }}
         />
       </div>
@@ -2088,9 +1943,7 @@ function ChatTab() {
             >
               <div className="notifications-sound-info">
                 <span className="notifications-sound-name">{opt.label}</span>
-                <span className="notifications-sound-desc">
-                  {opt.description}
-                </span>
+                <span className="notifications-sound-desc">{opt.description}</span>
               </div>
               {currentBlocked === opt.value && <Icon name="Check" size={16} />}
             </button>
@@ -2128,8 +1981,8 @@ function VoiceTab() {
       <div className="settings-field">
         <label>Microphone Sensitivity — {currentThreshold}</label>
         <p className="settings-field-hint">
-          Higher values require louder audio before you're detected as speaking.
-          Lower values are more sensitive.
+          Higher values require louder audio before you're detected as speaking. Lower values are
+          more sensitive.
         </p>
         <input
           type="range"
@@ -2139,10 +1992,7 @@ function VoiceTab() {
           value={currentThreshold}
           style={{ width: "100%", marginTop: 8 }}
           onInput={(e) => {
-            micThreshold.value = parseInt(
-              (e.target as HTMLInputElement).value,
-              10,
-            );
+            micThreshold.value = parseInt((e.target as HTMLInputElement).value, 10);
           }}
         />
         <div
@@ -2203,9 +2053,7 @@ function VoiceTab() {
 export function AccountModal({ username }: { username: string }) {
   const [profile, setProfile] = useState<RoturProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(() =>
-    roturFollowing.value.has(username),
-  );
+  const [isFollowing, setIsFollowing] = useState(() => roturFollowing.value.has(username));
   const [followWorking, setFollowWorking] = useState(false);
 
   useEffect(() => {
@@ -2234,9 +2082,7 @@ export function AccountModal({ username }: { username: string }) {
       if (isFollowing) {
         await unfollowUser(username);
         setIsFollowing(false);
-        roturFollowing.value = new Set(
-          [...roturFollowing.value].filter((u) => u !== username),
-        );
+        roturFollowing.value = new Set([...roturFollowing.value].filter((u) => u !== username));
         if (profile)
           setProfile({
             ...profile,
@@ -2246,8 +2092,7 @@ export function AccountModal({ username }: { username: string }) {
         await followUser(username);
         setIsFollowing(true);
         roturFollowing.value = new Set([...roturFollowing.value, username]);
-        if (profile)
-          setProfile({ ...profile, followers: (profile.followers || 0) + 1 });
+        if (profile) setProfile({ ...profile, followers: (profile.followers || 0) + 1 });
       }
     } catch (e) {
       showUIError(e, "Failed to update follow status", {
@@ -2260,15 +2105,9 @@ export function AccountModal({ username }: { username: string }) {
 
   return (
     <div id="account-modal" className="account-modal active">
-      <div
-        className="account-overlay"
-        onClick={() => (showAccountModal.value = null)}
-      ></div>
+      <div className="account-overlay" onClick={() => (showAccountModal.value = null)}></div>
       <div className="account-card">
-        <button
-          className="account-close-btn"
-          onClick={() => (showAccountModal.value = null)}
-        >
+        <button className="account-close-btn" onClick={() => (showAccountModal.value = null)}>
           <Icon name="X" />
         </button>
         <div id="account-content">
@@ -2289,28 +2128,20 @@ export function AccountModal({ username }: { username: string }) {
                     pfp={profile.pfp}
                     alt={profile.username}
                   />
-                  <div
-                    className={`account-status-indicator ${statusClass}`}
-                  ></div>
+                  <div className={`account-status-indicator ${statusClass}`}></div>
                 </div>
               </div>
               <div className="account-names-section">
                 <div className="account-username-text">{profile.username}</div>
-                {profile.pronouns && (
-                  <div className="account-global-name">{profile.pronouns}</div>
-                )}
+                {profile.pronouns && <div className="account-global-name">{profile.pronouns}</div>}
               </div>
               <div className="account-stats">
                 <div className="account-stat">
-                  <div className="account-stat-value">
-                    {profile.followers || 0}
-                  </div>
+                  <div className="account-stat-value">{profile.followers || 0}</div>
                   <div className="account-stat-label">Followers</div>
                 </div>
                 <div className="account-stat">
-                  <div className="account-stat-value">
-                    {profile.following || 0}
-                  </div>
+                  <div className="account-stat-value">{profile.following || 0}</div>
                   <div className="account-stat-label">Following</div>
                 </div>
                 <div className="account-stat">
@@ -2320,9 +2151,7 @@ export function AccountModal({ username }: { username: string }) {
                   <div className="account-stat-label">Credits</div>
                 </div>
                 <div className="account-stat">
-                  <div className="account-stat-value">
-                    {profile.subscription || "Free"}
-                  </div>
+                  <div className="account-stat-value">{profile.subscription || "Free"}</div>
                   <div className="account-stat-label">Tier</div>
                 </div>
               </div>
@@ -2333,10 +2162,7 @@ export function AccountModal({ username }: { username: string }) {
                   onClick={handleToggleFollow}
                   disabled={followWorking}
                 >
-                  <Icon
-                    name={isFollowing ? "UserCheck" : "UserPlus"}
-                    size={14}
-                  />
+                  <Icon name={isFollowing ? "UserCheck" : "UserPlus"} size={14} />
                   {isFollowing ? "Following" : "Follow"}
                   {profile.follows_me && (
                     <span className="account-follows-me-pill">Follows you</span>
@@ -2411,9 +2237,7 @@ export function DiscoveryModal() {
     }
 
     const normalized =
-      raw.startsWith("wss://") || raw.startsWith("ws://")
-        ? raw.replace(/^wss?:\/\//, "")
-        : raw;
+      raw.startsWith("wss://") || raw.startsWith("ws://") ? raw.replace(/^wss?:\/\//, "") : raw;
 
     if (servers.value.some((s) => s.url === normalized)) {
       await switchServer(normalized);
@@ -2458,16 +2282,11 @@ export function DiscoveryModal() {
               className="discovery-content"
               style={{ display: "flex", flexDirection: "column", gap: 12 }}
             >
-              <button
-                className="discovery-option-btn"
-                onClick={() => setView("join")}
-              >
+              <button className="discovery-option-btn" onClick={() => setView("join")}>
                 <Icon name="LogIn" size={22} />
                 <div>
                   <div className="discovery-option-title">Join a Server</div>
-                  <div className="discovery-option-desc">
-                    Connect using a server URL
-                  </div>
+                  <div className="discovery-option-desc">Connect using a server URL</div>
                 </div>
               </button>
               <button
@@ -2479,25 +2298,17 @@ export function DiscoveryModal() {
               >
                 <Icon name="Compass" size={22} />
                 <div>
-                  <div className="discovery-option-title">
-                    Browse Public Servers
-                  </div>
-                  <div className="discovery-option-desc">
-                    Discover and join community servers
-                  </div>
+                  <div className="discovery-option-title">Browse Public Servers</div>
+                  <div className="discovery-option-desc">Discover and join community servers</div>
                 </div>
               </button>
               <button
                 className="discovery-option-btn"
-                onClick={() =>
-                  window.open("https://github.com/originChats/server", "_blank")
-                }
+                onClick={() => window.open("https://github.com/originChats/server", "_blank")}
               >
                 <Icon name="Server" size={22} />
                 <div>
-                  <div className="discovery-option-title">
-                    Create Your Own Server
-                  </div>
+                  <div className="discovery-option-title">Create Your Own Server</div>
                   <div className="discovery-option-desc">
                     Host and run your own OriginChats server
                   </div>
@@ -2584,13 +2395,10 @@ export function NotificationPromptModal() {
         <div className="notification-prompt-icon">
           <Icon name="Bell" size={32} />
         </div>
-        <h2 className="notification-prompt-title">
-          Enable notifications for the best experience
-        </h2>
+        <h2 className="notification-prompt-title">Enable notifications for the best experience</h2>
         <p className="notification-prompt-text">
-          You'll never miss a message when notifications are enabled. Get
-          instant alerts for mentions and direct messages, even when the tab is
-          closed.
+          You'll never miss a message when notifications are enabled. Get instant alerts for
+          mentions and direct messages, even when the tab is closed.
         </p>
         <div className="notification-prompt-buttons">
           <button className="btn btn-primary" onClick={handleEnable}>

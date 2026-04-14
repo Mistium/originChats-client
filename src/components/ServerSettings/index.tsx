@@ -31,13 +31,7 @@ import {
   canManageEmojis,
 } from "../../lib/permissions";
 
-type Section =
-  | "overview"
-  | "channels"
-  | "roles"
-  | "members"
-  | "bans"
-  | "emojis";
+type Section = "overview" | "channels" | "roles" | "members" | "bans" | "emojis";
 
 interface UserDetailModal {
   username: string;
@@ -240,9 +234,7 @@ function UserRolesEditor({
   const initialRoles = member?.roles || [];
   const [assignedRoles, setAssignedRoles] = useState<string[]>(initialRoles);
   const [showJsonEditor, setShowJsonEditor] = useState(false);
-  const [jsonValue, setJsonValue] = useState(
-    JSON.stringify(initialRoles, null, 2),
-  );
+  const [jsonValue, setJsonValue] = useState(JSON.stringify(initialRoles, null, 2));
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -311,10 +303,7 @@ function UserRolesEditor({
       }
       const validRoles = parsed.filter((r: any) => typeof r === "string");
       setAssignedRoles(validRoles);
-      wsSend(
-        { cmd: "user_roles_set", user: username, roles: validRoles },
-        sUrl,
-      );
+      wsSend({ cmd: "user_roles_set", user: username, roles: validRoles }, sUrl);
       showInfo("Roles updated");
       setShowJsonEditor(false);
     } catch {
@@ -323,15 +312,12 @@ function UserRolesEditor({
   };
 
   const handleSave = () => {
-    wsSend(
-      { cmd: "user_roles_set", user: username, roles: assignedRoles },
-      sUrl,
-    );
+    wsSend({ cmd: "user_roles_set", user: username, roles: assignedRoles }, sUrl);
     showInfo("Roles updated");
   };
 
   const availableRoles = serverRoles.filter(
-    (r) => !assignedRoles.includes(r.name) && r.name !== "owner",
+    (r) => !assignedRoles.includes(r.name) && r.name !== "owner"
   );
 
   return (
@@ -354,16 +340,11 @@ function UserRolesEditor({
           <textarea
             className="json-editor-textarea"
             value={jsonValue}
-            onInput={(e) =>
-              setJsonValue((e.target as HTMLTextAreaElement).value)
-            }
+            onInput={(e) => setJsonValue((e.target as HTMLTextAreaElement).value)}
             spellcheck={false}
           />
           <div className="json-editor-actions">
-            <button
-              className="settings-btn-cancel"
-              onClick={() => setShowJsonEditor(false)}
-            >
+            <button className="settings-btn-cancel" onClick={() => setShowJsonEditor(false)}>
               Cancel
             </button>
             <button className="settings-btn-confirm" onClick={handleJsonSave}>
@@ -390,17 +371,11 @@ function UserRolesEditor({
                   className="role-color-dot"
                   style={{ background: getRoleColor(roleName) }}
                 ></div>
-                <span
-                  className="role-name"
-                  style={{ color: getRoleColor(roleName) }}
-                >
+                <span className="role-name" style={{ color: getRoleColor(roleName) }}>
                   {roleName}
                 </span>
                 {roleName !== "user" && (
-                  <button
-                    className="role-remove-btn"
-                    onClick={() => removeRole(roleName)}
-                  >
+                  <button className="role-remove-btn" onClick={() => removeRole(roleName)}>
                     <Icon name="X" size={12} />
                   </button>
                 )}
@@ -411,9 +386,7 @@ function UserRolesEditor({
           <div className="add-role-section">
             <h5>Add Role</h5>
             {availableRoles.length === 0 ? (
-              <div className="no-roles-available">
-                All roles already assigned
-              </div>
+              <div className="no-roles-available">All roles already assigned</div>
             ) : (
               <div className="available-roles-grid">
                 {availableRoles.map((role) => (
@@ -424,10 +397,7 @@ function UserRolesEditor({
                     onClick={() => addRole(role.name)}
                   >
                     {role.color && (
-                      <span
-                        className="role-color-dot"
-                        style={{ background: role.color }}
-                      ></span>
+                      <span className="role-color-dot" style={{ background: role.color }}></span>
                     )}
                     <span>{role.name}</span>
                     <Icon name="Plus" size={12} />
@@ -475,13 +445,10 @@ export function ServerSettingsModal() {
   const [memberFilter, setMemberFilter] = useState("");
   const [channelModalOpen, setChannelModalOpen] = useState(false);
   const [channelName, setChannelName] = useState("");
-  const [channelType, setChannelType] = useState<
-    "text" | "voice" | "separator"
-  >("text");
+  const [channelType, setChannelType] = useState<"text" | "voice" | "separator">("text");
   const [channelDescription, setChannelDescription] = useState("");
   const [bannedUsers, setBannedUsers] = useState<string[]>([]);
-  const [userDetailModal, setUserDetailModal] =
-    useState<UserDetailModal | null>(null);
+  const [userDetailModal, setUserDetailModal] = useState<UserDetailModal | null>(null);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editUsername, setEditUsername] = useState("");
   const [editNickname, setEditNickname] = useState<string | null>(null);
@@ -497,9 +464,7 @@ export function ServerSettingsModal() {
   const [emojiName, setEmojiName] = useState("");
   const [emojiFile, setEmojiFile] = useState<File | null>(null);
   const [emojiPreview, setEmojiPreview] = useState<string | null>(null);
-  const [emojiEditModal, setEmojiEditModal] = useState<CustomEmoji | null>(
-    null,
-  );
+  const [emojiEditModal, setEmojiEditModal] = useState<CustomEmoji | null>(null);
 
   useEffect(() => {
     wsSend({ cmd: "roles_list" }, serverUrl.value);
@@ -522,7 +487,7 @@ export function ServerSettingsModal() {
         Object.entries(roles).map(([roleName, role]) => ({
           ...role,
           name: roleName,
-        })),
+        }))
       );
     }
   }, [rolesByServer.value]);
@@ -544,9 +509,7 @@ export function ServerSettingsModal() {
   };
 
   const myServerUser =
-    usersByServer.value[serverUrl.value]?.[
-      currentUser.value?.username?.toLowerCase() || ""
-    ];
+    usersByServer.value[serverUrl.value]?.[currentUser.value?.username?.toLowerCase() || ""];
   const owner = isServerOwner(serverUrl.value);
   const canChannels = canManageChannels(serverUrl.value);
   const canRoles = canManageRoles(serverUrl.value);
@@ -559,11 +522,7 @@ export function ServerSettingsModal() {
   const channelsList = channels.value;
 
   const filteredMembers = usersList
-    .filter(
-      (m) =>
-        !memberFilter ||
-        m.username.toLowerCase().includes(memberFilter.toLowerCase()),
-    )
+    .filter((m) => !memberFilter || m.username.toLowerCase().includes(memberFilter.toLowerCase()))
     .sort((a, b) => {
       const ar = a.roles || [];
       const br = b.roles || [];
@@ -600,10 +559,9 @@ export function ServerSettingsModal() {
         hoisted: newRoleHoisted,
         category: newRoleCategory,
         self_assignable: newRoleSelfAssignable,
-        permissions:
-          newRolePermissions.length > 0 ? newRolePermissions : undefined,
+        permissions: newRolePermissions.length > 0 ? newRolePermissions : undefined,
       },
-      serverUrl.value,
+      serverUrl.value
     );
     setCreatingRole(false);
     showInfo(`Role "${newRoleName}" created`);
@@ -619,8 +577,7 @@ export function ServerSettingsModal() {
   const getRolePermissions = (role: Role): string[] => {
     if (!role.permissions) return [];
     if (Array.isArray(role.permissions)) return role.permissions;
-    if (typeof role.permissions === "object")
-      return Object.keys(role.permissions);
+    if (typeof role.permissions === "object") return Object.keys(role.permissions);
     return [];
   };
 
@@ -628,8 +585,7 @@ export function ServerSettingsModal() {
     const role = serverRoles.find((r) => r.name === roleName);
     if (!role) return;
 
-    const currentPerms =
-      roleEdits[roleName]?.permissions ?? getRolePermissions(role);
+    const currentPerms = roleEdits[roleName]?.permissions ?? getRolePermissions(role);
     const hasPermission = currentPerms.includes(permissionId);
 
     const newPerms = hasPermission
@@ -650,14 +606,14 @@ export function ServerSettingsModal() {
         name: roleName,
         permissions: newPerms,
       },
-      serverUrl.value,
+      serverUrl.value
     );
   };
 
   const updateRoleField = (
     roleName: string,
     field: "color" | "description" | "category" | "hoisted" | "self_assignable",
-    value: string | boolean | null | string[],
+    value: string | boolean | null | string[]
   ) => {
     setRoleEdits((prev) => ({
       ...prev,
@@ -670,7 +626,7 @@ export function ServerSettingsModal() {
 
   const saveRoleField = (
     roleName: string,
-    field: "color" | "description" | "category" | "hoisted" | "self_assignable",
+    field: "color" | "description" | "category" | "hoisted" | "self_assignable"
   ) => {
     const role = serverRoles.find((r) => r.name === roleName);
     if (!role) return;
@@ -684,7 +640,7 @@ export function ServerSettingsModal() {
         name: roleName,
         [field]: edit[field],
       },
-      serverUrl.value,
+      serverUrl.value
     );
 
     showInfo(`Role "${roleName}" updated`);
@@ -692,7 +648,7 @@ export function ServerSettingsModal() {
 
   const getRoleEditValue = (
     role: Role,
-    field: "color" | "description" | "category" | "hoisted" | "self_assignable",
+    field: "color" | "description" | "category" | "hoisted" | "self_assignable"
   ): string | boolean | null | string[] | undefined => {
     if (roleEdits[role.name]?.[field] !== undefined) {
       return roleEdits[role.name][field];
@@ -717,10 +673,9 @@ export function ServerSettingsModal() {
         cmd: "channel_create",
         name: channelName.trim(),
         type: channelType,
-        description:
-          channelType !== "separator" ? channelDescription.trim() : undefined,
+        description: channelType !== "separator" ? channelDescription.trim() : undefined,
       },
-      serverUrl.value,
+      serverUrl.value
     );
     setChannelModalOpen(false);
     showInfo(`Channel "${channelName}" created`);
@@ -735,18 +690,14 @@ export function ServerSettingsModal() {
     }
   };
 
-  const toggleMemberRole = (
-    username: string,
-    roleName: string,
-    hasRole: boolean,
-  ) => {
+  const toggleMemberRole = (username: string, roleName: string, hasRole: boolean) => {
     wsSend(
       {
         cmd: hasRole ? "user_roles_remove" : "user_roles_add",
         user: username,
         roles: [roleName],
       },
-      serverUrl.value,
+      serverUrl.value
     );
   };
 
@@ -756,10 +707,7 @@ export function ServerSettingsModal() {
   };
 
   const handleTimeoutUser = (username: string, seconds: number) => {
-    wsSend(
-      { cmd: "user_timeout", user: username, timeout: seconds },
-      serverUrl.value,
-    );
+    wsSend({ cmd: "user_timeout", user: username, timeout: seconds }, serverUrl.value);
     showInfo(`User "${username}" timed out for ${seconds} seconds`);
     setTimeoutModal(null);
   };
@@ -797,7 +745,7 @@ export function ServerSettingsModal() {
           user: editingUser,
           updates,
         },
-        serverUrl.value,
+        serverUrl.value
       );
       showInfo(`User "${editingUser}" updated`);
     }
@@ -840,10 +788,7 @@ export function ServerSettingsModal() {
     newRoles.splice(targetIndex, 0, removed);
     setServerRoles(newRoles);
 
-    wsSend(
-      { cmd: "role_reorder", roles: newRoles.map((r) => r.name) },
-      serverUrl.value,
-    );
+    wsSend({ cmd: "role_reorder", roles: newRoles.map((r) => r.name) }, serverUrl.value);
 
     setDraggedRole(null);
     setDragOverRole(null);
@@ -870,12 +815,8 @@ export function ServerSettingsModal() {
       return;
     }
 
-    const draggedIndex = channelsList.findIndex(
-      (c) => c.name === draggedChannel,
-    );
-    const targetIndex = channelsList.findIndex(
-      (c) => c.name === targetChannelName,
-    );
+    const draggedIndex = channelsList.findIndex((c) => c.name === draggedChannel);
+    const targetIndex = channelsList.findIndex((c) => c.name === targetChannelName);
 
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedChannel(null);
@@ -889,7 +830,7 @@ export function ServerSettingsModal() {
         name: draggedChannel,
         position: targetIndex,
       },
-      serverUrl.value,
+      serverUrl.value
     );
 
     setDraggedChannel(null);
@@ -912,12 +853,7 @@ export function ServerSettingsModal() {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-      const allowedTypes = [
-        "image/gif",
-        "image/jpeg",
-        "image/jpg",
-        "image/svg+xml",
-      ];
+      const allowedTypes = ["image/gif", "image/jpeg", "image/jpg", "image/svg+xml"];
       if (!allowedTypes.includes(file.type)) {
         showError("Invalid file type. Allowed: GIF, JPG, JPEG, SVG");
         return;
@@ -946,7 +882,7 @@ export function ServerSettingsModal() {
         name: emojiName.trim(),
         image: emojiPreview,
       },
-      serverUrl.value,
+      serverUrl.value
     );
     setEmojiModalOpen(false);
     showInfo(`Emoji "${emojiName}" added`);
@@ -954,10 +890,7 @@ export function ServerSettingsModal() {
 
   const handleDeleteEmoji = (emoji: CustomEmoji) => {
     if (confirm(`Delete emoji "${emoji.name}"?`)) {
-      wsSend(
-        { cmd: "emoji_delete", emoji_id: parseInt(emoji.id, 10) },
-        serverUrl.value,
-      );
+      wsSend({ cmd: "emoji_delete", emoji_id: parseInt(emoji.id, 10) }, serverUrl.value);
       showInfo(`Emoji "${emoji.name}" deleted`);
     }
   };
@@ -973,7 +906,7 @@ export function ServerSettingsModal() {
         emoji_id: parseInt(emoji.id, 10),
         name: newName.trim(),
       },
-      serverUrl.value,
+      serverUrl.value
     );
     setEmojiEditModal(null);
     showInfo(`Emoji renamed to "${newName}"`);
@@ -1004,9 +937,7 @@ export function ServerSettingsModal() {
               )}
             </div>
             <div className="server-settings-title">
-              <div className="server-settings-name">
-                {server?.name || "Server"}
-              </div>
+              <div className="server-settings-name">{server?.name || "Server"}</div>
               <div className="server-settings-url">{serverUrl.value}</div>
             </div>
           </div>
@@ -1092,10 +1023,7 @@ export function ServerSettingsModal() {
           )}
 
           {section === "channels" && (
-            <div
-              className="server-section-body"
-              style={{ position: "relative" }}
-            >
+            <div className="server-section-body" style={{ position: "relative" }}>
               {channelsList.length === 0 ? (
                 <div className="settings-empty">No channels found</div>
               ) : (
@@ -1113,9 +1041,7 @@ export function ServerSettingsModal() {
                         className={`settings-list-item clickable ${draggedChannel === channel.name ? "dragging" : ""} ${dragOverChannel === channel.name ? "drag-over" : ""}`}
                         draggable={isOwner}
                         onDragStart={() => handleChannelDragStart(channel.name)}
-                        onDragOver={(e) =>
-                          handleChannelDragOver(e as any, channel.name)
-                        }
+                        onDragOver={(e) => handleChannelDragOver(e as any, channel.name)}
                         onDrop={() => handleChannelDrop(channel.name)}
                         onDragEnd={handleChannelDragEnd}
                         onClick={() => {
@@ -1138,9 +1064,7 @@ export function ServerSettingsModal() {
                           </div>
                           <div className="settings-item-meta">
                             {channel.type}
-                            {channel.type === "separator"
-                              ? ""
-                              : ` - ${channel.name}`}
+                            {channel.type === "separator" ? "" : ` - ${channel.name}`}
                           </div>
                         </div>
                         {isOwner && (
@@ -1194,9 +1118,7 @@ export function ServerSettingsModal() {
                           className={`role-card ${editingRole === role.name ? "active" : ""} ${draggedRole === role.name ? "dragging" : ""} ${dragOverRole === role.name ? "drag-over" : ""}`}
                           draggable={isOwner && editingRole !== role.name}
                           onDragStart={() => handleRoleDragStart(role.name)}
-                          onDragOver={(e) =>
-                            handleRoleDragOver(e as any, role.name)
-                          }
+                          onDragOver={(e) => handleRoleDragOver(e as any, role.name)}
                           onDrop={() => handleRoleDrop(role.name)}
                           onDragEnd={handleRoleDragEnd}
                         >
@@ -1205,9 +1127,7 @@ export function ServerSettingsModal() {
                             onClick={() => startEditingRole(role.name)}
                           >
                             <div className="role-drag-area">
-                              {isOwner && (
-                                <Icon name="GripVertical" size={14} />
-                              )}
+                              {isOwner && <Icon name="GripVertical" size={14} />}
                             </div>
                             <div
                               className="role-color-dot"
@@ -1225,8 +1145,7 @@ export function ServerSettingsModal() {
                               <span className="role-card-meta">
                                 {role.description || "No description"}
                                 {role.category && ` · ${role.category}`}
-                                {!isSystem &&
-                                  ` · ${rolePerms.length} permissions`}
+                                {!isSystem && ` · ${rolePerms.length} permissions`}
                               </span>
                             </div>
                           </div>
@@ -1256,9 +1175,7 @@ export function ServerSettingsModal() {
                           type="text"
                           className="role-name-input"
                           value={newRoleName}
-                          onInput={(e) =>
-                            setNewRoleName((e.target as HTMLInputElement).value)
-                          }
+                          onInput={(e) => setNewRoleName((e.target as HTMLInputElement).value)}
                           placeholder="New role name"
                           autoFocus
                         />
@@ -1268,9 +1185,7 @@ export function ServerSettingsModal() {
                         <input
                           type="text"
                           value={newRoleDesc}
-                          onInput={(e) =>
-                            setNewRoleDesc((e.target as HTMLInputElement).value)
-                          }
+                          onInput={(e) => setNewRoleDesc((e.target as HTMLInputElement).value)}
                           placeholder="Role description"
                         />
                       </div>
@@ -1280,19 +1195,13 @@ export function ServerSettingsModal() {
                           <input
                             type="color"
                             value={newRoleColor ?? "#5865F2"}
-                            onInput={(e) =>
-                              setNewRoleColor(
-                                (e.target as HTMLInputElement).value,
-                              )
-                            }
+                            onInput={(e) => setNewRoleColor((e.target as HTMLInputElement).value)}
                           />
                           <input
                             type="text"
                             value={newRoleColor ?? ""}
                             onInput={(e) =>
-                              setNewRoleColor(
-                                (e.target as HTMLInputElement).value || null,
-                              )
+                              setNewRoleColor((e.target as HTMLInputElement).value || null)
                             }
                             placeholder="#5865F2"
                             className="color-hex-input"
@@ -1311,9 +1220,7 @@ export function ServerSettingsModal() {
                             type="checkbox"
                             checked={newRoleHoisted}
                             onChange={(e) =>
-                              setNewRoleHoisted(
-                                (e.target as HTMLInputElement).checked,
-                              )
+                              setNewRoleHoisted((e.target as HTMLInputElement).checked)
                             }
                           />
                           <span>Hoisted (show separately in member list)</span>
@@ -1325,14 +1232,10 @@ export function ServerSettingsModal() {
                             type="checkbox"
                             checked={newRoleSelfAssignable}
                             onChange={(e) =>
-                              setNewRoleSelfAssignable(
-                                (e.target as HTMLInputElement).checked,
-                              )
+                              setNewRoleSelfAssignable((e.target as HTMLInputElement).checked)
                             }
                           />
-                          <span>
-                            Self-assignable (users can assign to themselves)
-                          </span>
+                          <span>Self-assignable (users can assign to themselves)</span>
                         </label>
                       </div>
                       <div className="role-editor-field">
@@ -1341,9 +1244,7 @@ export function ServerSettingsModal() {
                           type="text"
                           value={newRoleCategory ?? ""}
                           onInput={(e) =>
-                            setNewRoleCategory(
-                              (e.target as HTMLInputElement).value || null,
-                            )
+                            setNewRoleCategory((e.target as HTMLInputElement).value || null)
                           }
                           placeholder="No category"
                         />
@@ -1358,15 +1259,10 @@ export function ServerSettingsModal() {
                               onClick={() => {
                                 if (newRolePermissions.includes(perm.id)) {
                                   setNewRolePermissions(
-                                    newRolePermissions.filter(
-                                      (p) => p !== perm.id,
-                                    ),
+                                    newRolePermissions.filter((p) => p !== perm.id)
                                   );
                                 } else {
-                                  setNewRolePermissions([
-                                    ...newRolePermissions,
-                                    perm.id,
-                                  ]);
+                                  setNewRolePermissions([...newRolePermissions, perm.id]);
                                 }
                               }}
                               title={perm.description}
@@ -1395,9 +1291,7 @@ export function ServerSettingsModal() {
                   </>
                 ) : editingRole ? (
                   (() => {
-                    const role = serverRoles.find(
-                      (r) => r.name === editingRole,
-                    );
+                    const role = serverRoles.find((r) => r.name === editingRole);
                     if (!role) return null;
                     const isSystem = ["owner", "user"].includes(role.name);
                     const rolePerms = getRolePermissions(role);
@@ -1426,31 +1320,24 @@ export function ServerSettingsModal() {
                             <div className="color-picker-row">
                               <input
                                 type="color"
-                                value={
-                                  (getRoleEditValue(role, "color") as string) ??
-                                  "#5865F2"
-                                }
+                                value={(getRoleEditValue(role, "color") as string) ?? "#5865F2"}
                                 onInput={(e) => {
                                   updateRoleField(
                                     role.name,
                                     "color",
-                                    (e.target as HTMLInputElement).value,
+                                    (e.target as HTMLInputElement).value
                                   );
                                 }}
                                 onBlur={() => saveRoleField(role.name, "color")}
                               />
                               <input
                                 type="text"
-                                value={
-                                  (getRoleEditValue(role, "color") as string) ??
-                                  ""
-                                }
+                                value={(getRoleEditValue(role, "color") as string) ?? ""}
                                 onInput={(e) => {
                                   updateRoleField(
                                     role.name,
                                     "color",
-                                    (e.target as HTMLInputElement).value ||
-                                      null,
+                                    (e.target as HTMLInputElement).value || null
                                   );
                                 }}
                                 onBlur={() => saveRoleField(role.name, "color")}
@@ -1466,7 +1353,7 @@ export function ServerSettingsModal() {
                                       name: role.name,
                                       color: null,
                                     },
-                                    serverUrl.value,
+                                    serverUrl.value
                                   );
                                   showInfo(`Role "${role.name}" color cleared`);
                                 }}
@@ -1479,22 +1366,15 @@ export function ServerSettingsModal() {
                             <label>Description</label>
                             <input
                               type="text"
-                              value={
-                                (getRoleEditValue(
-                                  role,
-                                  "description",
-                                ) as string) ?? ""
-                              }
+                              value={(getRoleEditValue(role, "description") as string) ?? ""}
                               onInput={(e) =>
                                 updateRoleField(
                                   role.name,
                                   "description",
-                                  (e.target as HTMLInputElement).value,
+                                  (e.target as HTMLInputElement).value
                                 )
                               }
-                              onBlur={() =>
-                                saveRoleField(role.name, "description")
-                              }
+                              onBlur={() => saveRoleField(role.name, "description")}
                               placeholder="No description"
                             />
                           </div>
@@ -1502,22 +1382,15 @@ export function ServerSettingsModal() {
                             <label>Category</label>
                             <input
                               type="text"
-                              value={
-                                (getRoleEditValue(
-                                  role,
-                                  "category",
-                                ) as string) ?? ""
-                              }
+                              value={(getRoleEditValue(role, "category") as string) ?? ""}
                               onInput={(e) =>
                                 updateRoleField(
                                   role.name,
                                   "category",
-                                  (e.target as HTMLInputElement).value || null,
+                                  (e.target as HTMLInputElement).value || null
                                 )
                               }
-                              onBlur={() =>
-                                saveRoleField(role.name, "category")
-                              }
+                              onBlur={() => saveRoleField(role.name, "category")}
                               placeholder="No category"
                             />
                           </div>
@@ -1525,75 +1398,49 @@ export function ServerSettingsModal() {
                             <label className="checkbox-label">
                               <input
                                 type="checkbox"
-                                checked={
-                                  (getRoleEditValue(
-                                    role,
-                                    "hoisted",
-                                  ) as boolean) ?? false
-                                }
+                                checked={(getRoleEditValue(role, "hoisted") as boolean) ?? false}
                                 onChange={(e) => {
-                                  const checked = (e.target as HTMLInputElement)
-                                    .checked;
-                                  updateRoleField(
-                                    role.name,
-                                    "hoisted",
-                                    checked,
-                                  );
+                                  const checked = (e.target as HTMLInputElement).checked;
+                                  updateRoleField(role.name, "hoisted", checked);
                                   wsSend(
                                     {
                                       cmd: "role_update",
                                       name: role.name,
                                       hoisted: checked,
                                     },
-                                    serverUrl.value,
+                                    serverUrl.value
                                   );
                                   showInfo(
-                                    `Role "${role.name}" ${checked ? "hoisted" : "unhoisted"}`,
+                                    `Role "${role.name}" ${checked ? "hoisted" : "unhoisted"}`
                                   );
                                 }}
                               />
-                              <span>
-                                Hoisted (show separately in member list)
-                              </span>
+                              <span>Hoisted (show separately in member list)</span>
                             </label>
-                            {!["owner", "admin", "moderator"].includes(
-                              role.name,
-                            ) && (
+                            {!["owner", "admin", "moderator"].includes(role.name) && (
                               <label className="checkbox-label">
                                 <input
                                   type="checkbox"
                                   checked={
-                                    (getRoleEditValue(
-                                      role,
-                                      "self_assignable",
-                                    ) as boolean) ?? false
+                                    (getRoleEditValue(role, "self_assignable") as boolean) ?? false
                                   }
                                   onChange={(e) => {
-                                    const checked = (
-                                      e.target as HTMLInputElement
-                                    ).checked;
-                                    updateRoleField(
-                                      role.name,
-                                      "self_assignable",
-                                      checked,
-                                    );
+                                    const checked = (e.target as HTMLInputElement).checked;
+                                    updateRoleField(role.name, "self_assignable", checked);
                                     wsSend(
                                       {
                                         cmd: "role_update",
                                         name: role.name,
                                         self_assignable: checked,
                                       },
-                                      serverUrl.value,
+                                      serverUrl.value
                                     );
                                     showInfo(
-                                      `Role "${role.name}" ${checked ? "is now self-assignable" : "is no longer self-assignable"}`,
+                                      `Role "${role.name}" ${checked ? "is now self-assignable" : "is no longer self-assignable"}`
                                     );
                                   }}
                                 />
-                                <span>
-                                  Self-assignable (users can assign to
-                                  themselves)
-                                </span>
+                                <span>Self-assignable (users can assign to themselves)</span>
                               </label>
                             )}
                           </div>
@@ -1604,20 +1451,16 @@ export function ServerSettingsModal() {
                                 <button
                                   className="settings-btn-secondary small"
                                   onClick={() => {
-                                    const allPerms = ALL_PERMISSIONS.map(
-                                      (p) => p.id,
-                                    );
+                                    const allPerms = ALL_PERMISSIONS.map((p) => p.id);
                                     wsSend(
                                       {
                                         cmd: "role_update",
                                         name: role.name,
                                         permissions: allPerms,
                                       },
-                                      serverUrl.value,
+                                      serverUrl.value
                                     );
-                                    showInfo(
-                                      `All permissions added to "${role.name}"`,
-                                    );
+                                    showInfo(`All permissions added to "${role.name}"`);
                                   }}
                                 >
                                   Select All
@@ -1631,11 +1474,9 @@ export function ServerSettingsModal() {
                                         name: role.name,
                                         permissions: [],
                                       },
-                                      serverUrl.value,
+                                      serverUrl.value
                                     );
-                                    showInfo(
-                                      `All permissions removed from "${role.name}"`,
-                                    );
+                                    showInfo(`All permissions removed from "${role.name}"`);
                                   }}
                                 >
                                   Clear All
@@ -1649,9 +1490,7 @@ export function ServerSettingsModal() {
                                   <button
                                     key={perm.id}
                                     className={`permission-chip ${hasPerm ? "active" : ""}`}
-                                    onClick={() =>
-                                      togglePermission(role.name, perm.id)
-                                    }
+                                    onClick={() => togglePermission(role.name, perm.id)}
                                     title={perm.description}
                                   >
                                     {perm.name}
@@ -1667,14 +1506,9 @@ export function ServerSettingsModal() {
                               className="settings-btn-danger"
                               onClick={() => {
                                 if (confirm(`Delete role "${role.name}"?`)) {
-                                  wsSend(
-                                    { cmd: "role_delete", name: role.name },
-                                    serverUrl.value,
-                                  );
+                                  wsSend({ cmd: "role_delete", name: role.name }, serverUrl.value);
                                   showInfo(`Role "${role.name}" deleted`);
-                                  const nextRole = serverRoles.find(
-                                    (r) => r.name !== role.name,
-                                  );
+                                  const nextRole = serverRoles.find((r) => r.name !== role.name);
                                   setEditingRole(nextRole?.name || null);
                                 }
                               }}
@@ -1703,9 +1537,7 @@ export function ServerSettingsModal() {
                   type="text"
                   placeholder="Search members..."
                   value={memberFilter}
-                  onInput={(e) =>
-                    setMemberFilter((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setMemberFilter((e.target as HTMLInputElement).value)}
                 />
               </div>
               <div className="settings-list">
@@ -1739,11 +1571,7 @@ export function ServerSettingsModal() {
                             <span
                               key={role}
                               className="member-role-badge"
-                              style={
-                                roleColor
-                                  ? { background: roleColor }
-                                  : undefined
-                              }
+                              style={roleColor ? { background: roleColor } : undefined}
                             >
                               {role}
                             </span>
@@ -1788,9 +1616,7 @@ export function ServerSettingsModal() {
                       </div>
                       <div className="settings-item-info">
                         <div className="settings-item-name">{username}</div>
-                        <div className="settings-item-meta">
-                          Banned from server
-                        </div>
+                        <div className="settings-item-meta">Banned from server</div>
                       </div>
                       {isOwner && (
                         <button
@@ -1812,10 +1638,7 @@ export function ServerSettingsModal() {
             <div className="server-section-body">
               {isOwner && (
                 <div className="settings-section-actions">
-                  <button
-                    className="settings-action-btn"
-                    onClick={openAddEmoji}
-                  >
+                  <button className="settings-action-btn" onClick={openAddEmoji}>
                     <Icon name="Plus" size={16} /> Add Emoji
                   </button>
                 </div>
@@ -1874,9 +1697,7 @@ export function ServerSettingsModal() {
                 <input
                   type="text"
                   value={channelName}
-                  onInput={(e) =>
-                    setChannelName((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setChannelName((e.target as HTMLInputElement).value)}
                   placeholder="channel-name"
                 />
               </div>
@@ -1924,20 +1745,13 @@ export function ServerSettingsModal() {
                   <input
                     type="text"
                     value={channelDescription}
-                    onInput={(e) =>
-                      setChannelDescription(
-                        (e.target as HTMLInputElement).value,
-                      )
-                    }
+                    onInput={(e) => setChannelDescription((e.target as HTMLInputElement).value)}
                     placeholder="Channel description (optional)"
                   />
                 </div>
               )}
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setChannelModalOpen(false)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setChannelModalOpen(false)}>
                   Cancel
                 </button>
                 <button
@@ -1969,35 +1783,30 @@ export function ServerSettingsModal() {
                 <div className="user-detail-info">
                   <h3>{userDetailModal.username}</h3>
                   <div className="user-detail-roles">
-                    {(
-                      users.value[userDetailModal.username.toLowerCase()]
-                        ?.roles || []
-                    ).map((role) => (
-                      <span
-                        key={role}
-                        className="member-role-badge"
-                        style={{ background: getRoleColor(role) }}
-                      >
-                        {role}
-                      </span>
-                    ))}
+                    {(users.value[userDetailModal.username.toLowerCase()]?.roles || []).map(
+                      (role) => (
+                        <span
+                          key={role}
+                          className="member-role-badge"
+                          style={{ background: getRoleColor(role) }}
+                        >
+                          {role}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
               <div className="user-detail-tabs">
                 <button
                   className={`user-detail-tab ${userDetailModal.tab === "overview" ? "active" : ""}`}
-                  onClick={() =>
-                    setUserDetailModal({ ...userDetailModal, tab: "overview" })
-                  }
+                  onClick={() => setUserDetailModal({ ...userDetailModal, tab: "overview" })}
                 >
                   Overview
                 </button>
                 <button
                   className={`user-detail-tab ${userDetailModal.tab === "roles" ? "active" : ""}`}
-                  onClick={() =>
-                    setUserDetailModal({ ...userDetailModal, tab: "roles" })
-                  }
+                  onClick={() => setUserDetailModal({ ...userDetailModal, tab: "roles" })}
                 >
                   Roles
                 </button>
@@ -2025,8 +1834,7 @@ export function ServerSettingsModal() {
                               type="text"
                               value={editNickname ?? ""}
                               onInput={(e) => {
-                                const val = (e.target as HTMLInputElement)
-                                  .value;
+                                const val = (e.target as HTMLInputElement).value;
                                 setEditNickname(val || null);
                               }}
                               placeholder="No nickname"
@@ -2042,16 +1850,10 @@ export function ServerSettingsModal() {
                           </div>
                         </div>
                         <div className="settings-dialog-actions">
-                          <button
-                            className="settings-btn-cancel"
-                            onClick={cancelEditUser}
-                          >
+                          <button className="settings-btn-cancel" onClick={cancelEditUser}>
                             Cancel
                           </button>
-                          <button
-                            className="settings-btn-confirm"
-                            onClick={handleUserUpdate}
-                          >
+                          <button className="settings-btn-confirm" onClick={handleUserUpdate}>
                             Save
                           </button>
                         </div>
@@ -2061,30 +1863,28 @@ export function ServerSettingsModal() {
                         <div className="settings-field">
                           <label>Username</label>
                           <div className="settings-value">
-                            {users.value[userDetailModal.username.toLowerCase()]
-                              ?.username || userDetailModal.username}
+                            {users.value[userDetailModal.username.toLowerCase()]?.username ||
+                              userDetailModal.username}
                           </div>
                         </div>
                         <div className="settings-field">
                           <label>Nickname</label>
                           <div className="settings-value">
-                            {users.value[userDetailModal.username.toLowerCase()]
-                              ?.nickname || "None"}
+                            {users.value[userDetailModal.username.toLowerCase()]?.nickname ||
+                              "None"}
                           </div>
                         </div>
                         <div className="settings-field">
                           <label>Status</label>
                           <div className="settings-value">
-                            {users.value[userDetailModal.username.toLowerCase()]
-                              ?.status?.status || "offline"}
+                            {users.value[userDetailModal.username.toLowerCase()]?.status?.status ||
+                              "offline"}
                           </div>
                         </div>
                         {isOwner && (
                           <button
                             className="settings-btn-secondary"
-                            onClick={() =>
-                              openEditUser(userDetailModal.username)
-                            }
+                            onClick={() => openEditUser(userDetailModal.username)}
                           >
                             Edit User
                           </button>
@@ -2110,41 +1910,31 @@ export function ServerSettingsModal() {
                       <div className="moderation-buttons">
                         <button
                           className="moderation-btn warning"
-                          onClick={() =>
-                            handleTimeoutUser(userDetailModal.username, 60)
-                          }
+                          onClick={() => handleTimeoutUser(userDetailModal.username, 60)}
                         >
                           1 min
                         </button>
                         <button
                           className="moderation-btn warning"
-                          onClick={() =>
-                            handleTimeoutUser(userDetailModal.username, 300)
-                          }
+                          onClick={() => handleTimeoutUser(userDetailModal.username, 300)}
                         >
                           5 min
                         </button>
                         <button
                           className="moderation-btn warning"
-                          onClick={() =>
-                            handleTimeoutUser(userDetailModal.username, 3600)
-                          }
+                          onClick={() => handleTimeoutUser(userDetailModal.username, 3600)}
                         >
                           1 hour
                         </button>
                         <button
                           className="moderation-btn warning"
-                          onClick={() =>
-                            handleTimeoutUser(userDetailModal.username, 86400)
-                          }
+                          onClick={() => handleTimeoutUser(userDetailModal.username, 86400)}
                         >
                           24 hours
                         </button>
                         <button
                           className="moderation-btn warning"
-                          onClick={() =>
-                            setTimeoutModal(userDetailModal.username)
-                          }
+                          onClick={() => setTimeoutModal(userDetailModal.username)}
                         >
                           Custom
                         </button>
@@ -2157,9 +1947,7 @@ export function ServerSettingsModal() {
                       </p>
                       <button
                         className="moderation-btn danger"
-                        onClick={() =>
-                          setConfirmDelete(userDetailModal.username)
-                        }
+                        onClick={() => setConfirmDelete(userDetailModal.username)}
                       >
                         Delete Account
                       </button>
@@ -2168,10 +1956,7 @@ export function ServerSettingsModal() {
                 )}
               </div>
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-confirm"
-                  onClick={() => setUserDetailModal(null)}
-                >
+                <button className="settings-btn-confirm" onClick={() => setUserDetailModal(null)}>
                   Done
                 </button>
               </div>
@@ -2193,11 +1978,7 @@ export function ServerSettingsModal() {
                 <input
                   type="number"
                   value={timeoutSeconds}
-                  onInput={(e) =>
-                    setTimeoutSeconds(
-                      Number((e.target as HTMLInputElement).value),
-                    )
-                  }
+                  onInput={(e) => setTimeoutSeconds(Number((e.target as HTMLInputElement).value))}
                   min={0}
                 />
               </div>
@@ -2209,17 +1990,12 @@ export function ServerSettingsModal() {
                 <button onClick={() => setTimeoutSeconds(86400)}>24h</button>
               </div>
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setTimeoutModal(null)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setTimeoutModal(null)}>
                   Cancel
                 </button>
                 <button
                   className="settings-btn-confirm"
-                  onClick={() =>
-                    handleTimeoutUser(timeoutModal, timeoutSeconds)
-                  }
+                  onClick={() => handleTimeoutUser(timeoutModal, timeoutSeconds)}
                 >
                   Apply Timeout
                 </button>
@@ -2238,14 +2014,11 @@ export function ServerSettingsModal() {
             <div className="settings-inner-dialog">
               <h3>Delete Account</h3>
               <p className="settings-warning-text">
-                Are you sure you want to permanently delete "{confirmDelete}"?
-                This cannot be undone.
+                Are you sure you want to permanently delete "{confirmDelete}"? This cannot be
+                undone.
               </p>
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setConfirmDelete(null)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setConfirmDelete(null)}>
                   Cancel
                 </button>
                 <button
@@ -2273,9 +2046,7 @@ export function ServerSettingsModal() {
                 <input
                   type="text"
                   value={emojiName}
-                  onInput={(e) =>
-                    setEmojiName((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setEmojiName((e.target as HTMLInputElement).value)}
                   placeholder="emoji_name"
                 />
               </div>
@@ -2289,21 +2060,12 @@ export function ServerSettingsModal() {
               </div>
               {emojiPreview && (
                 <div className="emoji-preview-container">
-                  <img
-                    src={emojiPreview}
-                    alt="Preview"
-                    className="emoji-preview-img"
-                  />
-                  <span className="emoji-preview-label">
-                    :{emojiName || "name"}:
-                  </span>
+                  <img src={emojiPreview} alt="Preview" className="emoji-preview-img" />
+                  <span className="emoji-preview-label">:{emojiName || "name"}:</span>
                 </div>
               )}
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setEmojiModalOpen(false)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setEmojiModalOpen(false)}>
                   Cancel
                 </button>
                 <button
@@ -2335,9 +2097,7 @@ export function ServerSettingsModal() {
                     alt={emojiEditModal.name}
                     className="emoji-preview-img"
                   />
-                  <span className="emoji-preview-label">
-                    :{emojiEditModal.name}:
-                  </span>
+                  <span className="emoji-preview-label">:{emojiEditModal.name}:</span>
                 </div>
               </div>
               <div className="settings-field">
@@ -2350,17 +2110,14 @@ export function ServerSettingsModal() {
                 />
               </div>
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setEmojiEditModal(null)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setEmojiEditModal(null)}>
                   Cancel
                 </button>
                 <button
                   className="settings-btn-confirm"
                   onClick={() => {
                     const input = document.getElementById(
-                      "emoji-edit-name-input",
+                      "emoji-edit-name-input"
                     ) as HTMLInputElement;
                     if (input) {
                       handleUpdateEmojiName(emojiEditModal, input.value);

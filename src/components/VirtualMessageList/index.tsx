@@ -1,8 +1,2 @@
-export {
-  VirtualMessageList,
-  MemoVirtualMessageList,
-} from "./VirtualMessageList";
-export {
-  VirtualMessageContainer,
-  MemoVirtualMessageContainer,
-} from "./VirtualMessageContainer";
+export { VirtualMessageList, MemoVirtualMessageList } from "./VirtualMessageList";
+export { VirtualMessageContainer, MemoVirtualMessageContainer } from "./VirtualMessageContainer";

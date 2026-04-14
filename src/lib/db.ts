@@ -59,10 +59,7 @@ async function db(): Promise<IDBDatabase> {
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
-async function dbGet<T = unknown>(
-  store: StoreName,
-  key: string,
-): Promise<T | undefined> {
+async function dbGet<T = unknown>(store: StoreName, key: string): Promise<T | undefined> {
   const d = await db();
   return new Promise((resolve, reject) => {
     const tx = d.transaction(store, "readonly");
@@ -72,11 +69,7 @@ async function dbGet<T = unknown>(
   });
 }
 
-async function dbSet(
-  store: StoreName,
-  key: string,
-  value: unknown,
-): Promise<void> {
+async function dbSet(store: StoreName, key: string, value: unknown): Promise<void> {
   const d = await db();
   return new Promise((resolve, reject) => {
     const tx = d.transaction(store, "readwrite");
@@ -97,9 +90,7 @@ async function dbDel(store: StoreName, key: string): Promise<void> {
 }
 
 /** Read all key-value pairs in a store as a plain object. */
-async function dbGetAll<T = unknown>(
-  store: StoreName,
-): Promise<Record<string, T>> {
+async function dbGetAll<T = unknown>(store: StoreName): Promise<Record<string, T>> {
   const d = await db();
   return new Promise((resolve, reject) => {
     const tx = d.transaction(store, "readonly");
@@ -148,23 +139,20 @@ export const session = {
 export const readTimes = {
   get: (serverUrl: string): Promise<Record<string, number>> =>
     dbGet<Record<string, number>>("readTimes", serverUrl).then((v) => v ?? {}),
-  set: (serverUrl: string, value: Record<string, number>) =>
-    dbSet("readTimes", serverUrl, value),
+  set: (serverUrl: string, value: Record<string, number>) => dbSet("readTimes", serverUrl, value),
   getAll: (): Promise<Record<string, Record<string, number>>> =>
     dbGetAll<Record<string, number>>("readTimes"),
 };
 
 /** Favourite GIFs. */
 export const favGifs = {
-  get: (): Promise<any[]> =>
-    dbGet<any[]>("favGifs", "favGifs").then((v) => v ?? []),
+  get: (): Promise<any[]> => dbGet<any[]>("favGifs", "favGifs").then((v) => v ?? []),
   set: (items: any[]) => dbSet("favGifs", "favGifs", items),
 };
 
 /** Custom media server configs. */
 export const mediaServersDb = {
-  get: <T>(): Promise<T | undefined> =>
-    dbGet<T>("mediaServers", "mediaServers"),
+  get: <T>(): Promise<T | undefined> => dbGet<T>("mediaServers", "mediaServers"),
   set: (value: unknown) => dbSet("mediaServers", "mediaServers", value),
 };
 
@@ -177,11 +165,8 @@ const foldersDb = {
 /** Pings and unreads persistence. */
 export const pings = {
   get: (): Promise<
-    | { pings: Record<string, number>; unreads: Record<string, number> }
-    | undefined
+    { pings: Record<string, number>; unreads: Record<string, number> } | undefined
   > => dbGet("pings", "pings"),
-  set: (value: {
-    pings: Record<string, number>;
-    unreads: Record<string, number>;
-  }) => dbSet("pings", "pings", value),
+  set: (value: { pings: Record<string, number>; unreads: Record<string, number> }) =>
+    dbSet("pings", "pings", value),
 };

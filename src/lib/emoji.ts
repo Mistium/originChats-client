@@ -16,8 +16,7 @@
 import twemoji from "@twemoji/api";
 import { useSystemEmojis } from "../state";
 
-const TWEMOJI_CDN_BASE =
-  "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg";
+const TWEMOJI_CDN_BASE = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg";
 
 const dataUriCache = new Map<string, string>();
 const inflightRequests = new Map<string, Promise<void>>();
@@ -58,7 +57,7 @@ function ensureCached(hexcode: string): void {
   if (dataUriCache.size >= MAX_EMOJI_CACHE_SIZE) {
     const keysToDelete = [...dataUriCache.keys()].slice(
       0,
-      dataUriCache.size - MAX_EMOJI_CACHE_SIZE + 1,
+      dataUriCache.size - MAX_EMOJI_CACHE_SIZE + 1
     );
     keysToDelete.forEach((k) => dataUriCache.delete(k));
   }

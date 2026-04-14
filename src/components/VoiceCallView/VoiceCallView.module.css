@@ -12,7 +12,7 @@
   flex: 0 0 40%;
   max-height: 40%;
   min-height: 220px;
-  
+
   border-radius: 16px 16px 0 0;
   overflow: hidden;
   background: var(--surface, #1e1e2e);
@@ -56,7 +56,7 @@
 .voiceCallHeader {
   align-items: center;
   background: rgba(0, 0, 0, 0.3);
-  
+
   display: flex;
   flex-shrink: 0;
   justify-content: space-between;
@@ -276,7 +276,7 @@
 .voiceCallControls {
   align-items: center;
   background: rgba(0, 0, 0, 0.3);
-  
+
   display: flex;
   flex-shrink: 0;
   gap: 12px;

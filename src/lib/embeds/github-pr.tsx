@@ -9,12 +9,7 @@ interface GitHubPREmbedProps {
   originalUrl: string;
 }
 
-export function GitHubPREmbed({
-  owner,
-  repo,
-  prNumber,
-  originalUrl,
-}: GitHubPREmbedProps) {
+export function GitHubPREmbed({ owner, repo, prNumber, originalUrl }: GitHubPREmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,9 +84,7 @@ export function GitHubPREmbed({
           </span>
           <span className="gh-embed__sep">#{prNumber}</span>
         </span>
-        <span className={`gh-embed__badge gh-embed__badge--${stateClass}`}>
-          {stateLabel}
-        </span>
+        <span className={`gh-embed__badge gh-embed__badge--${stateClass}`}>{stateLabel}</span>
       </div>
 
       <p className="gh-embed__desc gh-embed__desc--message">{title}</p>

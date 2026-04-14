@@ -1,10 +1,4 @@
-import {
-  useReducer,
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-} from "preact/hooks";
+import { useReducer, useState, useRef, useCallback, useEffect } from "preact/hooks";
 import { useSignalEffect, useSignal } from "@preact/signals";
 import { signal } from "@preact/signals";
 
@@ -97,8 +91,7 @@ export function ChannelList() {
   const isInVoice = !!voice.currentChannel;
   const sUrl = serverUrl.value;
   const myUsername = currentUserByServer.value[sUrl]?.username;
-  const { showThreadMenu, closeThreadMenu, threadMenu } =
-    useThreadContextMenu();
+  const { showThreadMenu, closeThreadMenu, threadMenu } = useThreadContextMenu();
 
   // When the voice call view is open for a dedicated voice channel (not a chat
   // channel), suppress the text-channel active highlight so only the voice
@@ -106,9 +99,7 @@ export function ChannelList() {
   const voiceChannelActive =
     showVoiceCallView.value &&
     voice.currentChannel !== null &&
-    channels.value.find(
-      (c) => c.name === voice.currentChannel && c.type === "voice",
-    ) !== undefined;
+    channels.value.find((c) => c.name === voice.currentChannel && c.type === "voice") !== undefined;
 
   const handleChannelClick = (channel: any) => {
     if (channel.type === "voice") {
@@ -186,7 +177,7 @@ export function ChannelList() {
           fn: () => {
             showChannelEditModal.value = channel.name;
           },
-        },
+        }
       );
     }
 
@@ -206,7 +197,7 @@ export function ChannelList() {
         fn: () => {
           navigator.clipboard.writeText(channel.name);
         },
-      },
+      }
     );
 
     showContextMenu(e, menuItems);
@@ -307,11 +298,7 @@ export function ChannelList() {
     <div
       id="channels"
       className={`channels${mobileSidebarOpen.value ? " open" : ""}`}
-      style={
-        window.innerWidth > 768
-          ? { width: `${channelListWidth.value}px` }
-          : undefined
-      }
+      style={window.innerWidth > 768 ? { width: `${channelListWidth.value}px` } : undefined}
     >
       <div
         ref={resizeRef}
@@ -352,8 +339,7 @@ export function ChannelList() {
         )}
         {!isDM &&
           (() => {
-            const myServerUser =
-              users.value[currentUser.value?.username?.toLowerCase() || ""];
+            const myServerUser = users.value[currentUser.value?.username?.toLowerCase() || ""];
             const isOwner = myServerUser?.roles?.includes("owner");
             return (
               isOwner && (
@@ -367,11 +353,7 @@ export function ChannelList() {
               )
             );
           })()}
-        <button
-          className={styles.channelHeaderClose}
-          onClick={closeMobileNav}
-          aria-label="Close"
-        >
+        <button className={styles.channelHeaderClose} onClick={closeMobileNav} aria-label="Close">
           <Icon name="X" size={18} />
         </button>
       </div>
@@ -420,15 +402,14 @@ export function ChannelList() {
               </div>
               <div
                 className={`${styles.channelItem}${currentChannel.value?.name === "new_message" ? ` ${styles.active}` : ""}`}
-onClick={() => {
-selectChannel({
-name: "new_message",
-type: "new_message",
-display_name: "New Message",
-});
-closeMobileNav();
-}}
-                }
+                onClick={() => {
+                  selectChannel({
+                    name: "new_message",
+                    type: "new_message",
+                    display_name: "New Message",
+                  });
+                  closeMobileNav();
+                }}
               >
                 <Icon name="PenSquare" size={16} />
                 <span>New Message</span>
@@ -442,7 +423,7 @@ closeMobileNav();
               if (!caps.includes("self_roles_list")) return null;
               const allRoles = rolesByServer.value[sUrl] ?? {};
               const selfAssignableRoles = Object.entries(allRoles).filter(
-                ([, role]) => (role as any).self_assignable === true,
+                ([, role]) => (role as any).self_assignable === true
               );
               if (selfAssignableRoles.length === 0) return null;
               return (
@@ -450,9 +431,9 @@ closeMobileNav();
                   <div
                     className={`${styles.channelItem}${currentChannel.value?.name === "roles" ? ` ${styles.active}` : ""}`}
                     onClick={() => {
-selectRolesChannel();
-closeMobileNav();
-}}
+                      selectRolesChannel();
+                      closeMobileNav();
+                    }}
                   >
                     <Icon name="Shield" size={18} />
                     <span>Roles</span>
@@ -468,26 +449,16 @@ closeMobileNav();
             if (channel.type === "separator") {
               separatorIndex++;
               return (
-                <div
-                  key={`separator-${separatorIndex}`}
-                  className={styles.channelSeparator}
-                />
+                <div key={`separator-${separatorIndex}`} className={styles.channelSeparator} />
               );
             }
 
             const isVoice = channel.type === "voice";
             const displayName = (channel as any).display_name || channel.name;
-            const notifLevel = getChannelNotifLevel(
-              serverUrl.value,
-              channel.name,
-            );
+            const notifLevel = getChannelNotifLevel(serverUrl.value, channel.name);
             const isMuted = notifLevel === "none";
-            const pingCount = isMuted
-              ? 0
-              : getChannelPingCount(serverUrl.value, channel.name);
-            const unreadCount = isMuted
-              ? 0
-              : getChannelUnreadCount(serverUrl.value, channel.name);
+            const pingCount = isMuted ? 0 : getChannelPingCount(serverUrl.value, channel.name);
+            const unreadCount = isMuted ? 0 : getChannelUnreadCount(serverUrl.value, channel.name);
             const hasUnread = !isMuted && (unreadCount > 0 || pingCount > 0);
             const displayPingCount = isDM ? unreadCount : pingCount;
             const hasPing = displayPingCount > 0;
@@ -500,22 +471,15 @@ closeMobileNav();
                   <div
                     className={`${styles.channelItem}${voice.currentChannel === channel.name ? ` ${styles.active}` : ""}`}
                     onClick={() => handleChannelClick(channel)}
-                    onContextMenu={(e: any) =>
-                      handleChannelContextMenu(e, channel)
-                    }
+                    onContextMenu={(e: any) => handleChannelContextMenu(e, channel)}
                   >
                     <Icon name="Mic" size={18} />
                     {(channel as any).icon && (
-                      <img
-                        src={(channel as any).icon}
-                        className={styles.channelItemIcon}
-                      />
+                      <img src={(channel as any).icon} className={styles.channelItemIcon} />
                     )}
                     <span>{displayName}</span>
                     {voiceUsers.length > 0 && (
-                      <span className={styles.voiceUserCount}>
-                        {voiceUsers.length}
-                      </span>
+                      <span className={styles.voiceUserCount}>{voiceUsers.length}</span>
                     )}
                   </div>
                   {voiceUsers.length > 0 && (
@@ -529,19 +493,12 @@ closeMobileNav();
                           <div className={styles.voiceChannelUserAvatar}>
                             <UserAvatar
                               username={vu.username}
-                              nickname={
-                                users.value[vu.username?.toLowerCase()]
-                                  ?.nickname
-                              }
+                              nickname={users.value[vu.username?.toLowerCase()]?.nickname}
                               pfp={vu.pfp}
-                              cracked={
-                                users.value[vu.username?.toLowerCase()]?.cracked
-                              }
+                              cracked={users.value[vu.username?.toLowerCase()]?.cracked}
                             />
                           </div>
-                          <span className={styles.voiceChannelUsername}>
-                            {vu.username}
-                          </span>
+                          <span className={styles.voiceChannelUsername}>{vu.username}</span>
                           {vu.muted && <Icon name="MicOff" size={14} />}
                         </div>
                       ))}
@@ -565,11 +522,9 @@ closeMobileNav();
             if (isForum) {
               const ch = currentChannel.value as any;
               const isThreadSelected = currentThread.value?.id !== undefined;
-              const isForumSelected =
-                !isThreadSelected && ch?.name === channel.name;
+              const isForumSelected = !isThreadSelected && ch?.name === channel.name;
 
-              const newThreadCount =
-                newThreadCounts.value[serverUrl.value]?.[channel.name] || 0;
+              const newThreadCount = newThreadCounts.value[serverUrl.value]?.[channel.name] || 0;
 
               const channelKey = `${serverUrl.value}:${channel.name}`;
               const isCollapsed = collapsedForumChannels.value.has(channelKey);
@@ -595,21 +550,14 @@ closeMobileNav();
                       handleChannelClick(channel);
                       clearNewThreadCount(serverUrl.value, channel.name);
                     }}
-                    onContextMenu={(e: any) =>
-                      handleChannelContextMenu(e, channel)
-                    }
+                    onContextMenu={(e: any) => handleChannelContextMenu(e, channel)}
                   >
                     <button
                       className={styles.collapseToggle}
                       onClick={toggleCollapse}
-                      title={
-                        isCollapsed ? "Expand threads" : "Collapse threads"
-                      }
+                      title={isCollapsed ? "Expand threads" : "Collapse threads"}
                     >
-                      <Icon
-                        name={isCollapsed ? "ChevronRight" : "ChevronDown"}
-                        size={14}
-                      />
+                      <Icon name={isCollapsed ? "ChevronRight" : "ChevronDown"} size={14} />
                     </button>
                     <Icon name="MessageCircle" size={18} />
                     <span>{displayName}</span>
@@ -617,24 +565,21 @@ closeMobileNav();
                       <span className={styles.threadCount}>{threadCount}</span>
                     )}
                     {newThreadCount > 0 && (
-                      <span className={styles.newThreadBadge}>
-                        +{newThreadCount}
-                      </span>
+                      <span className={styles.newThreadBadge}>+{newThreadCount}</span>
                     )}
                   </div>
                   {!isCollapsed &&
                     visibleThreads.map((thread: any) => {
                       const threadPingCount = getChannelPingCount(
                         serverUrl.value,
-                        `thread:${thread.id}`,
+                        `thread:${thread.id}`
                       );
                       const threadUnreadCount = getChannelUnreadCount(
                         serverUrl.value,
-                        `thread:${thread.id}`,
+                        `thread:${thread.id}`
                       );
                       const threadHasPing = threadPingCount > 0;
-                      const threadHasUnread =
-                        !threadHasPing && threadUnreadCount > 0;
+                      const threadHasUnread = !threadHasPing && threadUnreadCount > 0;
 
                       return (
                         <div
@@ -648,22 +593,16 @@ closeMobileNav();
                           onContextMenu={(e: any) => showThreadMenu(e, thread)}
                         >
                           <Icon name="CornerDownRight" size={15} />
-                          <span className={styles.threadName}>
-                            {thread.name}
-                          </span>
+                          <span className={styles.threadName}>{thread.name}</span>
                           {thread.locked && (
                             <span className={styles.threadLockedIcon}>
                               <Icon name="Lock" size={12} />
                             </span>
                           )}
                           {threadHasPing && (
-                            <span className={styles.pingBadge}>
-                              {threadPingCount}
-                            </span>
+                            <span className={styles.pingBadge}>{threadPingCount}</span>
                           )}
-                          {threadHasUnread && (
-                            <span className={styles.unreadIndicator}></span>
-                          )}
+                          {threadHasUnread && <span className={styles.unreadIndicator}></span>}
                         </div>
                       );
                     })}
@@ -691,12 +630,7 @@ closeMobileNav();
                 ) : (
                   <>
                     <Icon name="Hash" size={18} />
-                    {channel.icon && (
-                      <img
-                        src={channel.icon}
-                        className={styles.channelItemIcon}
-                      />
-                    )}
+                    {channel.icon && <img src={channel.icon} className={styles.channelItemIcon} />}
                   </>
                 )}
                 <span>{displayName}</span>
@@ -711,12 +645,8 @@ closeMobileNav();
                     <Icon name="BellOff" size={14} />
                   </span>
                 )}
-                {hasPing && (
-                  <span className={styles.pingBadge}>{displayPingCount}</span>
-                )}
-                {hasUnread && !hasPing && (
-                  <span className={styles.unreadIndicator}></span>
-                )}
+                {hasPing && <span className={styles.pingBadge}>{displayPingCount}</span>}
+                {hasUnread && !hasPing && <span className={styles.unreadIndicator}></span>}
               </div>
             );
           })}
@@ -736,9 +666,7 @@ closeMobileNav();
               <Icon name="Wifi" size={14} />
               <span>Voice Connected</span>
             </div>
-            <div className={styles.voicePanelChannel}>
-              {voice.currentChannel}
-            </div>
+            <div className={styles.voicePanelChannel}>{voice.currentChannel}</div>
           </div>
           <div className={styles.voicePanelControls}>
             <button
@@ -760,10 +688,7 @@ closeMobileNav();
               onClick={() => voiceManager.toggleScreenShare()}
               title={voice.isScreenSharing ? "Stop Sharing" : "Share Screen"}
             >
-              <Icon
-                name={voice.isScreenSharing ? "MonitorOff" : "Monitor"}
-                size={18}
-              />
+              <Icon name={voice.isScreenSharing ? "MonitorOff" : "Monitor"} size={18} />
             </button>
             <button
               className={styles.voiceControlBtn}
@@ -818,8 +743,7 @@ function UserPanel() {
     offline: "#80848e",
   };
 
-  const statusColor =
-    statusColorMap[myStatus.value.status] || statusColorMap.online;
+  const statusColor = statusColorMap[myStatus.value.status] || statusColorMap.online;
 
   return (
     <>
@@ -840,9 +764,7 @@ function UserPanel() {
           <div className={styles.channelUserPanelInfo}>
             <div className={styles.channelUserPanelName}>{displayName}</div>
             {supportsStatus && myStatus.value.text && (
-              <div className={styles.channelUserPanelStatusText}>
-                {myStatus.value.text}
-              </div>
+              <div className={styles.channelUserPanelStatusText}>{myStatus.value.text}</div>
             )}
           </div>
         </div>

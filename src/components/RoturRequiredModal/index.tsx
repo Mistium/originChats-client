@@ -44,8 +44,7 @@ export function RoturRequiredModal() {
             <strong>{serverName}</strong> requires a Rotur account to access.
           </p>
           <p className="rotur-required-description">
-            Please log in with your Rotur account to continue, or disconnect
-            from this server.
+            Please log in with your Rotur account to continue, or disconnect from this server.
           </p>
         </div>
 

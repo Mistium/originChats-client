@@ -10,18 +10,9 @@ interface CheckboxProps {
   icon?: string;
 }
 
-export function Checkbox({
-  checked,
-  onChange,
-  disabled,
-  label,
-  description,
-  icon,
-}: CheckboxProps) {
+export function Checkbox({ checked, onChange, disabled, label, description, icon }: CheckboxProps) {
   const input = (
-    <label
-      className={`${styles.checkboxRoot}${disabled ? ` ${styles.disabled}` : ""}`}
-    >
+    <label className={`${styles.checkboxRoot}${disabled ? ` ${styles.disabled}` : ""}`}>
       <input
         type="checkbox"
         className={styles.checkboxInput}
@@ -44,9 +35,7 @@ export function Checkbox({
       )}
       <div className={styles.appearanceToggleText}>
         <div className={styles.appearanceToggleTitle}>{label}</div>
-        {description && (
-          <div className={styles.appearanceToggleDesc}>{description}</div>
-        )}
+        {description && <div className={styles.appearanceToggleDesc}>{description}</div>}
       </div>
       {input}
     </label>

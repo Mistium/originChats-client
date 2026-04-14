@@ -14,14 +14,9 @@ export function getMessageKey(msg: MessageKeyInput): string {
   return msg.thread_id || msg.channel;
 }
 
-export function truncateForNotification(
-  content: string,
-  maxLength = 100,
-): string {
+export function truncateForNotification(content: string, maxLength = 100): string {
   const clean = (content || "").replace(/<[^>]*>/g, "");
-  return clean.length > maxLength
-    ? clean.substring(0, maxLength) + "..."
-    : clean;
+  return clean.length > maxLength ? clean.substring(0, maxLength) + "..." : clean;
 }
 
 function ensureServerState(sUrl: string): void {
@@ -44,11 +39,7 @@ function appendMessage(serverUrl: string, key: string, message: any): void {
   renderMessagesSignal.value++;
 }
 
-function prependMessages(
-  serverUrl: string,
-  key: string,
-  messages: any[],
-): void {
+function prependMessages(serverUrl: string, key: string, messages: any[]): void {
   ensureServerState(serverUrl);
   const existing = messagesByServer.value[serverUrl][key] || [];
   const existingIds = new Set(existing.map((m) => m.id));
@@ -67,7 +58,7 @@ export function updateMessage(
   serverUrl: string,
   key: string,
   messageId: string,
-  update: any,
+  update: any
 ): void {
   const messages = messagesByServer.value[serverUrl]?.[key];
   if (!messages) return;
@@ -82,11 +73,7 @@ export function updateMessage(
   renderMessagesSignal.value++;
 }
 
-export function removeMessage(
-  serverUrl: string,
-  key: string,
-  messageId: string,
-): void {
+export function removeMessage(serverUrl: string, key: string, messageId: string): void {
   const messages = messagesByServer.value[serverUrl]?.[key];
   if (!messages) return;
   messagesByServer.value = {
@@ -99,11 +86,7 @@ export function removeMessage(
   renderMessagesSignal.value++;
 }
 
-export function setMessages(
-  serverUrl: string,
-  key: string,
-  messages: any[],
-): void {
+export function setMessages(serverUrl: string, key: string, messages: any[]): void {
   ensureServerState(serverUrl);
   const trimmed = trimMessages(messages);
   messagesByServer.value = {
@@ -113,11 +96,7 @@ export function setMessages(
   renderMessagesSignal.value++;
 }
 
-export function insertMessage(
-  serverUrl: string,
-  key: string,
-  message: any,
-): void {
+export function insertMessage(serverUrl: string, key: string, message: any): void {
   ensureServerState(serverUrl);
   const messages = messagesByServer.value[serverUrl][key] || [];
   if (messages.some((m) => m.id === message.id)) return;
@@ -125,11 +104,7 @@ export function insertMessage(
   const newMessages =
     insertIdx === -1
       ? [...messages, message]
-      : [
-          ...messages.slice(0, insertIdx),
-          message,
-          ...messages.slice(insertIdx),
-        ];
+      : [...messages.slice(0, insertIdx), message, ...messages.slice(insertIdx)];
   const trimmed = trimMessages(newMessages);
   messagesByServer.value = {
     ...messagesByServer.value,
@@ -141,7 +116,5 @@ export function insertMessage(
 export function mergeAndSortMessages(existing: any[], incoming: any[]): any[] {
   const all = [...existing, ...incoming];
   const uniqueMap = new Map(all.map((m) => [m.id, m]));
-  return Array.from(uniqueMap.values()).sort(
-    (a, b) => a.timestamp - b.timestamp,
-  );
+  return Array.from(uniqueMap.values()).sort((a, b) => a.timestamp - b.timestamp);
 }

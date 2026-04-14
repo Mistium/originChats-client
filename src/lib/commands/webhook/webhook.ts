@@ -17,9 +17,7 @@ export function handleWebhookCreate(msg: WebhookCreate, sUrl: string): void {
       [sUrl]: [...currentWebhooks, msg.webhook],
     };
     if (msg.webhook.token) {
-      showInfo(
-        `Webhook "${msg.webhook.name}" created. Token: ${msg.webhook.token}`,
-      );
+      showInfo(`Webhook "${msg.webhook.name}" created. Token: ${msg.webhook.token}`);
     }
   } else {
     showError(msg.val || "Failed to create webhook");
@@ -69,10 +67,7 @@ export function handleWebhookUpdate(msg: WebhookUpdate, sUrl: string): void {
   }
 }
 
-export function handleWebhookRegenerate(
-  msg: WebhookRegenerate,
-  sUrl: string,
-): void {
+export function handleWebhookRegenerate(msg: WebhookRegenerate, sUrl: string): void {
   const currentWebhooks = webhooksByServer.value[sUrl] || [];
   const idx = currentWebhooks.findIndex((w) => w.id === msg.webhook.id);
   if (idx !== -1 && msg.webhook) {

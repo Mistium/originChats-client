@@ -7,10 +7,8 @@ export function closeWebSocket(url: string): void {
   if (wsConnections[url]) {
     const conn = wsConnections[url];
     if (conn.socket) {
-      if (conn.closeHandler)
-        conn.socket.removeEventListener("close", conn.closeHandler);
-      if (conn.errorHandler)
-        conn.socket.removeEventListener("error", conn.errorHandler);
+      if (conn.closeHandler) conn.socket.removeEventListener("close", conn.closeHandler);
+      if (conn.errorHandler) conn.socket.removeEventListener("error", conn.errorHandler);
       if (conn.socket.readyState !== WebSocket.CLOSED) {
         conn.socket.close();
       }
@@ -23,4 +21,3 @@ export function closeWebSocket(url: string): void {
   dismissBanner(bannerId);
   delete reconnectBannerIds[url];
 }
-

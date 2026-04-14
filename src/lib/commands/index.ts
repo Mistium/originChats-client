@@ -20,19 +20,12 @@ export { handleUsersList } from "./user/users_list";
 export { handleUsersOnline } from "./user/users_online";
 export { handleUserConnect } from "./user/user_connect";
 export { handleUserJoin } from "./user/user_join";
-export {
-  handleUserDisconnect,
-  handleUserLeave,
-} from "./user/user_disconnect_leave";
+export { handleUserDisconnect, handleUserLeave } from "./user/user_disconnect_leave";
 export { handleUserStatus } from "./user/user_status";
 export { handleUserRolesSet } from "./user/user_roles_set";
 export { handleUserRolesGet } from "./user/user_roles_get";
 export { handleUsersBannedList } from "./user/users_banned_list";
-export {
-  handleNicknameUpdate,
-  handleNicknameRemove,
-  handleUserUpdate,
-} from "./user/nickname";
+export { handleNicknameUpdate, handleNicknameRemove, handleUserUpdate } from "./user/nickname";
 export { handleStatusGet } from "./status/get";
 
 export { handleMessageNew } from "./message/new";
@@ -71,11 +64,7 @@ export {
 
 export { handlePushVapid, handlePushSubscribed } from "./push/push";
 
-export {
-  handleSlashList,
-  handleSlashAdd,
-  handleSlashRemove,
-} from "./slash/slash";
+export { handleSlashList, handleSlashAdd, handleSlashRemove } from "./slash/slash";
 
 export { handlePingsGet } from "./pings/s_get";
 

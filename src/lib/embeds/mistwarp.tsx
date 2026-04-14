@@ -15,7 +15,7 @@ export function MistWarpEmbed({ projectId, originalUrl }: MistWarpEmbedProps) {
     const controller = new AbortController();
     fetch(
       `https://proxy.mistium.com?url=${encodeURIComponent(`https://api.scratch.mit.edu/projects/${projectId}`)}`,
-      { signal: controller.signal },
+      { signal: controller.signal }
     )
       .then((res) => {
         if (!res.ok) throw new Error("Scratch API failed");
@@ -45,17 +45,10 @@ export function MistWarpEmbed({ projectId, originalUrl }: MistWarpEmbedProps) {
 
   const blurb = (data.description || data.instructions || "").trim();
   const avatarUrl = data.author?.profile?.images?.["50x50"];
-  const modifiedAt = data.history?.modified
-    ? formatDate(new Date(data.history.modified))
-    : null;
+  const modifiedAt = data.history?.modified ? formatDate(new Date(data.history.modified)) : null;
 
   return (
-    <a
-      href={originalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mistwarp-embed"
-    >
+    <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="mistwarp-embed">
       <div className="mistwarp-embed__top">
         <img
           src={proxyImageUrl(thumbUrl)}
@@ -66,9 +59,7 @@ export function MistWarpEmbed({ projectId, originalUrl }: MistWarpEmbedProps) {
         <div className="mistwarp-embed__body">
           <div className="mistwarp-embed__header">
             <span className="mistwarp-embed__source">MistWarp</span>
-            {modifiedAt && (
-              <span className="mistwarp-embed__modified">{modifiedAt}</span>
-            )}
+            {modifiedAt && <span className="mistwarp-embed__modified">{modifiedAt}</span>}
           </div>
           <div className="mistwarp-embed__title">{data.title}</div>
           {data.author?.username && (

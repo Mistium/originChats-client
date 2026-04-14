@@ -42,26 +42,20 @@ function notify(title: string, body: string, tag: string) {
 
 function isPinged(
   msg: MessageNew,
-  myUsername: string,
+  myUsername: string
 ): { user: boolean; role: boolean; reply: boolean } {
   const pings = msg.message.pings;
   if (!pings) return { user: false, role: false, reply: false };
   return {
-    user: (pings.users || []).some(
-      (u: string) => u.toLowerCase() === myUsername.toLowerCase(),
-    ),
+    user: (pings.users || []).some((u: string) => u.toLowerCase() === myUsername.toLowerCase()),
     role: false,
-    reply: (pings.replies || []).some(
-      (r: string) => r.toLowerCase() === myUsername.toLowerCase(),
-    ),
+    reply: (pings.replies || []).some((r: string) => r.toLowerCase() === myUsername.toLowerCase()),
   };
 }
 
 function getMyRoles(sUrl: string, username: string): string[] {
   return (
-    usersByServer.value[sUrl]?.[username.toLowerCase()]?.roles?.map((r) =>
-      r.toLowerCase(),
-    ) || []
+    usersByServer.value[sUrl]?.[username.toLowerCase()]?.roles?.map((r) => r.toLowerCase()) || []
   );
 }
 
@@ -96,18 +90,11 @@ function persistReadTime(sUrl: string, channel: string, timestamp: number) {
     delete readTimeTimers[key];
     dbReadTimes
       .set(sUrl, readTimesByServer.value[sUrl] ?? {})
-      .catch((e) =>
-        console.warn("[message_new] Failed to persist read time:", e),
-      );
+      .catch((e) => console.warn("[message_new] Failed to persist read time:", e));
   }, 1000);
 }
 
-function doPingNotification(
-  sUrl: string,
-  channel: string,
-  msg: MessageNew,
-  title: string,
-) {
+function doPingNotification(sUrl: string, channel: string, msg: MessageNew, title: string) {
   unreadState.incrementPing(sUrl, channel);
   playPingSound();
   notify(title, truncateForNotification(msg.message.content), msg.channel);
@@ -119,12 +106,12 @@ function handlePingNotifications(
   msg: MessageNew,
   sUrl: string,
   channel: string,
-  myUsername: string,
+  myUsername: string
 ) {
   const pinged = isPinged(msg, myUsername);
   const myRoles = getMyRoles(sUrl, myUsername);
   const rolePinged = (msg.message.pings?.roles || []).some((r) =>
-    myRoles.includes(r.toLowerCase()),
+    myRoles.includes(r.toLowerCase())
   );
 
   if (msg.thread_id && (pinged.user || rolePinged || pinged.reply)) {
@@ -134,28 +121,21 @@ function handlePingNotifications(
   }
 
   if (pinged.user) {
-    doPingNotification(
-      sUrl,
-      channel,
-      msg,
-      `${msg.message.user} mentioned you in #${msg.channel}`,
-    );
+    doPingNotification(sUrl, channel, msg, `${msg.message.user} mentioned you in #${msg.channel}`);
   } else if (rolePinged) {
-    const role = (msg.message.pings?.roles || []).find((r) =>
-      myRoles.includes(r.toLowerCase()),
-    );
+    const role = (msg.message.pings?.roles || []).find((r) => myRoles.includes(r.toLowerCase()));
     doPingNotification(
       sUrl,
       channel,
       msg,
-      `${msg.message.user} mentioned ${role} in #${msg.channel}`,
+      `${msg.message.user} mentioned ${role} in #${msg.channel}`
     );
   } else if (pinged.reply) {
     doPingNotification(
       sUrl,
       channel,
       msg,
-      `${msg.message.user} replied to your message in #${msg.channel}`,
+      `${msg.message.user} replied to your message in #${msg.channel}`
     );
   }
 }
@@ -193,12 +173,7 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
     if (sUrl === DM_SERVER_URL && dmMessageSound.value) playPingSound();
 
     if (notifLevel === "all") {
-      doPingNotification(
-        sUrl,
-        channelToClear,
-        msg,
-        `${msg.message.user} in #${msg.channel}`,
-      );
+      doPingNotification(sUrl, channelToClear, msg, `${msg.message.user} in #${msg.channel}`);
     }
 
     if (sUrl === DM_SERVER_URL)
@@ -215,13 +190,7 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
     ensureDMServer(msg.channel, msg.message.user, msg.message.timestamp);
   }
 
-  if (
-    !isOwn &&
-    !isMuted &&
-    !isCurrentChannel &&
-    notifLevel !== "all" &&
-    myUsername
-  ) {
+  if (!isOwn && !isMuted && !isCurrentChannel && notifLevel !== "all" && myUsername) {
     handlePingNotifications(msg, sUrl, channelToClear, myUsername);
   }
 

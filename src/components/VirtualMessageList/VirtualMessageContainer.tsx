@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "preact/hooks";
+import { useEffect, useRef, useState, useCallback, useMemo } from "preact/hooks";
 import { memo } from "preact/compat";
 
 interface VirtualContainerProps {
@@ -79,9 +73,7 @@ export function VirtualMessageContainer({
       if (!container) return;
 
       requestAnimationFrame(() => {
-        const el = container.querySelector(
-          `[data-msg-id="${scrollToMessageId}"]`,
-        );
+        const el = container.querySelector(`[data-msg-id="${scrollToMessageId}"]`);
         if (el) {
           isScrollingProgrammaticallyRef.current = true;
           el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -140,7 +132,7 @@ export function VirtualMessageContainer({
       nearTopThreshold,
       nearBottomThreshold,
       onStickToBottomChange,
-    ],
+    ]
   );
 
   return (

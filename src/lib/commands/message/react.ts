@@ -3,10 +3,7 @@ import { messagesByServer } from "../../../state";
 import { renderMessagesSignal } from "../../ui-signals";
 import { getMessageKey } from "../../message-utils";
 
-export function handleMessageReact(
-  msg: MessageReactAdd | MessageReactRemove,
-  sUrl: string,
-): void {
+export function handleMessageReact(msg: MessageReactAdd | MessageReactRemove, sUrl: string): void {
   const messageKey = getMessageKey(msg);
   const channelMessages = messagesByServer.value[sUrl]?.[messageKey];
   if (!channelMessages) return;
@@ -29,7 +26,7 @@ export function handleMessageReact(
   } else {
     if (updatedReactions[msg.emoji]) {
       updatedReactions[msg.emoji] = updatedReactions[msg.emoji].filter(
-        (u: string) => u !== reactUser,
+        (u: string) => u !== reactUser
       );
       if (updatedReactions[msg.emoji].length === 0) {
         delete updatedReactions[msg.emoji];

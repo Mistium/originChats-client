@@ -35,12 +35,7 @@ export function LoadingScreen() {
   return (
     <div className="loading-screen">
       <div className="loading-content">
-        <img
-          className="loading-logo"
-          src="/dms.png"
-          alt="originChats"
-          draggable={false}
-        />
+        <img className="loading-logo" src="/dms.png" alt="originChats" draggable={false} />
         <div className="loading-status">
           <Icon name="Loader" size={16} />
           <span>Loading...</span>

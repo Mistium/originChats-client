@@ -62,23 +62,13 @@ import {
   cleanupAudioContext,
 } from "./lib/websocket";
 import { cleanupWsSenderAudio } from "./lib/ws-sender";
-import {
-  selectHomeChannel,
-  selectChannel,
-  switchServer,
-  navigateFromUrl,
-} from "./lib/actions";
+import { selectHomeChannel, selectChannel, switchServer, navigateFromUrl } from "./lib/actions";
 import { loadShortcodes } from "./lib/shortcodes";
 import { prewarmCommonEmojis } from "./lib/emoji";
 import { emojiCache } from "./lib/emoji-data-cache";
 import { session as dbSession, readTimes as dbReadTimes } from "./lib/db";
 import { initSettingsFromDb } from "./state";
-import {
-  validateToken,
-  getAuthRedirectUrl,
-  getFollowing,
-  getStatus,
-} from "./lib/rotur-api";
+import { validateToken, getAuthRedirectUrl, getFollowing, getStatus } from "./lib/rotur-api";
 import { showLoginChoiceModal } from "./lib/ui-signals";
 
 import { LandingPage } from "./components/LandingPage/LandingPage";
@@ -226,8 +216,7 @@ function App() {
       const loadedFolders = await loadFolders();
       serverFolders.value = loadedFolders;
 
-      const savedServerUrl =
-        (await dbSession.get<string>("serverUrl", "")) || DM_SERVER_URL;
+      const savedServerUrl = (await dbSession.get<string>("serverUrl", "")) || DM_SERVER_URL;
       serverUrl.value = savedServerUrl;
 
       const localReadTimes: Record<string, Record<string, number>> = {};
@@ -249,9 +238,7 @@ function App() {
     // Seed follow state in the background — non-blocking
     getFollowing(meData.username)
       .then((data) => {
-        roturFollowing.value = new Set(
-          (data.following || []).map((u: string) => u.toLowerCase()),
-        );
+        roturFollowing.value = new Set((data.following || []).map((u: string) => u.toLowerCase()));
       })
       .catch((err) => {
         console.warn("Failed to load follow state:", err);
@@ -283,8 +270,7 @@ function App() {
     const loadedNicknames = await loadFriendNicknames();
     friendNicknames.value = loadedNicknames;
 
-    const savedServerUrl =
-      (await dbSession.get<string>("serverUrl", "")) || DM_SERVER_URL;
+    const savedServerUrl = (await dbSession.get<string>("serverUrl", "")) || DM_SERVER_URL;
     serverUrl.value = savedServerUrl;
 
     // Load read times: merge IDB (local) with OriginFS (cloud)
@@ -305,8 +291,7 @@ function App() {
         } else {
           for (const channelName in cloudReadTimes[serverUrlKey]) {
             if (!(channelName in localReadTimes[serverUrlKey])) {
-              localReadTimes[serverUrlKey][channelName] =
-                cloudReadTimes[serverUrlKey][channelName];
+              localReadTimes[serverUrlKey][channelName] = cloudReadTimes[serverUrlKey][channelName];
             }
           }
         }
@@ -380,10 +365,7 @@ function App() {
 
       // Add to server list if not already present
       if (!servers.value.some((s) => s.url === normalized)) {
-        servers.value = [
-          ...servers.value,
-          { name: normalized, url: normalized, icon: null },
-        ];
+        servers.value = [...servers.value, { name: normalized, url: normalized, icon: null }];
         const { saveServers } = await import("./lib/persistence");
         await saveServers();
       }
@@ -398,9 +380,7 @@ function App() {
           new Promise<void>((resolve) => {
             const check = () => {
               const chs = channelsByServer.value[normalized] ?? [];
-              const text = chs.find(
-                (c) => c.type === "text" || c.type === "voice",
-              );
+              const text = chs.find((c) => c.type === "text" || c.type === "voice");
               if (text) {
                 selectChannel(text);
                 resolve();
@@ -439,17 +419,13 @@ function App() {
     return <OfflineScreen onRetry={boot} />;
   }
 
-  const showNotes =
-    currentChannel.value?.name === "notes" && serverUrl.value === DM_SERVER_URL;
-  const showHome =
-    currentChannel.value?.name === "home" && serverUrl.value === DM_SERVER_URL;
+  const showNotes = currentChannel.value?.name === "notes" && serverUrl.value === DM_SERVER_URL;
+  const showHome = currentChannel.value?.name === "home" && serverUrl.value === DM_SERVER_URL;
   const showFriends = currentChannel.value?.name === "relationships";
   const showNewMessage =
-    currentChannel.value?.name === "new_message" &&
-    serverUrl.value === DM_SERVER_URL;
+    currentChannel.value?.name === "new_message" && serverUrl.value === DM_SERVER_URL;
   const showDiscovery = currentChannel.value?.name === "discovery";
-  const showRoles =
-    currentChannel.value?.name === "roles" && serverUrl.value !== DM_SERVER_URL;
+  const showRoles = currentChannel.value?.name === "roles" && serverUrl.value !== DM_SERVER_URL;
   const isForumChannel = currentChannel.value?.type === "forum";
   const isThreadSelected = currentChannel.value?.type === "thread";
 
@@ -487,9 +463,7 @@ function App() {
         </div>
       )}
       {showSettingsModal.value && <SettingsModal />}
-      {showAccountModal.value && (
-        <AccountModal username={showAccountModal.value} />
-      )}
+      {showAccountModal.value && <AccountModal username={showAccountModal.value} />}
       {showDiscoveryModal.value && <DiscoveryModal />}
       {showServerSettingsModal.value && <ServerSettingsModal />}
       {showChannelEditModal.value && <ChannelEditModal />}

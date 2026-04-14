@@ -1,16 +1,5 @@
-import {
-  serverUrl,
-  currentUserByServer,
-  users,
-  hasCapability,
-} from "../../state";
-import {
-  selectThread,
-  deleteThread,
-  getThread,
-  joinThread,
-  leaveThread,
-} from "../../lib/actions";
+import { serverUrl, currentUserByServer, users, hasCapability } from "../../state";
+import { selectThread, deleteThread, getThread, joinThread, leaveThread } from "../../lib/actions";
 import { wsSend } from "../../lib/websocket";
 import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
 import { Icon } from "../Icon";
@@ -24,21 +13,13 @@ interface ThreadContextMenuProps {
   onClose: () => void;
 }
 
-export function ThreadContextMenu({
-  thread,
-  x,
-  y,
-  onClose,
-}: ThreadContextMenuProps) {
+export function ThreadContextMenu({ thread, x, y, onClose }: ThreadContextMenuProps) {
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
   const myRoles = users.value[myUsername?.toLowerCase() || ""]?.roles || [];
   const canManage =
-    thread.created_by === myUsername ||
-    myUsername === "admin" ||
-    myRoles.includes("owner");
+    thread.created_by === myUsername || myUsername === "admin" || myRoles.includes("owner");
 
-  const supportsJoinLeave =
-    hasCapability("thread_join") && hasCapability("thread_leave");
+  const supportsJoinLeave = hasCapability("thread_join") && hasCapability("thread_leave");
   const isParticipant = thread.participants?.includes(myUsername || "");
 
   const items: ContextMenuItem[] = [
@@ -98,7 +79,7 @@ export function ThreadContextMenu({
             channel: thread.parent_channel,
             locked: !thread.locked,
           },
-          serverUrl.value,
+          serverUrl.value
         );
         onClose();
       },
@@ -115,7 +96,7 @@ export function ThreadContextMenu({
             channel: thread.parent_channel,
             archived: !thread.archived,
           },
-          serverUrl.value,
+          serverUrl.value
         );
         onClose();
       },
@@ -157,9 +138,7 @@ export function ThreadContextMenu({
     </>
   );
 
-  return (
-    <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />
-  );
+  return <ContextMenu x={x} y={y} items={items} onClose={onClose} header={header} />;
 }
 
 type UseThreadContextMenuResult = ReturnType<typeof useThreadContextMenu>;

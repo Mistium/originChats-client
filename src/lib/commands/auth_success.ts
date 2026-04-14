@@ -35,13 +35,10 @@ export function handleAuthSuccess(sUrl: string): void {
                 password: pending.password,
               },
             }
-          : s,
+          : s
       );
       saveServers().catch((err) =>
-        console.error(
-          "[auth_success] Failed to save cracked credentials:",
-          err,
-        ),
+        console.error("[auth_success] Failed to save cracked credentials:", err)
       );
       pendingCrackedCredentials.value = null;
     }

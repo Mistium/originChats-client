@@ -61,12 +61,12 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
 
   const parsedTitle = useMemo(
     () => (embed.title ? parseEmbedMarkdown(embed.title) : null),
-    [embed.title],
+    [embed.title]
   );
 
   const parsedDescription = useMemo(
     () => (embed.description ? parseEmbedMarkdown(embed.description) : null),
-    [embed.description],
+    [embed.description]
   );
 
   const parsedFields = useMemo(
@@ -76,7 +76,7 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
         parsedName: parseEmbedMarkdown(field.name),
         parsedValue: parseEmbedMarkdown(field.value),
       })),
-    [embed.fields],
+    [embed.fields]
   );
 
   const isSquareThumbnail = useImageAspectRatio(embed.thumbnail?.url);
@@ -87,22 +87,13 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
       style={borderColor ? { borderLeftColor: borderColor } : undefined}
     >
       {!isSquareThumbnail && embed.thumbnail && (
-        <img
-          className="embed-thumbnail"
-          src={embed.thumbnail.url}
-          alt=""
-          loading="lazy"
-        />
+        <img className="embed-thumbnail" src={embed.thumbnail.url} alt="" loading="lazy" />
       )}
       <div className="embed-body">
         {embed.author && (
           <div className="embed-author">
             {embed.author.icon_url && (
-              <img
-                className="embed-author-icon"
-                src={embed.author.icon_url}
-                alt=""
-              />
+              <img className="embed-author-icon" src={embed.author.icon_url} alt="" />
             )}
             {embed.author.url ? (
               <a
@@ -119,10 +110,7 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
           </div>
         )}
         {parsedTitle && (
-          <div
-            className="embed-title"
-            dangerouslySetInnerHTML={{ __html: parsedTitle }}
-          />
+          <div className="embed-title" dangerouslySetInnerHTML={{ __html: parsedTitle }} />
         )}
         {parsedDescription && (
           <div
@@ -133,10 +121,7 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
         {parsedFields && parsedFields.length > 0 && (
           <div className="embed-fields">
             {parsedFields.map((field, i) => (
-              <div
-                key={i}
-                className={`embed-field${field.inline ? " inline" : ""}`}
-              >
+              <div key={i} className={`embed-field${field.inline ? " inline" : ""}`}>
                 <div
                   className="embed-field-name"
                   dangerouslySetInnerHTML={{ __html: field.parsedName }}
@@ -149,30 +134,17 @@ function MessageEmbedInner({ embed, messageId }: MessageEmbedProps) {
             ))}
           </div>
         )}
-        {embed.image && (
-          <img
-            className="embed-image"
-            src={embed.image.url}
-            alt=""
-            loading="lazy"
-          />
-        )}
+        {embed.image && <img className="embed-image" src={embed.image.url} alt="" loading="lazy" />}
         {embed.footer && (
           <div className="embed-footer">
             {embed.footer.icon_url && (
-              <img
-                className="embed-footer-icon"
-                src={embed.footer.icon_url}
-                alt=""
-              />
+              <img className="embed-footer-icon" src={embed.footer.icon_url} alt="" />
             )}
             <span className="embed-footer-text">{embed.footer.text}</span>
             {embed.timestamp && (
               <>
                 <span className="embed-footer-separator">•</span>
-                <span className="embed-footer-timestamp">
-                  {formatTimestamp(embed.timestamp)}
-                </span>
+                <span className="embed-footer-timestamp">{formatTimestamp(embed.timestamp)}</span>
               </>
             )}
           </div>

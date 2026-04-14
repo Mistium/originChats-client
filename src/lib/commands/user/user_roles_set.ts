@@ -9,7 +9,7 @@ export function handleUserRolesSet(msg: UserRolesSet, sUrl: string): void {
   if (user) {
     user.roles = msg.roles || [];
     const roleColor = Object.values(rolesByServer.value[sUrl] || {}).find((r) =>
-      user.roles?.includes(r.name),
+      user.roles?.includes(r.name)
     )?.color;
     if (roleColor) user.color = roleColor;
     usersByServer.value = {

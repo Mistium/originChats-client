@@ -21,7 +21,7 @@ interface AttachmentPreviewProps {
 function openImage(
   url: string,
   expiresAt?: number | null,
-  images?: Array<{ url: string; expiresAt?: number | null }>,
+  images?: Array<{ url: string; expiresAt?: number | null }>
 ) {
   const currentIndex = images?.findIndex((img) => img.url === url) ?? -1;
   imageViewerState.value = {
@@ -67,18 +67,14 @@ function getFileExtension(filename: string): string {
 
 function getFileTypeInfo(
   mimeType: string,
-  filename: string,
+  filename: string
 ): { icon: string; color: string; label: string } {
   const ext = getFileExtension(filename);
 
-  if (mimeType.startsWith("image/"))
-    return { icon: "Image", color: "#10b981", label: "Image" };
-  if (mimeType.startsWith("video/"))
-    return { icon: "Video", color: "#8b5cf6", label: "Video" };
-  if (mimeType.startsWith("audio/"))
-    return { icon: "Music", color: "#ec4899", label: "Audio" };
-  if (mimeType === "application/pdf")
-    return { icon: "FileText", color: "#ef4444", label: "PDF" };
+  if (mimeType.startsWith("image/")) return { icon: "Image", color: "#10b981", label: "Image" };
+  if (mimeType.startsWith("video/")) return { icon: "Video", color: "#8b5cf6", label: "Video" };
+  if (mimeType.startsWith("audio/")) return { icon: "Music", color: "#ec4899", label: "Audio" };
+  if (mimeType === "application/pdf") return { icon: "FileText", color: "#ef4444", label: "PDF" };
   if (
     mimeType.includes("zip") ||
     mimeType.includes("rar") ||
@@ -88,10 +84,7 @@ function getFileTypeInfo(
   )
     return { icon: "Package", color: "#f59e0b", label: "Archive" };
 
-  const docTypes: Record<
-    string,
-    { icon: string; color: string; label: string }
-  > = {
+  const docTypes: Record<string, { icon: string; color: string; label: string }> = {
     DOC: { icon: "FileText", color: "#2563eb", label: "Document" },
     DOCX: { icon: "FileText", color: "#2563eb", label: "Document" },
     XLS: { icon: "Grid3x3", color: "#16a34a", label: "Spreadsheet" },
@@ -107,9 +100,7 @@ function getFileTypeInfo(
     CSS: { icon: "FileCode", color: "#3b82f6", label: "CSS" },
   };
 
-  return (
-    docTypes[ext] || { icon: "File", color: "#6b7280", label: ext || "File" }
-  );
+  return docTypes[ext] || { icon: "File", color: "#6b7280", label: ext || "File" };
 }
 
 function AudioPlayer({ att }: { att: Attachment }) {
@@ -169,10 +160,7 @@ function AudioPlayer({ att }: { att: Attachment }) {
     if (!audio || !progress) return;
 
     const rect = progress.getBoundingClientRect();
-    const percent = Math.max(
-      0,
-      Math.min(1, (e.clientX - rect.left) / rect.width),
-    );
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = percent * duration;
     audio.currentTime = newTime;
     setCurrentTime(newTime);
@@ -204,14 +192,8 @@ function AudioPlayer({ att }: { att: Attachment }) {
   useEffect(() => {
     return () => {
       if (dragListenersRef.current) {
-        window.removeEventListener(
-          "mousemove",
-          dragListenersRef.current.handleDrag,
-        );
-        window.removeEventListener(
-          "mouseup",
-          dragListenersRef.current.handleEnd,
-        );
+        window.removeEventListener("mousemove", dragListenersRef.current.handleDrag);
+        window.removeEventListener("mouseup", dragListenersRef.current.handleEnd);
       }
     };
   }, []);
@@ -228,9 +210,7 @@ function AudioPlayer({ att }: { att: Attachment }) {
         <div className="audio-player-info">
           <span className="audio-player-name">{att.name}</span>
           <div className="audio-player-meta">
-            <span className="audio-player-size">
-              {formatFileSize(att.size)}
-            </span>
+            <span className="audio-player-size">{formatFileSize(att.size)}</span>
             <span className="audio-player-dot">·</span>
             <span className="audio-player-time">
               {formatTime(currentTime)} / {formatTime(duration)}
@@ -254,14 +234,8 @@ function AudioPlayer({ att }: { att: Attachment }) {
         onMouseDown={handleDragStart}
       >
         <div className="audio-player-progress-bg">
-          <div
-            className="audio-player-progress-fill"
-            style={{ width: `${progress}%` }}
-          />
-          <div
-            className="audio-player-progress-handle"
-            style={{ left: `${progress}%` }}
-          />
+          <div className="audio-player-progress-fill" style={{ width: `${progress}%` }} />
+          <div className="audio-player-progress-handle" style={{ left: `${progress}%` }} />
         </div>
       </div>
     </div>
@@ -290,11 +264,7 @@ export function AttachmentPreview({
   };
 
   const handleImageClick = (att: Attachment) => {
-    openImage(
-      att.url,
-      att.expires_at,
-      imageData.length > 1 ? imageData : undefined,
-    );
+    openImage(att.url, att.expires_at, imageData.length > 1 ? imageData : undefined);
   };
 
   const handleContextMenu = (e: MouseEvent, att: Attachment) => {
@@ -312,8 +282,7 @@ export function AttachmentPreview({
   }));
   const videos = attachments.filter((a) => a.mime_type.startsWith("video/"));
   const others = attachments.filter(
-    (a) =>
-      !a.mime_type.startsWith("image/") && !a.mime_type.startsWith("video/"),
+    (a) => !a.mime_type.startsWith("image/") && !a.mime_type.startsWith("video/")
   );
   const isOnlyImagesOrVideos = others.length === 0;
 
@@ -351,16 +320,9 @@ export function AttachmentPreview({
             className={`message-attachment ${isOnlyImagesOrVideos ? "no-bg" : ""}`}
             onContextMenu={(e) => handleContextMenu(e, att)}
           >
-            <video
-              src={att.url}
-              className="message-attachment-video"
-              controls
-              preload="metadata"
-            />
+            <video src={att.url} className="message-attachment-video" controls preload="metadata" />
             {showExpiry && (
-              <div className="message-attachment-expiry">
-                {formatExpiry(att.expires_at!)}
-              </div>
+              <div className="message-attachment-expiry">{formatExpiry(att.expires_at!)}</div>
             )}
           </div>
         );
@@ -393,17 +355,11 @@ export function AttachmentPreview({
                   <Icon name={typeInfo.icon} size={24} />
                 </div>
                 <div className="message-attachment-file-info">
-                  <span className="message-attachment-file-name">
-                    {att.name}
-                  </span>
+                  <span className="message-attachment-file-name">{att.name}</span>
                   <div className="message-attachment-file-meta">
-                    <span className="message-attachment-file-type">
-                      {typeInfo.label}
-                    </span>
+                    <span className="message-attachment-file-type">{typeInfo.label}</span>
                     <span className="message-attachment-file-dot">·</span>
-                    <span className="message-attachment-file-size">
-                      {formatFileSize(att.size)}
-                    </span>
+                    <span className="message-attachment-file-size">{formatFileSize(att.size)}</span>
                     {showExpiry && (
                       <>
                         <span className="message-attachment-file-dot">·</span>

@@ -79,12 +79,7 @@ class MessageStore {
     };
   }
 
-  update(
-    url: ServerUrl,
-    channel: ChannelKey,
-    id: string,
-    patch: Partial<Message>,
-  ): boolean {
+  update(url: ServerUrl, channel: ChannelKey, id: string, patch: Partial<Message>): boolean {
     const serverMsgs = this.getServerMessages(url);
     const arr = serverMsgs[channel];
     if (!arr) return false;

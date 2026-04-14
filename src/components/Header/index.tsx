@@ -57,23 +57,18 @@ export function Header() {
   const thread = currentThread.value;
   const isChatChannel = ch !== null && ch.type === "chat";
   const caps = serverCapabilities.value;
-  const canPin =
-    caps.includes("message_pin") && caps.includes("messages_pinned");
+  const canPin = caps.includes("message_pin") && caps.includes("messages_pinned");
   const canSearch = caps.includes("messages_search");
   const canInbox = caps.includes("pings_get");
-  const supportsJoinLeave =
-    hasCapability("thread_join") && hasCapability("thread_leave");
+  const supportsJoinLeave = hasCapability("thread_join") && hasCapability("thread_leave");
 
   const myUsername = currentUserByServer.value[serverUrl.value]?.username;
   const isThreadParticipant = thread?.participants?.includes(myUsername || "");
 
-  const serverPingTotal = servers.value.reduce(
-    (sum, s) => sum + getServerPingCount(s.url),
-    0,
-  );
+  const serverPingTotal = servers.value.reduce((sum, s) => sum + getServerPingCount(s.url), 0);
   const dmPingTotal = dmServers.value.reduce(
     (sum, dm) => sum + getChannelUnreadCount(DM_SERVER_URL, dm.channel),
-    0,
+    0
   );
   const totalPings = serverPingTotal + dmPingTotal;
 
@@ -123,16 +118,10 @@ export function Header() {
 
   const renderMobileHeader = () => (
     <div className={styles.header}>
-      <button
-        className={styles.menuBtn}
-        onClick={toggleSidebar}
-        aria-label="Toggle navigation"
-      >
+      <button className={styles.menuBtn} onClick={toggleSidebar} aria-label="Toggle navigation">
         <Icon name="Menu" size={24} />
         {totalPings > 0 && !mobileSidebarOpen.value && (
-          <span className={styles.menuBtnPingBadge}>
-            {totalPings > 99 ? "99+" : totalPings}
-          </span>
+          <span className={styles.menuBtnPingBadge}>{totalPings > 99 ? "99+" : totalPings}</span>
         )}
       </button>
       <div className={styles.serverInfo}>
@@ -141,15 +130,9 @@ export function Header() {
             <span>{currentServer.value?.name || "Direct Messages"}</span>
           </div>
           <div className={styles.channelName}>
-            #{" "}
-            {currentChannel.value?.display_name ||
-              currentChannel.value?.name ||
-              "home"}
+            # {currentChannel.value?.display_name || currentChannel.value?.name || "home"}
             {(currentChannel.value as any)?.description && (
-              <span
-                className={styles.channelDescription}
-                style={{ marginLeft: 8, opacity: 0.6 }}
-              >
+              <span className={styles.channelDescription} style={{ marginLeft: 8, opacity: 0.6 }}>
                 {(currentChannel.value as any).description}
               </span>
             )}
@@ -201,14 +184,9 @@ export function Header() {
   const renderDesktopHeader = () => (
     <div className={styles.mainMessagesHeader}>
       <div className={styles.mainHeaderLeft}>
-        <Icon
-          name={ch?.type === "thread" ? "MessageSquare" : "Hash"}
-          size={24}
-        />
+        <Icon name={ch?.type === "thread" ? "MessageSquare" : "Hash"} size={24} />
         <span className={styles.mainHeaderChannelName}>
-          {currentChannel.value?.display_name ||
-            currentChannel.value?.name ||
-            "home"}
+          {currentChannel.value?.display_name || currentChannel.value?.name || "home"}
         </span>
         {(currentChannel.value as any)?.description && (
           <span className={styles.mainHeaderChannelDescription}>
@@ -245,9 +223,7 @@ export function Header() {
               <span>Join</span>
             </button>
           ))}
-        {isChatChannel && (
-          <CallButton className={styles.headerIconBtn} iconSize={20} />
-        )}
+        {isChatChannel && <CallButton className={styles.headerIconBtn} iconSize={20} />}
         {canInbox && (
           <button
             className={`${styles.headerIconBtn} ${rightPanelView.value === "inbox" ? styles.active : ""}`}
@@ -280,9 +256,7 @@ export function Header() {
           !SPECIAL_CHANNELS.has(currentChannel.value.name) &&
           (() => {
             const displayName = currentChannel.value?.display_name;
-            const is1on1 =
-              displayName &&
-              currentChannel.value?.icon === avatarUrl(displayName);
+            const is1on1 = displayName && currentChannel.value?.icon === avatarUrl(displayName);
             return (
               <button
                 className={`${styles.headerIconBtn} ${rightPanelView.value === "members" ? styles.active : ""}`}
@@ -294,29 +268,21 @@ export function Header() {
             );
           })()}
         {canSearch && (
-          <div
-            className={`${styles.searchInputContainer} ${searchFocused ? styles.focused : ""}`}
-          >
+          <div className={`${styles.searchInputContainer} ${searchFocused ? styles.focused : ""}`}>
             <Icon name="Search" size={16} />
             <input
               type="text"
               className={styles.searchInput}
               placeholder="Search"
               value={searchInput}
-              onInput={(e) =>
-                setSearchInput((e.target as HTMLInputElement).value)
-              }
+              onInput={(e) => setSearchInput((e.target as HTMLInputElement).value)}
               onFocus={() => {
                 setSearchFocused(true);
                 rightPanelView.value = "search";
               }}
               onBlur={() => setSearchFocused(false)}
               onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  searchInput.trim() &&
-                  currentChannel.value
-                ) {
+                if (e.key === "Enter" && searchInput.trim() && currentChannel.value) {
                   searchLoading.value = true;
                   searchResults.value = [];
                   wsSend({

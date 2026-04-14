@@ -160,8 +160,7 @@ async function deleteExpiredCache(): Promise<void> {
         entries.forEach(({ key, entry }) => {
           const expired = now - entry.timestamp > CACHE_DURATION_MS;
           const overSizeLimit = totalSize - deletedSize > IDB_MAX_SIZE;
-          const overEntryLimit =
-            keys.length - (deletedSize > 0 ? 1 : 0) > IDB_MAX_ENTRIES;
+          const overEntryLimit = keys.length - (deletedSize > 0 ? 1 : 0) > IDB_MAX_ENTRIES;
 
           if (expired || overSizeLimit || overEntryLimit) {
             const deleteTx = db.transaction(STORE_NAME, "readwrite");
@@ -296,10 +295,7 @@ function createCachedImageUrl(url: string): string {
   return blobUrl;
 }
 
-export function startChannelLoad(
-  channelId: string,
-  imageUrls: string[],
-): Promise<void> {
+export function startChannelLoad(channelId: string, imageUrls: string[]): Promise<void> {
   const state = channelLoadingState.get(channelId);
   if (state) {
     if (state.timeout) clearTimeout(state.timeout);
@@ -372,9 +368,7 @@ export function scheduleCleanup(): void {
   }, 5000);
 }
 
-export function getCachedImageSize(
-  url: string,
-): { width: number; height: number } | null {
+export function getCachedImageSize(url: string): { width: number; height: number } | null {
   if (!url || url.startsWith("data:") || url.startsWith("blob:")) return null;
   const cached = sizeMemoryCache.get(url);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
@@ -384,7 +378,7 @@ export function getCachedImageSize(
 }
 
 async function getCachedImageSizeAsync(
-  url: string,
+  url: string
 ): Promise<{ width: number; height: number } | null> {
   if (!url || url.startsWith("data:") || url.startsWith("blob:")) return null;
   const memCached = sizeMemoryCache.get(url);
@@ -417,11 +411,7 @@ async function getCachedImageSizeAsync(
   }
 }
 
-export async function saveImageSize(
-  url: string,
-  width: number,
-  height: number,
-): Promise<void> {
+export async function saveImageSize(url: string, width: number, height: number): Promise<void> {
   if (!url || url.startsWith("data:") || url.startsWith("blob:")) return;
   if (sizeMemoryCache.size >= MAX_SIZE_CACHE_ENTRIES) {
     const oldestKey = sizeMemoryCache.keys().next().value;

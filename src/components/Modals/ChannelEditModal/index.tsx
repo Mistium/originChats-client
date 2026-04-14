@@ -72,14 +72,12 @@ export function ChannelEditModal() {
   const channel = channels.value.find((c) => c.name === channelName);
   const webhooks =
     sUrl && channelName
-      ? (webhooksByServer.value[sUrl] || []).filter(
-          (w) => w.channel === channelName,
-        )
+      ? (webhooksByServer.value[sUrl] || []).filter((w) => w.channel === channelName)
       : [];
   const webhookToken =
     sUrl && channelName
       ? (webhooksByServer.value[sUrl] || []).find(
-          (w: Webhook) => w.channel === channelName && w.token,
+          (w: Webhook) => w.channel === channelName && w.token
         )?.token
       : null;
 
@@ -143,7 +141,7 @@ export function ChannelEditModal() {
           size: channel.type === "separator" ? size : undefined,
         },
       },
-      sUrl,
+      sUrl
     );
     setLoading(false);
   };
@@ -175,7 +173,7 @@ export function ChannelEditModal() {
           name: webhookName.trim(),
           avatar: webhookAvatar.trim(),
         },
-        sUrl,
+        sUrl
       );
     } else {
       wsSend(
@@ -185,7 +183,7 @@ export function ChannelEditModal() {
           name: webhookName.trim(),
           avatar: webhookAvatar.trim(),
         },
-        sUrl,
+        sUrl
       );
     }
     setWebhookModalOpen(false);
@@ -213,7 +211,7 @@ export function ChannelEditModal() {
     ([name, role]: [string, Role]) => ({
       ...role,
       name,
-    }),
+    })
   );
 
   const formatDate = (timestamp: number) => formatDateShort(timestamp * 1000);
@@ -246,13 +244,7 @@ export function ChannelEditModal() {
                 onClick={() => setActiveTab(tab)}
               >
                 <Icon
-                  name={
-                    tab === "overview"
-                      ? "Settings"
-                      : tab === "permissions"
-                        ? "Lock"
-                        : "Globe"
-                  }
+                  name={tab === "overview" ? "Settings" : tab === "permissions" ? "Lock" : "Globe"}
                   size={16}
                 />
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -285,9 +277,7 @@ export function ChannelEditModal() {
                   type="text"
                   className="input"
                   value={displayName}
-                  onInput={(e) =>
-                    setDisplayName((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setDisplayName((e.target as HTMLInputElement).value)}
                   placeholder="Enter display name"
                 />
               </div>
@@ -296,9 +286,7 @@ export function ChannelEditModal() {
                 <textarea
                   className="input"
                   value={description}
-                  onInput={(e) =>
-                    setDescription((e.target as HTMLTextAreaElement).value)
-                  }
+                  onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
                   placeholder="Enter description"
                   rows={4}
                 />
@@ -318,9 +306,7 @@ export function ChannelEditModal() {
                       min="0"
                       max="100"
                       value={size}
-                      onInput={(e) =>
-                        setSize(Number((e.target as HTMLInputElement).value))
-                      }
+                      onInput={(e) => setSize(Number((e.target as HTMLInputElement).value))}
                     />
                     <span style={{ marginLeft: "12px" }}>{size}px</span>
                   </div>
@@ -328,11 +314,7 @@ export function ChannelEditModal() {
               )}
 
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={close}
-                  disabled={loading}
-                >
+                <button className="settings-btn-cancel" onClick={close} disabled={loading}>
                   Cancel
                 </button>
                 <button
@@ -350,8 +332,8 @@ export function ChannelEditModal() {
             <div className="server-section-body channel-edit-overview">
               <div className="permissions-description">
                 <p>
-                  Configure which roles can perform specific actions in this
-                  channel. Add roles to each permission to grant access.
+                  Configure which roles can perform specific actions in this channel. Add roles to
+                  each permission to grant access.
                 </p>
               </div>
 
@@ -361,63 +343,49 @@ export function ChannelEditModal() {
                   description="Roles that can see the channel"
                   values={permissions.view}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, view: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, view: values })}
                 />
                 <TagInput
                   label="Send"
                   description="Roles that can send messages"
                   values={permissions.send}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, send: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, send: values })}
                 />
                 <TagInput
                   label="Delete"
                   description="Roles that can delete any message"
                   values={permissions.delete}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, delete: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, delete: values })}
                 />
                 <TagInput
                   label="Delete Own"
                   description="Roles that can delete their own messages (defaults to all if omitted)"
                   values={permissions.delete_own}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, delete_own: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, delete_own: values })}
                 />
                 <TagInput
                   label="Edit Own"
                   description="Roles that can edit their own messages (defaults to all if omitted)"
                   values={permissions.edit_own}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, edit_own: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, edit_own: values })}
                 />
                 <TagInput
                   label="Pin"
                   description="Roles that can pin messages (defaults to owner only if omitted)"
                   values={permissions.pin}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, pin: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, pin: values })}
                 />
                 <TagInput
                   label="React"
                   description="Roles that can add/remove reactions to messages"
                   values={permissions.react}
                   availableRoles={availableRoles}
-                  onChange={(values) =>
-                    setPermissions({ ...permissions, react: values })
-                  }
+                  onChange={(values) => setPermissions({ ...permissions, react: values })}
                 />
                 {channel.type === "forum" && (
                   <TagInput
@@ -425,19 +393,13 @@ export function ChannelEditModal() {
                     description="Roles that can create new threads"
                     values={permissions.create_thread}
                     availableRoles={availableRoles}
-                    onChange={(values) =>
-                      setPermissions({ ...permissions, create_thread: values })
-                    }
+                    onChange={(values) => setPermissions({ ...permissions, create_thread: values })}
                   />
                 )}
               </div>
 
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={close}
-                  disabled={loading}
-                >
+                <button className="settings-btn-cancel" onClick={close} disabled={loading}>
                   Cancel
                 </button>
                 <button
@@ -455,26 +417,19 @@ export function ChannelEditModal() {
             <div className="server-section-body">
               <div className="webhook-cards-header">
                 <h3>Webhooks</h3>
-                <button
-                  className="settings-action-btn"
-                  onClick={openCreateWebhook}
-                >
+                <button className="settings-action-btn" onClick={openCreateWebhook}>
                   <Icon name="Plus" size={16} /> Create Webhook
                 </button>
               </div>
               {webhooks.length === 0 ? (
-                <div className="settings-empty">
-                  No webhooks configured for this channel
-                </div>
+                <div className="settings-empty">No webhooks configured for this channel</div>
               ) : (
                 <div className="webhook-list">
                   {webhooks.map((webhook) => (
                     <div key={webhook.id} className="webhook-card">
                       <div className="webhook-card-header">
                         <div className="webhook-card-info">
-                          <div className="webhook-card-name">
-                            {webhook.name}
-                          </div>
+                          <div className="webhook-card-name">{webhook.name}</div>
                           <div className="webhook-card-meta">
                             Created {formatDate(webhook.created_at)}
                           </div>
@@ -483,9 +438,7 @@ export function ChannelEditModal() {
                           <div className="webhook-token-row">
                             <span className="webhook-token-label">Token:</span>
                             <span className="webhook-token-value">
-                              {revealedTokens.has(webhook.id)
-                                ? webhook.token
-                                : "••••••••••••••••"}
+                              {revealedTokens.has(webhook.id) ? webhook.token : "••••••••••••••••"}
                             </span>
                             <button
                               className="settings-icon-btn"
@@ -498,18 +451,10 @@ export function ChannelEditModal() {
                                 }
                                 setRevealedTokens(newRevealed);
                               }}
-                              title={
-                                revealedTokens.has(webhook.id)
-                                  ? "Hide"
-                                  : "Reveal"
-                              }
+                              title={revealedTokens.has(webhook.id) ? "Hide" : "Reveal"}
                             >
                               <Icon
-                                name={
-                                  revealedTokens.has(webhook.id)
-                                    ? "EyeOff"
-                                    : "Eye"
-                                }
+                                name={revealedTokens.has(webhook.id) ? "EyeOff" : "Eye"}
                                 size={14}
                               />
                             </button>
@@ -576,9 +521,7 @@ export function ChannelEditModal() {
                   type="text"
                   className="input"
                   value={webhookName}
-                  onInput={(e) =>
-                    setWebhookName((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setWebhookName((e.target as HTMLInputElement).value)}
                   placeholder="Webhook name"
                   disabled={!!editingWebhook}
                 />
@@ -589,9 +532,7 @@ export function ChannelEditModal() {
                   type="text"
                   className="input"
                   value={webhookAvatar}
-                  onInput={(e) =>
-                    setWebhookAvatar((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setWebhookAvatar((e.target as HTMLInputElement).value)}
                   placeholder="https://example.com/avatar.png"
                 />
               </div>
@@ -608,10 +549,7 @@ export function ChannelEditModal() {
                 </div>
               )}
               <div className="settings-dialog-actions">
-                <button
-                  className="settings-btn-cancel"
-                  onClick={() => setWebhookModalOpen(false)}
-                >
+                <button className="settings-btn-cancel" onClick={() => setWebhookModalOpen(false)}>
                   Cancel
                 </button>
                 <button
@@ -660,24 +598,14 @@ interface TagInputProps {
   onChange: (values: string[]) => void;
 }
 
-function TagInput({
-  label,
-  description,
-  values,
-  availableRoles,
-  onChange,
-}: TagInputProps) {
+function TagInput({ label, description, values, availableRoles, onChange }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredRoles = availableRoles
-    .filter(
-      (role) =>
-        role?.name &&
-        role.name.toLowerCase().includes(inputValue.toLowerCase()),
-    )
+    .filter((role) => role?.name && role.name.toLowerCase().includes(inputValue.toLowerCase()))
     .filter((role) => !values.includes(role.name));
 
   const handleAddTag = (roleName: string) => {
@@ -706,10 +634,7 @@ function TagInput({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
     };
@@ -720,9 +645,7 @@ function TagInput({
   return (
     <div className="tag-input-wrapper">
       <label>{label}</label>
-      {description && (
-        <div className="tag-input-description">{description}</div>
-      )}
+      {description && <div className="tag-input-description">{description}</div>}
       <div className="tag-input-container" ref={containerRef}>
         {values.map((value) => (
           <span key={value} className="tag">

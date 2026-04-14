@@ -30,13 +30,7 @@ export function Embed({ info }: EmbedProps) {
     case "github_repo": {
       const pathMatch = info.path!.match(/^([^/]+)\/([^/]+)$/);
       if (pathMatch) {
-        return (
-          <GitHubRepoEmbed
-            owner={pathMatch[1]}
-            repo={pathMatch[2]}
-            originalUrl={info.url}
-          />
-        );
+        return <GitHubRepoEmbed owner={pathMatch[1]} repo={pathMatch[2]} originalUrl={info.url} />;
       }
       return <GitHubUserEmbed username={info.path!} originalUrl={info.url} />;
     }
@@ -73,22 +67,13 @@ export function Embed({ info }: EmbedProps) {
         />
       );
     case "spotify":
-      return (
-        <SpotifyEmbed spotifyUrl={info.spotifyUrl!} originalUrl={info.url} />
-      );
+      return <SpotifyEmbed spotifyUrl={info.spotifyUrl!} originalUrl={info.url} />;
     case "steam":
       return <SteamEmbed appId={info.steamAppId!} originalUrl={info.url} />;
     case "mistwarp":
-      return (
-        <MistWarpEmbed projectId={info.mistWarpId!} originalUrl={info.url} />
-      );
+      return <MistWarpEmbed projectId={info.mistWarpId!} originalUrl={info.url} />;
     case "originchats_server":
-      return (
-        <OriginChatsServerEmbed
-          serverHost={info.originChatsHost!}
-          originalUrl={info.url}
-        />
-      );
+      return <OriginChatsServerEmbed serverHost={info.originChatsHost!} originalUrl={info.url} />;
     case "link_preview":
       return (
         <LinkPreviewEmbed

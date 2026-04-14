@@ -30,11 +30,7 @@ export function OfflineScreen({ onRetry }: OfflineScreenProps) {
           <br />
           Check your connection and try again.
         </p>
-        <button
-          className="offline-retry-btn"
-          onClick={handleRetry}
-          disabled={retrying}
-        >
+        <button className="offline-retry-btn" onClick={handleRetry} disabled={retrying}>
           {retrying ? (
             <>
               <Icon name="Loader" size={16} />

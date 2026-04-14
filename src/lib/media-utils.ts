@@ -22,14 +22,7 @@ export const IMAGE_EXTENSIONS = [
   "avif",
 ] as const;
 
-export const VIDEO_EXTENSIONS = [
-  "mp4",
-  "webm",
-  "mov",
-  "avi",
-  "mkv",
-  "gifv",
-] as const;
+export const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi", "mkv", "gifv"] as const;
 
 const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac", "aac"] as const;
 
@@ -45,10 +38,7 @@ export function proxyImageUrl(url: string): string {
   }
 }
 
-export function hasExtension(
-  url: string,
-  extensions: readonly string[],
-): boolean {
+export function hasExtension(url: string, extensions: readonly string[]): boolean {
   const lower = url.toLowerCase().split(/[?#]/)[0];
   return extensions.some((ext) => lower.endsWith(`.${ext}`));
 }

@@ -4,47 +4,24 @@ import DOMPurify from "dompurify";
 import { parseMarkdown } from "../../lib/markdown";
 import type { MentionContext } from "../../lib/markdown";
 import styles from "./MessageContent.module.css";
-import {
-  detectEmbedType,
-  isTenorOnlyMessage,
-  proxyImageUrl,
-} from "../../lib/embeds/utils";
+import { detectEmbedType, isTenorOnlyMessage, proxyImageUrl } from "../../lib/embeds/utils";
 import { Embed } from "../../lib/embeds/index";
 import type { EmbedInfo } from "../../lib/embeds/types";
 import { MessageEmbed } from "../MessageEmbed";
 import type { MessageEmbed as MessageEmbedType } from "../../types";
 import { users, channels, rolesByServer, serverUrl } from "../../state";
-import {
-  getCachedImage,
-  getCachedImageSync,
-  scheduleCleanup,
-} from "../../lib/image-cache";
+import { getCachedImage, getCachedImageSync, scheduleCleanup } from "../../lib/image-cache";
 
-const parseMemoCache = new Map<
-  string,
-  { html: string; embedLinks: string[] }
->();
+const parseMemoCache = new Map<string, { html: string; embedLinks: string[] }>();
 const MAX_PARSE_CACHE = 200;
 
-const IMAGE_EXTENSIONS = [
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "webp",
-  "svg",
-  "bmp",
-  "ico",
-  "avif",
-];
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "avif"];
 
 function hasImageExtension(url: string): boolean {
   const urlLower = url.toLowerCase();
   return IMAGE_EXTENSIONS.some(
     (ext) =>
-      urlLower.endsWith(`.${ext}`) ||
-      urlLower.includes(`.${ext}?`) ||
-      urlLower.includes(`.${ext}#`),
+      urlLower.endsWith(`.${ext}`) || urlLower.includes(`.${ext}?`) || urlLower.includes(`.${ext}#`)
   );
 }
 
@@ -74,14 +51,11 @@ function isEmojiOnlyMessage(text: string): boolean {
   if (SINGLE_EMOJI_RE.test(trimmed)) return true;
   if (CUSTOM_EMOJI_RE.test(trimmed)) return true;
 
-  const withoutCustomEmojis = trimmed.replace(
-    /originChats:<emoji>\/\/[^\/\s]+\/[^\s]+/g,
-    "",
-  );
+  const withoutCustomEmojis = trimmed.replace(/originChats:<emoji>\/\/[^\/\s]+\/[^\s]+/g, "");
 
   const remaining = withoutCustomEmojis.replace(
     /[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\u{1F3FB}-\u{1F3FF}\s]/gu,
-    "",
+    ""
   );
 
   return remaining.length === 0;
@@ -110,17 +84,13 @@ function MessageContentInner({
     }
 
     const authorRoles =
-      (authorUsername
-        ? users.value[authorUsername.toLowerCase()]?.roles
-        : undefined) ?? [];
+      (authorUsername ? users.value[authorUsername.toLowerCase()]?.roles : undefined) ?? [];
 
     const mentionableRoles = new Set<string>();
     for (const authorRole of authorRoles) {
-      const roleDef =
-        rolesMap[authorRole] ?? rolesMap[authorRole.toLowerCase()];
+      const roleDef = rolesMap[authorRole] ?? rolesMap[authorRole.toLowerCase()];
       if (!roleDef) continue;
-      const perm = (roleDef.permissions as Record<string, any> | undefined)
-        ?.mention_roles;
+      const perm = (roleDef.permissions as Record<string, any> | undefined)?.mention_roles;
       if (perm === true) {
         for (const r of Object.keys(rolesMap)) {
           mentionableRoles.add(r.toLowerCase());
@@ -143,12 +113,8 @@ function MessageContentInner({
     const allRoles = new Set(Object.keys(rolesMap).map((r) => r.toLowerCase()));
 
     const mentionCtx: MentionContext = {
-      validUsernames: new Set(
-        Object.keys(users.value).map((u) => u.toLowerCase()),
-      ),
-      validChannels: new Set(
-        channels.value.filter((c) => c.name).map((c) => c.name.toLowerCase()),
-      ),
+      validUsernames: new Set(Object.keys(users.value).map((u) => u.toLowerCase())),
+      validChannels: new Set(channels.value.filter((c) => c.name).map((c) => c.name.toLowerCase())),
       validRoles: mentionableRoles,
       allRoles,
       roleColors,
@@ -160,22 +126,14 @@ function MessageContentInner({
     let mentioned = false;
     if (currentUsername && pings) {
       const currentUsernameLower = currentUsername.toLowerCase();
-      const myRoles =
-        users.value[currentUsernameLower]?.roles?.map((r) => r.toLowerCase()) ??
-        [];
+      const myRoles = users.value[currentUsernameLower]?.roles?.map((r) => r.toLowerCase()) ?? [];
       const myRolesLower = new Set(myRoles);
-      const mentionedRolesLower = (pings.roles || []).map((r) =>
-        r.toLowerCase(),
-      );
+      const mentionedRolesLower = (pings.roles || []).map((r) => r.toLowerCase());
 
       mentioned =
-        (pings.users || []).some(
-          (u) => u.toLowerCase() === currentUsernameLower,
-        ) ||
+        (pings.users || []).some((u) => u.toLowerCase() === currentUsernameLower) ||
         mentionedRolesLower.some((r) => myRolesLower.has(r)) ||
-        (pings.replies || []).some(
-          (r) => r.toLowerCase() === currentUsernameLower,
-        );
+        (pings.replies || []).some((r) => r.toLowerCase() === currentUsernameLower);
     }
     return {
       html: DOMPurify.sanitize(parsed, { ADD_ATTR: ["target"] }),
@@ -185,14 +143,11 @@ function MessageContentInner({
     };
   }, [content, currentUsername, authorUsername]);
 
-  const isTenorOnly = useMemo(
-    () => isTenorOnlyMessage(embedLinks, content),
-    [embedLinks, content],
-  );
+  const isTenorOnly = useMemo(() => isTenorOnlyMessage(embedLinks, content), [embedLinks, content]);
 
   const linksNeedingEmbeds = useMemo(
     () => embedLinks.filter((url) => !hasImageExtension(url)),
-    [embedLinks],
+    [embedLinks]
   );
 
   useEffect(() => {
@@ -204,19 +159,11 @@ function MessageContentInner({
     let cancelled = false;
 
     async function resolveEmbeds() {
-      const results = await Promise.all(
-        linksNeedingEmbeds.map((url) => detectEmbedType(url)),
-      );
+      const results = await Promise.all(linksNeedingEmbeds.map((url) => detectEmbedType(url)));
       if (!cancelled) {
-        const imageUrls = results
-          .filter((e) => e.type === "image")
-          .map((e) => e.url);
+        const imageUrls = results.filter((e) => e.type === "image").map((e) => e.url);
         setInlineImages(imageUrls);
-        setEmbeds(
-          results.filter(
-            (e) => e.type !== "unknown" && e.type !== "image",
-          ) as EmbedInfo[],
-        );
+        setEmbeds(results.filter((e) => e.type !== "unknown" && e.type !== "image") as EmbedInfo[]);
       }
     }
 
@@ -232,9 +179,7 @@ function MessageContentInner({
     scheduleCleanup();
 
     const messageText = messageTextRef.current;
-    const placeholders = messageText.querySelectorAll<HTMLDivElement>(
-      "div.image-placeholder",
-    );
+    const placeholders = messageText.querySelectorAll<HTMLDivElement>("div.image-placeholder");
 
     if (isReply) {
       placeholders.forEach((placeholder) => {
@@ -272,16 +217,13 @@ function MessageContentInner({
       }
     });
 
-    const potentialLinks =
-      messageText.querySelectorAll<HTMLAnchorElement>("a.potential-image");
+    const potentialLinks = messageText.querySelectorAll<HTMLAnchorElement>("a.potential-image");
 
     potentialLinks.forEach((link) => {
       const url = link.dataset.imageUrl;
       if (!url) return;
 
-      const isDetectedImage = inlineImages.some(
-        (imgUrl) => imgUrl === url || imgUrl === link.href,
-      );
+      const isDetectedImage = inlineImages.some((imgUrl) => imgUrl === url || imgUrl === link.href);
 
       if (!isDetectedImage) return;
 
@@ -313,9 +255,7 @@ function MessageContentInner({
       }
     });
 
-    const remoteEmojis = messageText.querySelectorAll<HTMLImageElement>(
-      "img.custom-emoji-remote",
-    );
+    const remoteEmojis = messageText.querySelectorAll<HTMLImageElement>("img.custom-emoji-remote");
 
     remoteEmojis.forEach((img) => {
       if (img.dataset.fetched) return;

@@ -37,10 +37,7 @@ class UnreadStore {
 
   private save() {
     if (this._timer) clearTimeout(this._timer);
-    this._timer = setTimeout(
-      () => persist(this._pings.value, this._unreads.value),
-      500,
-    );
+    this._timer = setTimeout(() => persist(this._pings.value, this._unreads.value), 500);
   }
 
   get(url: string, channel: string) {
@@ -103,10 +100,10 @@ class UnreadStore {
     const prefix = `${url}:`;
     return (
       Object.keys(this._pings.value).some(
-        (k) => k.startsWith(prefix) && this._pings.value[k] > 0,
+        (k) => k.startsWith(prefix) && this._pings.value[k] > 0
       ) ||
       Object.keys(this._unreads.value).some(
-        (k) => k.startsWith(prefix) && this._unreads.value[k] > 0,
+        (k) => k.startsWith(prefix) && this._unreads.value[k] > 0
       )
     );
   }
@@ -154,12 +151,10 @@ class UnreadStore {
   clearServer(url: string) {
     const prefix = `${url}:`;
     this._pings.value = Object.fromEntries(
-      Object.entries(this._pings.value).filter(([k]) => !k.startsWith(prefix)),
+      Object.entries(this._pings.value).filter(([k]) => !k.startsWith(prefix))
     );
     this._unreads.value = Object.fromEntries(
-      Object.entries(this._unreads.value).filter(
-        ([k]) => !k.startsWith(prefix),
-      ),
+      Object.entries(this._unreads.value).filter(([k]) => !k.startsWith(prefix))
     );
     this.save();
   }

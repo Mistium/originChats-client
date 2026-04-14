@@ -17,12 +17,7 @@ import {
 } from "../../state";
 import type { ServerFolder } from "../../types";
 import { wsSend } from "../../lib/websocket";
-import {
-  switchServer,
-  markServerAsRead,
-  removeServer,
-  openDMWith,
-} from "../../lib/actions";
+import { switchServer, markServerAsRead, removeServer, openDMWith } from "../../lib/actions";
 import {
   showDiscoveryModal,
   mobileSidebarOpen,
@@ -69,8 +64,7 @@ export function GuildSidebar() {
   const getConnectionClass = (url: string) => {
     const status = wsStatus[url];
     if (status === "connecting") return styles.serverConnecting;
-    if (status === "disconnected" || status === "error")
-      return styles.serverDisconnected;
+    if (status === "disconnected" || status === "error") return styles.serverDisconnected;
     return "";
   };
 
@@ -90,10 +84,7 @@ export function GuildSidebar() {
     let hasDragged = false;
 
     const onMove = (moveEvent: MouseEvent) => {
-      if (
-        !hasDragged &&
-        Math.abs(moveEvent.clientY - startY) > DRAG_THRESHOLD
-      ) {
+      if (!hasDragged && Math.abs(moveEvent.clientY - startY) > DRAG_THRESHOLD) {
         hasDragged = true;
         const initialDrag = {
           index,
@@ -146,7 +137,7 @@ export function GuildSidebar() {
       setIsDropping(true);
       dropTimeoutRef.current = setTimeout(async () => {
         const serversNotInFolders = servers.value.filter(
-          (s) => !serverFolders.value.some((f) => f.serverUrls.includes(s.url)),
+          (s) => !serverFolders.value.some((f) => f.serverUrls.includes(s.url))
         );
 
         const reordered = [...serversNotInFolders];
@@ -155,15 +146,10 @@ export function GuildSidebar() {
 
         const newOrder = reordered.map((s) => s.url);
         const updatedServers = [...servers.value].sort((a, b) => {
-          const aInFolder = serverFolders.value.some((f) =>
-            f.serverUrls.includes(a.url),
-          );
-          const bInFolder = serverFolders.value.some((f) =>
-            f.serverUrls.includes(b.url),
-          );
+          const aInFolder = serverFolders.value.some((f) => f.serverUrls.includes(a.url));
+          const bInFolder = serverFolders.value.some((f) => f.serverUrls.includes(b.url));
           if (aInFolder !== bInFolder) return aInFolder ? 1 : -1;
-          if (!aInFolder && !bInFolder)
-            return newOrder.indexOf(a.url) - newOrder.indexOf(b.url);
+          if (!aInFolder && !bInFolder) return newOrder.indexOf(a.url) - newOrder.indexOf(b.url);
           return 0;
         });
 
@@ -190,10 +176,7 @@ export function GuildSidebar() {
   useEffect(() => {
     return () => {
       if (dragListenersRef.current) {
-        document.removeEventListener(
-          "mousemove",
-          dragListenersRef.current.onMove,
-        );
+        document.removeEventListener("mousemove", dragListenersRef.current.onMove);
         document.removeEventListener("mouseup", dragListenersRef.current.onUp);
       }
       if (dropTimeoutRef.current) {
@@ -202,15 +185,11 @@ export function GuildSidebar() {
     };
   }, []);
 
-  const handleServerContextMenu = (
-    e: MouseEvent,
-    server: { url: string; name: string },
-  ) => {
+  const handleServerContextMenu = (e: MouseEvent, server: { url: string; name: string }) => {
     e.preventDefault();
-    const currentLevel: NotificationLevel =
-      serverNotifSettings.value[server.url] ?? "mentions";
+    const currentLevel: NotificationLevel = serverNotifSettings.value[server.url] ?? "mentions";
     const folderContainingServer = serverFolders.value.find((f) =>
-      f.serverUrls.includes(server.url),
+      f.serverUrls.includes(server.url)
     );
 
     const setServerNotif = (level: NotificationLevel) => {
@@ -225,9 +204,7 @@ export function GuildSidebar() {
         };
       }
       saveNotifSettings()
-        .then(() =>
-          showInfo("Notification settings saved", { autoDismissMs: 2000 }),
-        )
+        .then(() => showInfo("Notification settings saved", { autoDismissMs: 2000 }))
         .catch(console.error);
     };
 
@@ -249,11 +226,9 @@ export function GuildSidebar() {
                     f.id === folderContainingServer.id
                       ? {
                           ...f,
-                          serverUrls: f.serverUrls.filter(
-                            (u) => u !== server.url,
-                          ),
+                          serverUrls: f.serverUrls.filter((u) => u !== server.url),
                         }
-                      : f,
+                      : f
                   )
                   .filter((f) => f.serverUrls.length > 0);
                 saveFolders().catch(() => {});
@@ -311,7 +286,7 @@ export function GuildSidebar() {
               },
             }),
         },
-      ].filter(Boolean) as any[],
+      ].filter(Boolean) as any[]
     );
   };
 
@@ -342,7 +317,7 @@ export function GuildSidebar() {
           const newName = prompt("Enter folder name:", folder.name);
           if (newName?.trim()) {
             serverFolders.value = serverFolders.value.map((f) =>
-              f.id === folder.id ? { ...f, name: newName.trim() } : f,
+              f.id === folder.id ? { ...f, name: newName.trim() } : f
             );
             saveFolders().catch(() => {});
           }
@@ -359,7 +334,7 @@ export function GuildSidebar() {
           iconColor: c.hex,
           fn: () => {
             serverFolders.value = serverFolders.value.map((f) =>
-              f.id === folder.id ? { ...f, color: c.hex } : f,
+              f.id === folder.id ? { ...f, color: c.hex } : f
             );
             saveFolders().catch(() => {});
           },
@@ -371,7 +346,7 @@ export function GuildSidebar() {
         icon: "X",
         fn: () => {
           serverFolders.value = serverFolders.value.map((f) =>
-            f.id === folder.id ? { ...f, color: undefined } : f,
+            f.id === folder.id ? { ...f, color: undefined } : f
           );
           saveFolders().catch(() => {});
         },
@@ -382,9 +357,7 @@ export function GuildSidebar() {
         icon: "Trash2",
         danger: true,
         fn: () => {
-          serverFolders.value = serverFolders.value.filter(
-            (f) => f.id !== folder.id,
-          );
+          serverFolders.value = serverFolders.value.filter((f) => f.id !== folder.id);
           saveFolders().catch(() => {});
         },
       },
@@ -392,7 +365,7 @@ export function GuildSidebar() {
   };
 
   const serversNotInFolders = servers.value.filter(
-    (s) => !serverFolders.value.some((f) => f.serverUrls.includes(s.url)),
+    (s) => !serverFolders.value.some((f) => f.serverUrls.includes(s.url))
   );
   const isDragging = drag !== null;
   const fromIdx = drag?.index;
@@ -400,9 +373,7 @@ export function GuildSidebar() {
 
   return (
     <>
-      <div
-        className={`${styles.guildSidebar}${mobileSidebarOpen.value ? ` ${styles.open}` : ""}`}
-      >
+      <div className={`${styles.guildSidebar}${mobileSidebarOpen.value ? ` ${styles.open}` : ""}`}>
         <div className={styles.guildList} ref={listRef}>
           <div
             className={`${styles.guildItem} ${styles.homeGuild} ${serverUrl.value === DM_SERVER_URL ? styles.active : ""} ${getConnectionClass(DM_SERVER_URL)}`}
@@ -426,29 +397,20 @@ export function GuildSidebar() {
           <div className={styles.guildDivider} />
 
           {serverFolders.value.map((folder) => {
-            const folderServers = servers.value.filter((s) =>
-              folder.serverUrls.includes(s.url),
-            );
+            const folderServers = servers.value.filter((s) => folder.serverUrls.includes(s.url));
             const isCollapsed = folder.collapsed !== false;
             const pings = folderServers.reduce(
               (sum, s) =>
-                sum +
-                (serverNotifSettings.value[s.url] === "none"
-                  ? 0
-                  : getServerPingCount(s.url)),
-              0,
+                sum + (serverNotifSettings.value[s.url] === "none" ? 0 : getServerPingCount(s.url)),
+              0
             );
             const unreads = folderServers.reduce(
               (sum, s) =>
                 sum +
-                (serverNotifSettings.value[s.url] === "none"
-                  ? 0
-                  : getServerUnreadCount(s.url)),
-              0,
+                (serverNotifSettings.value[s.url] === "none" ? 0 : getServerUnreadCount(s.url)),
+              0
             );
-            const hasActive = folderServers.some(
-              (s) => serverUrl.value === s.url,
-            );
+            const hasActive = folderServers.some((s) => serverUrl.value === s.url);
 
             return (
               <Fragment key={folder.id}>
@@ -456,9 +418,7 @@ export function GuildSidebar() {
                   className={`${styles.guildItem} ${styles.folderItem}${hasActive ? ` ${styles.active}` : ""}`}
                   onClick={() => {
                     serverFolders.value = serverFolders.value.map((f) =>
-                      f.id === folder.id
-                        ? { ...f, collapsed: !isCollapsed }
-                        : f,
+                      f.id === folder.id ? { ...f, collapsed: !isCollapsed } : f
                     );
                     saveFolders().catch(() => {});
                   }}
@@ -466,51 +426,33 @@ export function GuildSidebar() {
                 >
                   <div
                     className={styles.folderIcon}
-                    style={
-                      folder.color ? { backgroundColor: folder.color } : {}
-                    }
+                    style={folder.color ? { backgroundColor: folder.color } : {}}
                   >
-                    <Icon
-                      name={isCollapsed ? "Folder" : "FolderOpen"}
-                      size={20}
-                    />
+                    <Icon name={isCollapsed ? "Folder" : "FolderOpen"} size={20} />
                   </div>
                   <div className={styles.guildPill} />
-                  {unreads > 0 && pings === 0 && (
-                    <div className={styles.guildUnreadDot} />
-                  )}
-                  {pings > 0 && (
-                    <div className={styles.guildPingBadge}>{pings}</div>
-                  )}
+                  {unreads > 0 && pings === 0 && <div className={styles.guildUnreadDot} />}
+                  {pings > 0 && <div className={styles.guildPingBadge}>{pings}</div>}
                 </div>
                 {!isCollapsed && (
                   <div className={styles.folderServers}>
                     {folderServers.map((server) => {
-                      const muted =
-                        serverNotifSettings.value[server.url] === "none";
-                      const unreads = muted
-                        ? 0
-                        : getServerUnreadCount(server.url);
+                      const muted = serverNotifSettings.value[server.url] === "none";
+                      const unreads = muted ? 0 : getServerUnreadCount(server.url);
                       const pings = muted ? 0 : getServerPingCount(server.url);
                       return (
                         <div
                           key={server.url}
                           className={`${styles.guildItem} ${styles.folderServer}${serverUrl.value === server.url ? ` ${styles.active}` : ""} ${getConnectionClass(server.url)}`}
                           onClick={() => switchServer(server.url)}
-                          onContextMenu={(e) =>
-                            handleServerContextMenu(e, server)
-                          }
+                          onContextMenu={(e) => handleServerContextMenu(e, server)}
                         >
                           <div className={styles.guildIcon}>
                             <ServerIcon server={server} />
                           </div>
                           <div className={styles.guildPill} />
-                          {unreads > 0 && pings === 0 && (
-                            <div className={styles.guildUnreadDot} />
-                          )}
-                          {pings > 0 && (
-                            <div className={styles.guildPingBadge}>{pings}</div>
-                          )}
+                          {unreads > 0 && pings === 0 && <div className={styles.guildUnreadDot} />}
+                          {pings > 0 && <div className={styles.guildPingBadge}>{pings}</div>}
                         </div>
                       );
                     })}
@@ -524,16 +466,10 @@ export function GuildSidebar() {
             const muted = serverNotifSettings.value[server.url] === "none";
             const unreads = muted ? 0 : getServerUnreadCount(server.url);
             const pings = muted ? 0 : getServerPingCount(server.url);
-            const isBeingDragged =
-              fromIdx === index && (isDragging || isDropping);
+            const isBeingDragged = fromIdx === index && (isDragging || isDropping);
 
             let shiftStyle: any;
-            if (
-              fromIdx != null &&
-              toIdx != null &&
-              fromIdx !== toIdx &&
-              !isBeingDragged
-            ) {
+            if (fromIdx != null && toIdx != null && fromIdx !== toIdx && !isBeingDragged) {
               if (fromIdx < toIdx && index > fromIdx && index <= toIdx)
                 shiftStyle = {
                   transform: "translateY(-48px)",
@@ -558,12 +494,8 @@ export function GuildSidebar() {
                   <ServerIcon server={server} />
                 </div>
                 <div className={styles.guildPill} />
-                {unreads > 0 && pings === 0 && (
-                  <div className={styles.guildUnreadDot} />
-                )}
-                {pings > 0 && (
-                  <div className={styles.guildPingBadge}>{pings}</div>
-                )}
+                {unreads > 0 && pings === 0 && <div className={styles.guildUnreadDot} />}
+                {pings > 0 && <div className={styles.guildPingBadge}>{pings}</div>}
               </div>
             );
           })}
@@ -600,9 +532,7 @@ export function GuildSidebar() {
                 }}
               >
                 <div className={styles.guildIcon}>
-                  <ServerIcon
-                    server={servers.value.find((s) => s.url === d.url)!}
-                  />
+                  <ServerIcon server={servers.value.find((s) => s.url === d.url)!} />
                 </div>
               </div>
             );
@@ -623,11 +553,7 @@ export function GuildSidebar() {
   );
 }
 
-function DMServerItem({
-  dm,
-}: {
-  dm: { channel: string; username: string; name: string };
-}) {
+function DMServerItem({ dm }: { dm: { channel: string; username: string; name: string } }) {
   const unread = getChannelUnreadCount(DM_SERVER_URL, dm.channel);
   const displayName = useDisplayName(dm.username);
   return (
@@ -655,9 +581,7 @@ function DMServerItem({
         <UserAvatar username={dm.username} alt={displayName} />
       </div>
       <div className={styles.guildPill} />
-      {unread > 0 ? (
-        <div className={styles.guildPingBadge}>{unread}</div>
-      ) : null}
+      {unread > 0 ? <div className={styles.guildPingBadge}>{unread}</div> : null}
     </div>
   );
 }

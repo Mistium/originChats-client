@@ -1,7 +1,4 @@
-const META_CACHE = new Map<
-  string,
-  { data: LinkMetadata | null; timestamp: number }
->();
+const META_CACHE = new Map<string, { data: LinkMetadata | null; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 const MAX_META_CACHE_SIZE = 100;
 
@@ -20,14 +17,14 @@ function parseMetaTags(html: string, originalUrl: string): LinkMetadata | null {
       const attr = property ? "property" : "name";
       const regex = new RegExp(
         `<meta[^>]+${attr}=["']${escapeRegex(name)}["'][^>]*content=["']([^"']*)["']`,
-        "i",
+        "i"
       );
       const match = html.match(regex);
       if (match?.[1]) return decodeHtmlEntities(match[1]);
 
       const reverseRegex = new RegExp(
         `<meta[^>]+content=["']([^"']*)["'][^>]+${attr}=["']${escapeRegex(name)}["']`,
-        "i",
+        "i"
       );
       const reverseMatch = html.match(reverseRegex);
       if (reverseMatch?.[1]) return decodeHtmlEntities(reverseMatch[1]);
@@ -36,18 +33,14 @@ function parseMetaTags(html: string, originalUrl: string): LinkMetadata | null {
   };
 
   const title =
-    getMeta(["og:title", "twitter:title"], true) ||
-    getMeta(["title"]) ||
-    extractTitle(html);
+    getMeta(["og:title", "twitter:title"], true) || getMeta(["title"]) || extractTitle(html);
 
   if (!title) return null;
 
   const description =
-    getMeta(["og:description", "twitter:description"], true) ||
-    getMeta(["description"]);
+    getMeta(["og:description", "twitter:description"], true) || getMeta(["description"]);
 
-  let image =
-    getMeta(["og:image", "twitter:image"], true) || getMeta(["image"]);
+  let image = getMeta(["og:image", "twitter:image"], true) || getMeta(["image"]);
   if (image && !image.startsWith("data:") && !image.startsWith("http")) {
     try {
       const baseUrl = new URL(originalUrl);
@@ -62,8 +55,7 @@ function parseMetaTags(html: string, originalUrl: string): LinkMetadata | null {
     getMeta(["application-name"]) ||
     extractSiteName(originalUrl);
 
-  let favicon =
-    getMeta(["og:image", "apple-touch-icon"]) || extractFavicon(html);
+  let favicon = getMeta(["og:image", "apple-touch-icon"]) || extractFavicon(html);
 
   if (favicon && !favicon.startsWith("data:") && !favicon.startsWith("http")) {
     try {
@@ -96,9 +88,7 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
-      String.fromCharCode(parseInt(code, 16)),
-    );
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
 }
 
 function extractTitle(html: string): string | undefined {
@@ -127,9 +117,7 @@ function extractSiteName(url: string): string {
   }
 }
 
-export async function fetchLinkMetadata(
-  url: string,
-): Promise<LinkMetadata | null> {
+export async function fetchLinkMetadata(url: string): Promise<LinkMetadata | null> {
   const cached = META_CACHE.get(url);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.data;
@@ -139,10 +127,7 @@ export async function fetchLinkMetadata(
     const now = Date.now();
     const entries = [...META_CACHE.entries()];
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    const toDelete = entries.slice(
-      0,
-      META_CACHE.size - MAX_META_CACHE_SIZE + 1,
-    );
+    const toDelete = entries.slice(0, META_CACHE.size - MAX_META_CACHE_SIZE + 1);
     toDelete.forEach(([k]) => META_CACHE.delete(k));
   }
 

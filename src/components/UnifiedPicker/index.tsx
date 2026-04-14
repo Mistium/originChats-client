@@ -1,26 +1,11 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "preact/hooks";
+import { useState, useEffect, useRef, useMemo, useCallback } from "preact/hooks";
 import { memo } from "preact/compat";
 import type { TargetedInputEvent } from "preact";
-import {
-  recentEmojis,
-  customEmojisByServer,
-  servers,
-  serverUrl,
-} from "../../state";
+import { recentEmojis, customEmojisByServer, servers, serverUrl } from "../../state";
 import { Icon } from "../Icon";
 import { favGifs as dbFavGifs } from "../../lib/db";
 import { emojiImgUrl } from "../../lib/emoji";
-import {
-  emojiCache,
-  type EmojiEntry,
-  type CustomEmojiItem,
-} from "../../lib/emoji-data-cache";
+import { emojiCache, type EmojiEntry, type CustomEmojiItem } from "../../lib/emoji-data-cache";
 import {
   MemoVirtualizedEmojiGrid,
   standardEmojiToItem,
@@ -57,39 +42,16 @@ interface UnifiedPickerProps {
 }
 
 function hexcodeToEmoji(hexcode: string): string {
-  return String.fromCodePoint(
-    ...hexcode.split("-").map((h) => parseInt(h, 16)),
-  );
+  return String.fromCodePoint(...hexcode.split("-").map((h) => parseInt(h, 16)));
 }
 
-function TwemojiImg({
-  hexcode,
-  alt,
-  emoji,
-}: {
-  hexcode: string;
-  alt: string;
-  emoji?: string;
-}) {
+function TwemojiImg({ hexcode, alt, emoji }: { hexcode: string; alt: string; emoji?: string }) {
   const url = emojiImgUrl(hexcode);
   if (url) {
-    return (
-      <img
-        src={url}
-        alt={alt}
-        className={styles.twemojiPickerImg}
-        draggable={false}
-      />
-    );
+    return <img src={url} alt={alt} className={styles.twemojiPickerImg} draggable={false} />;
   }
   const char = emoji ?? hexcodeToEmoji(hexcode);
-  return (
-    <span
-      className={`${styles.twemojiPickerImg} ${styles.twemojiPickerSystem}`}
-    >
-      {char}
-    </span>
-  );
+  return <span className={`${styles.twemojiPickerImg} ${styles.twemojiPickerSystem}`}>{char}</span>;
 }
 
 const MemoTwemojiImg = memo(TwemojiImg);
@@ -118,18 +80,7 @@ const EMOJI_GROUP_ICONS: Record<number, string> = {
   9: "1f3c1",
 };
 
-const QUICK_REACTIONS = [
-  "😭",
-  "😔",
-  "💀",
-  "👍",
-  "👎",
-  "❤️",
-  "😂",
-  "😮",
-  "😢",
-  "🔥",
-];
+const QUICK_REACTIONS = ["😭", "😔", "💀", "👍", "👎", "❤️", "😂", "😮", "😢", "🔥"];
 
 const DISPLAY_GROUPS = [0, 1, 3, 4, 5, 6, 7, 8, 9];
 
@@ -247,26 +198,16 @@ export function UnifiedPicker({
         <Icon name="Search" size={14} />
         <input
           type="text"
-          placeholder={
-            activeTab === "emoji" ? "Search emoji..." : "Search Tenor GIFs..."
-          }
+          placeholder={activeTab === "emoji" ? "Search emoji..." : "Search Tenor GIFs..."}
           value={searchTerm}
           onInput={(e) => setSearchTerm((e.target as HTMLInputElement).value)}
           autoFocus
         />
       </div>
       {activeTab === "emoji" ? (
-        <EmojiPanel
-          searchTerm={searchTerm}
-          onSelect={onEmojiSelect}
-          onClose={onClose}
-        />
+        <EmojiPanel searchTerm={searchTerm} onSelect={onEmojiSelect} onClose={onClose} />
       ) : (
-        <GifPanel
-          searchTerm={searchTerm}
-          onSelect={onGifSelect}
-          onClose={onClose}
-        />
+        <GifPanel searchTerm={searchTerm} onSelect={onGifSelect} onClose={onClose} />
       )}
     </div>
   );
@@ -279,18 +220,8 @@ interface EmojiButtonProps {
   onClick: () => void;
 }
 
-const EmojiButtonImpl = ({
-  hexcode,
-  emoji,
-  label,
-  onClick,
-}: EmojiButtonProps) => (
-  <button
-    className="emoji-button"
-    onClick={onClick}
-    title={label}
-    type="button"
-  >
+const EmojiButtonImpl = ({ hexcode, emoji, label, onClick }: EmojiButtonProps) => (
+  <button className="emoji-button" onClick={onClick} title={label} type="button">
     <MemoTwemojiImg hexcode={hexcode} alt={emoji} />
   </button>
 );
@@ -306,31 +237,13 @@ interface CustomEmojiButtonProps {
   onClick: () => void;
 }
 
-const CustomEmojiButtonImpl = ({
-  name,
-  fileName,
-  serverUrl,
-  onClick,
-}: CustomEmojiButtonProps) => {
-  const baseUrl = serverUrl.startsWith("http")
-    ? serverUrl
-    : `https://${serverUrl}`;
+const CustomEmojiButtonImpl = ({ name, fileName, serverUrl, onClick }: CustomEmojiButtonProps) => {
+  const baseUrl = serverUrl.startsWith("http") ? serverUrl : `https://${serverUrl}`;
   const url = `${baseUrl}/emojis/${fileName}`;
 
   return (
-    <button
-      className="emoji-button"
-      onClick={onClick}
-      title={`:${name}:`}
-      type="button"
-    >
-      <img
-        src={url}
-        alt={name}
-        className="emoji-custom-img"
-        loading="lazy"
-        draggable={false}
-      />
+    <button className="emoji-button" onClick={onClick} title={`:${name}:`} type="button">
+      <img src={url} alt={name} className="emoji-custom-img" loading="lazy" draggable={false} />
     </button>
   );
 };
@@ -358,9 +271,7 @@ function EmojiPanel({
 
   useEffect(() => {
     if (activeCategory && contentRef.current) {
-      const sectionEl = contentRef.current.querySelector(
-        `[data-section="${activeCategory}"]`,
-      );
+      const sectionEl = contentRef.current.querySelector(`[data-section="${activeCategory}"]`);
       if (sectionEl) {
         sectionEl.scrollIntoView({ behavior: "instant", block: "start" });
       }
@@ -386,15 +297,12 @@ function EmojiPanel({
   const addRecent = useCallback(
     (emoji: string) => {
       const current = recentEmojis.value;
-      const updated = [emoji, ...current.filter((e) => e !== emoji)].slice(
-        0,
-        50,
-      );
+      const updated = [emoji, ...current.filter((e) => e !== emoji)].slice(0, 50);
       recentEmojis.value = updated;
       onSelect(emoji);
       onClose();
     },
-    [onSelect, onClose],
+    [onSelect, onClose]
   );
 
   const addCustomEmoji = useCallback(
@@ -402,7 +310,7 @@ function EmojiPanel({
       onSelect(`:${emoji.name}:`);
       onClose();
     },
-    [onSelect, onClose],
+    [onSelect, onClose]
   );
 
   const customEmojiData = useMemo(() => {
@@ -449,7 +357,7 @@ function EmojiPanel({
 
   const getServerForUrl = useCallback(
     (sUrl: string) => servers.value.find((s) => s.url === sUrl),
-    [],
+    []
   );
 
   const activeGroupEmojis = useMemo(() => {
@@ -461,7 +369,7 @@ function EmojiPanel({
 
   const activeGroupItems = useMemo(() => {
     return activeGroupEmojis.map((entry) =>
-      standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
+      standardEmojiToItem(entry.emoji, entry.hexcode, entry.label)
     );
   }, [activeGroupEmojis]);
 
@@ -497,7 +405,7 @@ function EmojiPanel({
         sections.push({
           header: EMOJI_GROUP_NAMES[groupId],
           items: groupEmojis.map((entry) =>
-            standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
+            standardEmojiToItem(entry.emoji, entry.hexcode, entry.label)
           ),
         });
       }
@@ -517,19 +425,14 @@ function EmojiPanel({
         items: emojis.map(customEmojiToItem),
       },
     ];
-  }, [
-    activeCategory,
-    customEmojiData,
-    isServerCategory,
-    getServerUrlFromCategory,
-  ]);
+  }, [activeCategory, customEmojiData, isServerCategory, getServerUrlFromCategory]);
 
   const findHexcode = useCallback(
     (emoji: string): string | null => {
       const entry = emojis.find((e) => e.emoji === emoji);
       return entry?.hexcode ?? null;
     },
-    [emojis],
+    [emojis]
   );
 
   // Filter function for search
@@ -543,7 +446,7 @@ function EmojiPanel({
         return labelMatch || emojiMatch;
       });
     },
-    [searchTerm],
+    [searchTerm]
   );
 
   // Apply search filter to all sections
@@ -585,13 +488,10 @@ function EmojiPanel({
         .filter((e) => {
           const labelMatch = e.label.toLowerCase().includes(query);
           const emojiMatch = e.emoji.includes(searchTerm.trim());
-          const tagMatch =
-            e.tags && e.tags.some((t) => t.toLowerCase().includes(query));
+          const tagMatch = e.tags && e.tags.some((t) => t.toLowerCase().includes(query));
           return labelMatch || emojiMatch || tagMatch;
         })
-        .map((entry) =>
-          standardEmojiToItem(entry.emoji, entry.hexcode, entry.label),
-        );
+        .map((entry) => standardEmojiToItem(entry.emoji, entry.hexcode, entry.label));
       if (filtered.length > 0) {
         sections.push({
           header: EMOJI_GROUP_NAMES[groupId],
@@ -614,8 +514,7 @@ function EmojiPanel({
     groupedEmojis,
   ]);
 
-  const showSearchEmpty =
-    searchTerm.trim() && displaySections.every((s) => s.items.length === 0);
+  const showSearchEmpty = searchTerm.trim() && displaySections.every((s) => s.items.length === 0);
 
   return (
     <div className={styles.unifiedPickerBody}>
@@ -662,10 +561,7 @@ function EmojiPanel({
             title={EMOJI_GROUP_NAMES[groupId]}
             type="button"
           >
-            <MemoTwemojiImg
-              hexcode={EMOJI_GROUP_ICONS[groupId]}
-              alt={EMOJI_GROUP_NAMES[groupId]}
-            />
+            <MemoTwemojiImg hexcode={EMOJI_GROUP_ICONS[groupId]} alt={EMOJI_GROUP_NAMES[groupId]} />
           </button>
         ))}
       </div>
@@ -710,11 +606,7 @@ function GifPanel({
   useEffect(() => {
     dbFavGifs.get().then((saved) => {
       if (saved.length > 0) {
-        setSavedGifs(
-          saved.map((url) =>
-            typeof url === "string" ? { url, savedAt: 0 } : url,
-          ),
-        );
+        setSavedGifs(saved.map((url) => (typeof url === "string" ? { url, savedAt: 0 } : url)));
       }
     });
   }, []);
@@ -738,7 +630,7 @@ function GifPanel({
     setLoading(true);
     try {
       const response = await fetch(
-        `https://apps.mistium.com/tenor/search?query=${encodeURIComponent(query)}`,
+        `https://apps.mistium.com/tenor/search?query=${encodeURIComponent(query)}`
       );
       const data = await response.json();
       setResults(data.results || data || []);
@@ -793,10 +685,7 @@ function GifPanel({
       )}
       {loading ? (
         <div className={styles.gifLoading}>
-          <div
-            className={styles.accountLoadingSpinner}
-            style={{ width: 32, height: 32 }}
-          ></div>
+          <div className={styles.accountLoadingSpinner} style={{ width: 32, height: 32 }}></div>
           <span>Searching...</span>
         </div>
       ) : displayGifs.length === 0 ? (
@@ -805,9 +694,7 @@ function GifPanel({
             <>
               <Icon name="Star" size={32} />
               <p>No favorite GIFs yet</p>
-              <p className={styles.pickerEmptyHint}>
-                Search for GIFs and star them to save
-              </p>
+              <p className={styles.pickerEmptyHint}>Search for GIFs and star them to save</p>
             </>
           ) : (
             <>

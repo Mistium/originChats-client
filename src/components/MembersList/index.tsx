@@ -68,9 +68,7 @@ function MembersListInner() {
   }
 
   if (thread && thread.participants) {
-    memberList = memberList.filter((m) =>
-      thread.participants?.includes(m.username),
-    );
+    memberList = memberList.filter((m) => thread.participants?.includes(m.username));
   }
 
   const rolesMap = rolesByServer.value[serverUrl.value] || {};
@@ -85,9 +83,7 @@ function MembersListInner() {
 
   const showStatus = hasCapability("status_get");
 
-  const getHoistedRole = (
-    member: (typeof memberList)[number],
-  ): string | null => {
+  const getHoistedRole = (member: (typeof memberList)[number]): string | null => {
     for (const hoisted of hoistedRoles) {
       if (member.roles.includes(hoisted.name)) return hoisted.name;
     }
@@ -109,9 +105,7 @@ function MembersListInner() {
     })
     .filter((s) => s.members.length > 0);
 
-  const remainder = memberList.filter(
-    (m) => !assignedToHoisted.has(m.username),
-  );
+  const remainder = memberList.filter((m) => !assignedToHoisted.has(m.username));
   const onlineRemainder = remainder
     .filter((u) => isOnline(u.status))
     .sort((a, b) => a.username.localeCompare(b.username));
@@ -120,8 +114,7 @@ function MembersListInner() {
     .sort((a, b) => a.username.localeCompare(b.username));
 
   const totalOnline =
-    hoistedSections.reduce((sum, s) => sum + s.members.length, 0) +
-    onlineRemainder.length;
+    hoistedSections.reduce((sum, s) => sum + s.members.length, 0) + onlineRemainder.length;
   const totalOffline = offlineRemainder.length;
 
   return (
@@ -130,9 +123,7 @@ function MembersListInner() {
     >
       <div className={styles.membersHeaderMobile}>
         <h3>Members</h3>
-        <span className={styles.membersCount}>
-          {totalOnline + totalOffline} members
-        </span>
+        <span className={styles.membersCount}>{totalOnline + totalOffline} members</span>
         <button
           className={styles.rightPanelClose}
           onClick={() => {
@@ -233,16 +224,11 @@ function MemberItemInner({
           alt={displayName}
         />
         {showStatus && !offline && (
-          <div
-            className={`${styles.memberStatusIndicator} ${styles[statusClass]}`}
-          />
+          <div className={`${styles.memberStatusIndicator} ${styles[statusClass]}`} />
         )}
       </div>
       <div className={styles.memberInfo}>
-        <span
-          className={styles.name}
-          style={user.color ? { color: user.color } : undefined}
-        >
+        <span className={styles.name} style={user.color ? { color: user.color } : undefined}>
           {displayName}
         </span>
         {showStatus && statusText && !offline && (

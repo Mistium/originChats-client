@@ -40,7 +40,7 @@ export function showError(
     actionLabel?: string;
     onAction?: () => void;
     autoDismissMs?: number;
-  },
+  }
 ): string {
   return showBanner({
     kind: opts?.severity || "error",
@@ -60,7 +60,7 @@ export function showInfo(
   opts?: {
     serverUrl?: string;
     autoDismissMs?: number;
-  },
+  }
 ): string {
   return showBanner({
     kind: "info",
@@ -80,7 +80,7 @@ export function showUIError(
     onAction?: () => void;
     logToConsole?: boolean;
     autoDismissMs?: number;
-  },
+  }
 ): string {
   if (opts?.logToConsole !== false) {
     console.error(`[Error] ${userMessage}:`, error);
@@ -96,9 +96,7 @@ export function dismissBanner(id: string): void {
 export function upsertBanner(id: string, opts: Omit<Banner, "id">): void {
   const existing = banners.value.find((b) => b.id === id);
   if (existing) {
-    banners.value = banners.value.map((b) =>
-      b.id === id ? { ...opts, id } : b,
-    );
+    banners.value = banners.value.map((b) => (b.id === id ? { ...opts, id } : b));
   } else {
     banners.value = [...banners.value, { ...opts, id }];
   }
@@ -120,15 +118,13 @@ const serverSettingsSection = signal<
   "overview" | "channels" | "roles" | "members" | "bans" | "emojis"
 >("overview");
 const serverSettingsUserEdit = signal<string | null>(null);
-export const currentDMTab = signal<
-  "friends" | "requests" | "blocked" | "groups"
->("friends");
+export const currentDMTab = signal<"friends" | "requests" | "blocked" | "groups">("friends");
 
 export const showVoiceCallView = signal(false);
 
-export const rightPanelView = signal<
-  "members" | "pinned" | "search" | "inbox" | "threads" | null
->("members");
+export const rightPanelView = signal<"members" | "pinned" | "search" | "inbox" | "threads" | null>(
+  "members"
+);
 
 export const showThreadPanel = signal(false);
 export const pinnedMessages = signal<Message[]>([]);

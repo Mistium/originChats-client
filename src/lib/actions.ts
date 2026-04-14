@@ -26,11 +26,7 @@ import {
   unreadState,
   isSpecialChannel,
 } from "../state";
-import {
-  renderGuildSidebarSignal,
-  renderChannelsSignal,
-  renderMessagesSignal,
-} from "./ui-signals";
+import { renderGuildSidebarSignal, renderChannelsSignal, renderMessagesSignal } from "./ui-signals";
 import { wsSend } from "./ws-sender";
 import { closeWebSocket } from "./ws-connection";
 import { startMessageFetch } from "./ws-sender";
@@ -165,9 +161,7 @@ export async function switchServer(url: string): Promise<boolean> {
   const currentSUrl = serverUrl.value;
   if (currentSUrl && currentSUrl !== url) {
     messagesByServer.value = Object.fromEntries(
-      Object.entries(messagesByServer.value).filter(
-        ([key]) => key !== currentSUrl,
-      ),
+      Object.entries(messagesByServer.value).filter(([key]) => key !== currentSUrl)
     );
   }
 
@@ -185,12 +179,9 @@ export async function switchServer(url: string): Promise<boolean> {
       const chs = channelsByServer.value[url] || [];
       if (chs.length > 0) {
         const textChannels = chs.filter(
-          (c) =>
-            c.type === "text" || c.type === "voice" || c.type === "category",
+          (c) => c.type === "text" || c.type === "voice" || c.type === "category"
         );
-        const target =
-          (saved && textChannels.find((c) => c.name === saved)) ||
-          textChannels[0];
+        const target = (saved && textChannels.find((c) => c.name === saved)) || textChannels[0];
         if (target) selectChannel(target);
       }
     }
@@ -245,7 +236,7 @@ function markChannelAsReadInternal(channelName: string): void {
   }
 
   saveReadTimes().catch((e) =>
-    console.warn("[markChannelAsRead] Failed to sync read times to cloud:", e),
+    console.warn("[markChannelAsRead] Failed to sync read times to cloud:", e)
   );
 }
 
@@ -274,7 +265,7 @@ export function markServerAsRead(sUrl: string): void {
   }
 
   saveReadTimes().catch((e) =>
-    console.warn("[markServerAsRead] Failed to sync read times to cloud:", e),
+    console.warn("[markServerAsRead] Failed to sync read times to cloud:", e)
   );
 }
 
@@ -286,9 +277,7 @@ export function removeServer(sUrl: string): void {
   const updatedServers = servers.value.filter((s) => s.url !== sUrl);
   servers.value = updatedServers;
 
-  saveServers().catch((err) =>
-    console.error("[removeServer] Failed to save servers:", err),
-  );
+  saveServers().catch((err) => console.error("[removeServer] Failed to save servers:", err));
 
   const newChannels = { ...channelsByServer.value };
   delete newChannels[sUrl];
@@ -341,16 +330,13 @@ export async function openDMWith(username: string): Promise<void> {
   }
   const dmChannels = channelsByServer.value[DM_SERVER_URL] || [];
   const existingChannel = dmChannels.find(
-    (ch) => ch.display_name?.toLowerCase() === username.toLowerCase(),
+    (ch) => ch.display_name?.toLowerCase() === username.toLowerCase()
   );
   if (existingChannel) {
     selectChannel(existingChannel);
   } else {
     setPendingDMAddUsername(username);
-    wsSend(
-      { cmd: "message_new", content: `dm add ${username}`, channel: "cmds" },
-      DM_SERVER_URL,
-    );
+    wsSend({ cmd: "message_new", content: `dm add ${username}`, channel: "cmds" }, DM_SERVER_URL);
   }
 }
 
@@ -459,10 +445,7 @@ export function navigateFromUrl(): void {
   }
 }
 
-function selectChannelFromUrl(
-  channelName: string | null,
-  threadId: string | null,
-): void {
+function selectChannelFromUrl(channelName: string | null, threadId: string | null): void {
   if (!channelName) {
     selectHomeChannel();
     return;
@@ -517,10 +500,7 @@ export function selectThread(thread: Thread | null): void {
     messageState.setCurrentChannel(null, null);
     const currentChannelValue = currentChannel.value;
     const currentThreadValue = currentThread.value;
-    if (
-      currentChannelValue?.type === "thread" &&
-      currentThreadValue?.parent_channel
-    ) {
+    if (currentChannelValue?.type === "thread" && currentThreadValue?.parent_channel) {
       currentChannel.value = {
         name: currentThreadValue.parent_channel,
         type: "forum",
@@ -531,10 +511,7 @@ export function selectThread(thread: Thread | null): void {
   }
 }
 
-export function setStatus(
-  status: "online" | "idle" | "dnd" | "offline",
-  text?: string,
-): void {
+export function setStatus(status: "online" | "idle" | "dnd" | "offline", text?: string): void {
   myStatus.value = { status: status as "online" | "idle" | "dnd", text };
   savedStatusText.value = text;
   for (const sUrl of Object.keys(wsConnections)) {

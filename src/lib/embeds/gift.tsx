@@ -44,12 +44,10 @@ export function GiftEmbed({ giftCode, originalUrl }: GiftEmbedProps) {
 
   if (loading || error || !gift) return null;
 
-  const isClaimed =
-    (gift.claimed_at && !gift.cancelled_at && !gift.is_expired) || claimed;
+  const isClaimed = (gift.claimed_at && !gift.cancelled_at && !gift.is_expired) || claimed;
   const isCancelled = gift.cancelled_at;
   const isExpired = gift.is_expired;
-  const canClaim =
-    !gift.claimed_at && !gift.cancelled_at && !gift.is_expired && !claimed;
+  const canClaim = !gift.claimed_at && !gift.cancelled_at && !gift.is_expired && !claimed;
 
   return (
     <div className="embed-container gift-embed">
@@ -84,19 +82,12 @@ export function GiftEmbed({ giftCode, originalUrl }: GiftEmbedProps) {
           )}
         </div>
         {canClaim && (
-          <button
-            className="gift-claim-btn"
-            onClick={handleClaim}
-            disabled={claiming}
-          >
+          <button className="gift-claim-btn" onClick={handleClaim} disabled={claiming}>
             {claiming ? "Claiming..." : "Claim Gift"}
           </button>
         )}
         {claimError && (
-          <div
-            className="gift-status"
-            style={{ color: "var(--danger, #ed4245)" }}
-          >
+          <div className="gift-status" style={{ color: "var(--danger, #ed4245)" }}>
             {claimError}
           </div>
         )}

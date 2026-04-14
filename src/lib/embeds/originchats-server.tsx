@@ -8,10 +8,7 @@ interface OriginChatsServerEmbedProps {
   originalUrl: string;
 }
 
-export function OriginChatsServerEmbed({
-  serverHost,
-  originalUrl,
-}: OriginChatsServerEmbedProps) {
+export function OriginChatsServerEmbed({ serverHost, originalUrl }: OriginChatsServerEmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

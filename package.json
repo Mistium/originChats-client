@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint . --fix",
     "deploy": "npm run build && gh-pages -d dist",
     "css:types": "tcm src"
   },
@@ -23,16 +23,15 @@
     "preact": "^10.28.4"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.10.3",
     "@eslint/js": "^10.0.1",
+    "@preact/preset-vite": "^2.10.3",
     "@types/dompurify": "^3.2.0",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "gh-pages": "^6.3.0",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "typed-css-modules": "^0.9.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.57.0",

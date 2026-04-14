@@ -11,8 +11,7 @@ export function handleSlashList(msg: SlashList, sUrl: string): void {
 
 export function handleSlashAdd(msg: SlashAdd, sUrl: string): void {
   const incoming: SlashCommand[] =
-    (msg.commands as SlashCommand[]) ||
-    (msg.command ? [msg.command as SlashCommand] : []);
+    (msg.commands as SlashCommand[]) || (msg.command ? [msg.command as SlashCommand] : []);
   if (incoming.length === 0) return;
   const existing = slashCommandsByServer.value[sUrl] || [];
   const merged = [...existing];

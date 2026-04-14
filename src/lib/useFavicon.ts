@@ -4,11 +4,7 @@ import { unreadState } from "../state";
 const BASE_FAVICON = "/dms.png";
 const FAVICON_SIZE = 32;
 
-function drawFavicon(
-  img: HTMLImageElement,
-  pingCount: number,
-  hasUnreads: boolean,
-): string {
+function drawFavicon(img: HTMLImageElement, pingCount: number, hasUnreads: boolean): string {
   const canvas = document.createElement("canvas");
   canvas.width = FAVICON_SIZE;
   canvas.height = FAVICON_SIZE;

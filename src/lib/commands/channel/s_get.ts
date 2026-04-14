@@ -50,9 +50,7 @@ export function handleChannelsGet(msg: { val: Channel[] }, sUrl: string): void {
     if (targetChannel) {
       selectChannel(targetChannel);
     } else if (channelList.length > 0) {
-      const textChannels = channelList.filter(
-        (c) => c.type === "text" || c.type === "voice",
-      );
+      const textChannels = channelList.filter((c) => c.type === "text" || c.type === "voice");
       if (textChannels.length > 0) {
         selectChannel(textChannels[0]);
       }

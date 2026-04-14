@@ -5,11 +5,7 @@ import { normalizeUsername } from "../../state-utils";
 
 type NicknameMsg = NicknameUpdate | NicknameRemove;
 
-function handleNicknameChange(
-  msg: NicknameMsg,
-  sUrl: string,
-  remove: boolean,
-): void {
+function handleNicknameChange(msg: NicknameMsg, sUrl: string, remove: boolean): void {
   const uKey = normalizeUsername(msg.username);
   if (usersByServer.value[sUrl]?.[uKey]) {
     const user = usersByServer.value[sUrl][uKey];

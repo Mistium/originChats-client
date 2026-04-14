@@ -42,10 +42,7 @@ export function StatusSelector() {
             className={`${styles.statusBtn} ${status === opt.value ? styles.active : ""}`}
             onClick={() => handleStatusChange(opt.value)}
           >
-            <span
-              className={styles.statusDot}
-              style={{ background: opt.color }}
-            />
+            <span className={styles.statusDot} style={{ background: opt.color }} />
             <span className={styles.statusLabel}>{opt.label}</span>
             {status === opt.value && (
               <span className={styles.statusCheck}>

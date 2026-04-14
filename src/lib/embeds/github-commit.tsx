@@ -9,12 +9,7 @@ interface GitHubCommitEmbedProps {
   originalUrl: string;
 }
 
-export function GitHubCommitEmbed({
-  owner,
-  repo,
-  sha,
-  originalUrl,
-}: GitHubCommitEmbedProps) {
+export function GitHubCommitEmbed({ owner, repo, sha, originalUrl }: GitHubCommitEmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

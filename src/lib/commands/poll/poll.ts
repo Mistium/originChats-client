@@ -9,11 +9,7 @@ import type {
 import { messagesByServer, serverUrl } from "../../../state";
 import { renderMessagesSignal } from "../../ui-signals";
 
-function updatePollInMessage(
-  messageId: string,
-  pollId: string,
-  results: any,
-): void {
+function updatePollInMessage(messageId: string, pollId: string, results: any): void {
   const sUrl = serverUrl.value;
   const serverMessages = messagesByServer.value[sUrl];
   if (!serverMessages) return;
@@ -26,7 +22,7 @@ function updatePollInMessage(
     if (!msg.embeds) continue;
 
     const pollEmbedIndex = msg.embeds.findIndex(
-      (e: any) => e.type === "poll" && e.poll?.id === pollId,
+      (e: any) => e.type === "poll" && e.poll?.id === pollId
     );
     if (pollEmbedIndex === -1) continue;
 

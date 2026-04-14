@@ -32,7 +32,7 @@ interface PollEmbedProps {
 
 export function PollEmbed({ poll, messageId }: PollEmbedProps) {
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(
-    new Set(poll.user_votes || []),
+    new Set(poll.user_votes || [])
   );
   const [isVoting, setIsVoting] = useState(false);
 
@@ -72,7 +72,7 @@ export function PollEmbed({ poll, messageId }: PollEmbedProps) {
         message_id: messageId,
         option_ids: optionIds,
       },
-      sUrl,
+      sUrl
     );
 
     setTimeout(() => setIsVoting(false), 500);
@@ -87,7 +87,7 @@ export function PollEmbed({ poll, messageId }: PollEmbedProps) {
         cmd: "poll_end",
         message_id: messageId,
       },
-      sUrl,
+      sUrl
     );
   };
 
@@ -109,8 +109,7 @@ export function PollEmbed({ poll, messageId }: PollEmbedProps) {
       <div className={styles.pollOptions}>
         {options.map((option) => {
           const votes = option.votes || 0;
-          const percentage =
-            totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+          const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
           const isSelected = selectedOptions.has(option.id) || option.voted;
 
           return (
@@ -122,17 +121,12 @@ export function PollEmbed({ poll, messageId }: PollEmbedProps) {
             >
               <div className={styles.optionContent}>
                 <div className={styles.optionHeader}>
-                  {option.emoji && (
-                    <span className={styles.optionEmoji}>{option.emoji}</span>
-                  )}
+                  {option.emoji && <span className={styles.optionEmoji}>{option.emoji}</span>}
                   <span className={styles.optionText}>{option.text}</span>
                   {isSelected && <span className={styles.checkmark}>✓</span>}
                 </div>
                 <div className={styles.voteBarContainer}>
-                  <div
-                    className={styles.voteBar}
-                    style={{ width: `${percentage}%` }}
-                  />
+                  <div className={styles.voteBar} style={{ width: `${percentage}%` }} />
                 </div>
                 <div className={styles.voteInfo}>
                   <span className={styles.voteCount}>
@@ -151,9 +145,7 @@ export function PollEmbed({ poll, messageId }: PollEmbedProps) {
           {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
         </span>
         {formatTimeRemaining() && (
-          <span className={styles.timeRemaining}>
-            {isEnded ? "Ended" : formatTimeRemaining()}
-          </span>
+          <span className={styles.timeRemaining}>{isEnded ? "Ended" : formatTimeRemaining()}</span>
         )}
         {!isEnded && poll.allow_multiselect && selectedOptions.size > 0 && (
           <button

@@ -28,25 +28,20 @@ export function LoginChoiceModal() {
       <div className="login-choice-modal">
         <div className="login-choice-description">
           <p>
-            Choose how you want to use OriginChats. You can log in with your
-            Rotur account for full access, or continue with server-specific
-            accounts for cracked servers only.
+            Choose how you want to use OriginChats. You can log in with your Rotur account for full
+            access, or continue with server-specific accounts for cracked servers only.
           </p>
         </div>
 
         <div className="login-choice-options">
-          <button
-            className="login-choice-option login-choice-primary"
-            onClick={handleRoturLogin}
-          >
+          <button className="login-choice-option login-choice-primary" onClick={handleRoturLogin}>
             <div className="login-choice-icon">
               <Icon name="User" size={24} />
             </div>
             <div className="login-choice-content">
               <div className="login-choice-title">Login with Rotur</div>
               <div className="login-choice-desc">
-                Full access to all servers, sync profile across devices, and
-                more.
+                Full access to all servers, sync profile across devices, and more.
               </div>
             </div>
           </button>
@@ -61,16 +56,13 @@ export function LoginChoiceModal() {
             <div className="login-choice-content">
               <div className="login-choice-title">Server Accounts Only</div>
               <div className="login-choice-desc">
-                Access cracked servers with server-specific accounts. No sync
-                between devices.
+                Access cracked servers with server-specific accounts. No sync between devices.
               </div>
             </div>
           </button>
         </div>
 
-        <p className="login-choice-note">
-          You can change this later by logging in from settings.
-        </p>
+        <p className="login-choice-note">You can change this later by logging in from settings.</p>
       </div>
     </Modal>
   );

@@ -27,7 +27,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  
 }
 
 .header h3 {
@@ -179,7 +178,6 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  
 }
 
 .cancelBtn {

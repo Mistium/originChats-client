@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "preact/hooks";
+import { useEffect, useRef, useState, useCallback, useMemo } from "preact/hooks";
 import { memo } from "preact/compat";
 import type { ComponentChildren } from "preact";
 
@@ -75,7 +69,7 @@ export function VirtualMessageList<T>({
         }
       }
     },
-    [],
+    []
   );
 
   const { positions, totalHeight, measuredKeys } = useMemo(() => {
@@ -124,15 +118,7 @@ export function VirtualMessageList<T>({
       idx++;
     }
     return Math.min(items.length - 1, idx + overscan);
-  }, [
-    positions,
-    scrollTop,
-    viewportHeight,
-    startIndex,
-    overscan,
-    estimateHeight,
-    items.length,
-  ]);
+  }, [positions, scrollTop, viewportHeight, startIndex, overscan, estimateHeight, items.length]);
 
   const visibleItems = useMemo(() => {
     const result: {
@@ -202,20 +188,13 @@ export function VirtualMessageList<T>({
   }, [items, scrollToBottom, scrollTop]);
 
   useEffect(() => {
-    if (
-      scrollToIndex !== undefined &&
-      scrollToIndex >= 0 &&
-      scrollToIndex < items.length
-    ) {
+    if (scrollToIndex !== undefined && scrollToIndex >= 0 && scrollToIndex < items.length) {
       const container = containerRef.current;
       if (!container) return;
 
       const targetTop = positions[scrollToIndex] || 0;
       const viewportMiddle = viewportHeight / 2;
-      const targetScrollTop = Math.max(
-        0,
-        targetTop - viewportMiddle + estimateHeight / 2,
-      );
+      const targetScrollTop = Math.max(0, targetTop - viewportMiddle + estimateHeight / 2);
 
       cancelAnimationFrame(scrollAnimationRef.current!);
       scrollAnimationRef.current = requestAnimationFrame(() => {
@@ -239,8 +218,7 @@ export function VirtualMessageList<T>({
       const scrollHeight = target.scrollHeight;
       const clientHeight = target.clientHeight;
 
-      stickToBottomRef.current =
-        scrollHeight - newScrollTop - clientHeight < 50;
+      stickToBottomRef.current = scrollHeight - newScrollTop - clientHeight < 50;
 
       const isScrollingUp = newScrollTop < prevScrollTopRef.current;
       prevScrollTopRef.current = newScrollTop;
@@ -252,14 +230,11 @@ export function VirtualMessageList<T>({
         onNearTop();
       }
 
-      if (
-        scrollHeight - newScrollTop - clientHeight < nearBottomThreshold &&
-        onNearBottom
-      ) {
+      if (scrollHeight - newScrollTop - clientHeight < nearBottomThreshold && onNearBottom) {
         onNearBottom();
       }
     },
-    [onScroll, onNearTop, onNearBottom, nearTopThreshold, nearBottomThreshold],
+    [onScroll, onNearTop, onNearBottom, nearTopThreshold, nearBottomThreshold]
   );
 
   useEffect(() => {
@@ -308,6 +283,4 @@ export function VirtualMessageList<T>({
   );
 }
 
-export const MemoVirtualMessageList = memo(
-  VirtualMessageList,
-) as typeof VirtualMessageList;
+export const MemoVirtualMessageList = memo(VirtualMessageList) as typeof VirtualMessageList;

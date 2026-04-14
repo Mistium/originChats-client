@@ -7,11 +7,7 @@ interface WikipediaEmbedProps {
   originalUrl: string;
 }
 
-export function WikipediaEmbed({
-  articleTitle,
-  lang,
-  originalUrl,
-}: WikipediaEmbedProps) {
+export function WikipediaEmbed({ articleTitle, lang, originalUrl }: WikipediaEmbedProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,15 +15,14 @@ export function WikipediaEmbed({
     const controller = new AbortController();
     fetch(
       `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(articleTitle)}`,
-      { signal: controller.signal },
+      { signal: controller.signal }
     )
       .then((res) => {
         if (!res.ok) throw new Error("Wikipedia API failed");
         return res.json();
       })
       .then((d) => {
-        if (d.type === "disambiguation" || !d.title)
-          throw new Error("No article");
+        if (d.type === "disambiguation" || !d.title) throw new Error("No article");
         setData(d);
       })
       .catch(() => {})
@@ -44,12 +39,7 @@ export function WikipediaEmbed({
     );
 
   return (
-    <a
-      href={originalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="wiki-embed"
-    >
+    <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="wiki-embed">
       <div className="wiki-embed__body">
         <div className="wiki-embed__text">
           <div className="wiki-embed__header">
@@ -57,12 +47,8 @@ export function WikipediaEmbed({
             <span className="wiki-embed__source">Wikipedia</span>
           </div>
           <div className="wiki-embed__title">{data.title}</div>
-          {data.description && (
-            <div className="wiki-embed__description">{data.description}</div>
-          )}
-          {data.extract && (
-            <p className="wiki-embed__extract">{data.extract}</p>
-          )}
+          {data.description && <div className="wiki-embed__description">{data.description}</div>}
+          {data.extract && <p className="wiki-embed__extract">{data.extract}</p>}
         </div>
         {data.thumbnail?.source && (
           <img

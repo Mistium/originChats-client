@@ -24,12 +24,8 @@ export async function loadServers(): Promise<Server[]> {
   if (!originFS) return [...DEFAULT_SERVERS];
   try {
     await originFS.loadIndex();
-    const content = await originFS.readFileContent(
-      "/application data/chats@mistium/servers.json",
-    );
-    return (JSON.parse(content) as Server[]).filter(
-      (s) => s.url !== "dms.mistium.com",
-    );
+    const content = await originFS.readFileContent("/application data/chats@mistium/servers.json");
+    return (JSON.parse(content) as Server[]).filter((s) => s.url !== "dms.mistium.com");
   } catch {
     return [...DEFAULT_SERVERS];
   }
@@ -39,9 +35,7 @@ export async function saveServers(): Promise<void> {
   await saveJsonFile("servers.json", servers.value);
 }
 
-export async function loadReadTimes(): Promise<
-  Record<string, Record<string, number>>
-> {
+export async function loadReadTimes(): Promise<Record<string, Record<string, number>>> {
   return loadJsonFile("read_times.json", {});
 }
 

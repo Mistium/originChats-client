@@ -48,42 +48,28 @@ export const replyTo = signal<Message | null>(null);
 export const replyPing = signal<boolean>(true);
 
 export const channelsByServer = signal<Record<string, Channel[]>>({});
-export const threadsByServer = signal<Record<string, Record<string, Thread[]>>>(
-  {},
-);
-export const threadMessagesByServer = signal<
-  Record<string, Record<string, Message[]>>
->({});
+export const threadsByServer = signal<Record<string, Record<string, Thread[]>>>({});
+export const threadMessagesByServer = signal<Record<string, Record<string, Message[]>>>({});
 
-export const newThreadCounts = signal<Record<string, Record<string, number>>>(
-  {},
-);
+export const newThreadCounts = signal<Record<string, Record<string, number>>>({});
 
 export { messagesByServer } from "./lib/state/messages";
 import { messagesByServer } from "./lib/state/messages";
 
 export const loadedChannelsByServer: Record<string, Set<string>> = {};
 export const reachedOldestByServer: Record<string, Set<string>> = {};
-export const usersByServer = signal<Record<string, Record<string, ServerUser>>>(
-  {},
-);
+export const usersByServer = signal<Record<string, Record<string, ServerUser>>>({});
 export const currentUserByServer = signal<Record<string, RoturAccount>>({});
 export const rolesByServer = signal<Record<string, Record<string, Role>>>({});
-const selfAssignableRolesByServer = signal<
-  Record<string, SelfAssignableRole[]>
->({});
+const selfAssignableRolesByServer = signal<Record<string, SelfAssignableRole[]>>({});
 export const slashCommandsByServer = signal<Record<string, SlashCommand[]>>({});
-export const readTimesByServer = signal<Record<string, Record<string, number>>>(
-  {},
-);
+export const readTimesByServer = signal<Record<string, Record<string, number>>>({});
 export const lastChannelByServer = signal<Record<string, string>>({});
 
 import { unreadState } from "./lib/state";
 const unreadByChannel = unreadState.unreads;
 const unreadPings = unreadState.pings;
-export const typingUsersByServer = signal<
-  Record<string, Record<string, Map<string, number>>>
->({});
+export const typingUsersByServer = signal<Record<string, Record<string, Map<string, number>>>>({});
 
 export function getServerPingCount(sUrl: string): number {
   return unreadState.getServerPing(sUrl);
@@ -97,10 +83,7 @@ export function getChannelPingCount(sUrl: string, channelName: string): number {
   return unreadState.getChannelPing(sUrl, channelName);
 }
 
-export function getChannelUnreadCount(
-  sUrl: string,
-  channelName: string,
-): number {
+export function getChannelUnreadCount(sUrl: string, channelName: string): number {
   return unreadState.getChannelUnread(sUrl, channelName);
 }
 
@@ -119,13 +102,9 @@ export function hasChannelUnreads(sUrl: string, channelName: string): boolean {
 function isChannelUnreadByLastMessage(
   sUrl: string,
   channelName: string,
-  lastMessageId?: string,
+  lastMessageId?: string
 ): boolean {
-  return unreadState.isChannelUnreadByLastMessage(
-    sUrl,
-    channelName,
-    lastMessageId,
-  );
+  return unreadState.isChannelUnreadByLastMessage(sUrl, channelName, lastMessageId);
 }
 
 interface PingMessage {
@@ -153,10 +132,7 @@ interface WSConnection {
 }
 
 export const wsConnections: Record<string, WSConnection> = {};
-export const wsStatus: Record<
-  string,
-  "connecting" | "connected" | "disconnected" | "error"
-> = {};
+export const wsStatus: Record<string, "connecting" | "connected" | "disconnected" | "error"> = {};
 export const serverValidatorKeys: Record<string, string> = {};
 
 type AuthMode = "rotur" | "cracked" | "cracked-only";
@@ -177,9 +153,7 @@ interface ServerPermission {
   category: string;
 }
 
-export const serverPermissionsByServer = signal<
-  Record<string, ServerPermission[]>
->({});
+export const serverPermissionsByServer = signal<Record<string, ServerPermission[]>>({});
 
 export const DEFAULT_PERMISSIONS: ServerPermission[] = [
   {
@@ -372,9 +346,7 @@ interface AttachmentConfig {
   permanent_tiers: string[];
 }
 
-export const attachmentConfigByServer = signal<
-  Record<string, AttachmentConfig>
->({});
+export const attachmentConfigByServer = signal<Record<string, AttachmentConfig>>({});
 const authRetries: Record<string, number> = {};
 const authRetryTimeouts: Record<string, number> = {};
 export const reconnectAttempts: Record<string, number> = {};
@@ -405,29 +377,19 @@ export function getOriginFS() {
   return originFS;
 }
 
-export const channels = computed(
-  () => channelsByServer.value[serverUrl.value] || [],
-);
-export const messages = computed(
-  () => messagesByServer.value[serverUrl.value] || {},
-);
+export const channels = computed(() => channelsByServer.value[serverUrl.value] || []);
+export const messages = computed(() => messagesByServer.value[serverUrl.value] || {});
 export const users = computed(() => usersByServer.value[serverUrl.value] || {});
-export const currentUser = computed(
-  () => currentUserByServer.value[serverUrl.value],
-);
-export const currentServer = computed(() =>
-  servers.value.find((s) => s.url === serverUrl.value),
-);
-export const slashCommands = computed(
-  () => slashCommandsByServer.value[serverUrl.value] || [],
-);
+export const currentUser = computed(() => currentUserByServer.value[serverUrl.value]);
+export const currentServer = computed(() => servers.value.find((s) => s.url === serverUrl.value));
+export const slashCommands = computed(() => slashCommandsByServer.value[serverUrl.value] || []);
 
 /**
  * Capabilities for the currently viewed server.
  * Returns an empty array if the server hasn't sent (or doesn't support) capabilities.
  */
 export const serverCapabilities = computed(
-  () => serverCapabilitiesByServer.value[serverUrl.value] ?? [],
+  () => serverCapabilitiesByServer.value[serverUrl.value] ?? []
 );
 
 /**
@@ -447,11 +409,7 @@ function setThreadsForServer(url: string, threads: Record<string, Thread[]>) {
   threadsByServer.value = { ...threadsByServer.value, [url]: threads };
 }
 
-export function addThreadToChannel(
-  url: string,
-  channelName: string,
-  thread: Thread,
-) {
+export function addThreadToChannel(url: string, channelName: string, thread: Thread) {
   const current = threadsByServer.value[url] || {};
   const channelThreads = current[channelName] || [];
   threadsByServer.value = {
@@ -471,11 +429,7 @@ export function addThreadToChannel(
   };
 }
 
-export function removeThreadFromChannel(
-  url: string,
-  channelName: string,
-  threadId: string,
-) {
+export function removeThreadFromChannel(url: string, channelName: string, threadId: string) {
   const current = threadsByServer.value[url] || {};
   const channelThreads = current[channelName] || [];
   threadsByServer.value = {
@@ -491,7 +445,7 @@ export function updateThreadInChannel(
   url: string,
   channelName: string,
   threadId: string,
-  update: Partial<Thread>,
+  update: Partial<Thread>
 ) {
   const current = threadsByServer.value[url] || {};
   const channelThreads = current[channelName] || [];
@@ -520,11 +474,7 @@ export function clearNewThreadCount(url: string, channelName: string) {
   }
 }
 
-function setThreadMessagesForServer(
-  url: string,
-  threadId: string,
-  msgs: Message[],
-) {
+function setThreadMessagesForServer(url: string, threadId: string, msgs: Message[]) {
   threadMessagesByServer.value = {
     ...threadMessagesByServer.value,
     [url]: {
@@ -558,11 +508,7 @@ function addMessage(channelName: string, msg: Message) {
   };
 }
 
-function updateMessage(
-  channelName: string,
-  msgId: string,
-  update: Partial<Message>,
-) {
+function updateMessage(channelName: string, msgId: string, update: Partial<Message>) {
   const current = messagesByServer.value[serverUrl.value] || {};
   const channelMsgs = current[channelName] || [];
   const idx = channelMsgs.findIndex((m) => m.id === msgId);
@@ -591,13 +537,9 @@ export const DEFAULT_SERVERS: Server[] = [];
 
 export const recentEmojis = signal<string[]>([]);
 
-export const customEmojisByServer = signal<
-  Record<string, Record<string, CustomEmoji>>
->({});
+export const customEmojisByServer = signal<Record<string, Record<string, CustomEmoji>>>({});
 
-function getCustomEmojiByName(
-  name: string,
-): { emoji: CustomEmoji; serverUrl: string } | null {
+function getCustomEmojiByName(name: string): { emoji: CustomEmoji; serverUrl: string } | null {
   const lowerName = name.toLowerCase();
   for (const [sUrl, emojis] of Object.entries(customEmojisByServer.value)) {
     for (const [, emoji] of Object.entries(emojis)) {
@@ -610,9 +552,7 @@ function getCustomEmojiByName(
 }
 
 function getCustomEmojiUrl(serverUrlStr: string, emoji: CustomEmoji): string {
-  const baseUrl = serverUrlStr.startsWith("http")
-    ? serverUrlStr
-    : `https://${serverUrlStr}`;
+  const baseUrl = serverUrlStr.startsWith("http") ? serverUrlStr : `https://${serverUrlStr}`;
   return `${baseUrl}/emojis/${emoji.fileName}`;
 }
 
@@ -661,8 +601,7 @@ export const offlinePushServers = signal<Record<string, boolean>>({});
  * keyed by serverUrl → serialised PushSubscriptionJSON.
  * Kept in memory only; subscription objects are fetched from PushManager on demand.
  */
-export const pushSubscriptionsByServer: Record<string, PushSubscriptionJSON> =
-  {};
+export const pushSubscriptionsByServer: Record<string, PushSubscriptionJSON> = {};
 
 // ─── Notification settings ─────────────────────────────────────────────────────
 // Per-server and per-channel notification level overrides.
@@ -672,20 +611,13 @@ export const pushSubscriptionsByServer: Record<string, PushSubscriptionJSON> =
 export type NotificationLevel = "all" | "mentions" | "none";
 
 /** Overrides keyed by serverUrl. */
-export const serverNotifSettings = signal<Record<string, NotificationLevel>>(
-  {},
-);
+export const serverNotifSettings = signal<Record<string, NotificationLevel>>({});
 
 /** Overrides keyed by "serverUrl:channelName". Channel settings take priority over server settings. */
-export const channelNotifSettings = signal<Record<string, NotificationLevel>>(
-  {},
-);
+export const channelNotifSettings = signal<Record<string, NotificationLevel>>({});
 
 /** Resolve the effective notification level for a channel, applying server → channel override order. */
-export function getChannelNotifLevel(
-  sUrl: string,
-  channelName: string,
-): NotificationLevel {
+export function getChannelNotifLevel(sUrl: string, channelName: string): NotificationLevel {
   const channelKey = `${sUrl}:${channelName}`;
   if (channelNotifSettings.value[channelKey] !== undefined) {
     return channelNotifSettings.value[channelKey];
@@ -698,29 +630,10 @@ export function getChannelNotifLevel(
 
 // --- Client Appearance / Notification Settings ---
 
-export type PingSoundType =
-  | "default"
-  | "soft"
-  | "bell"
-  | "pop"
-  | "custom"
-  | "none";
+export type PingSoundType = "default" | "soft" | "bell" | "pop" | "custom" | "none";
 export type BlockedMessageDisplay = "hide" | "collapse" | "show";
-export type AppTheme =
-  | "dark"
-  | "midnight"
-  | "dim"
-  | "light"
-  | "amoled"
-  | "ocean"
-  | "forest";
-export type AppFont =
-  | "default"
-  | "system"
-  | "geometric"
-  | "humanist"
-  | "mono"
-  | "serif";
+export type AppTheme = "dark" | "midnight" | "dim" | "light" | "amoled" | "ocean" | "forest";
+export type AppFont = "default" | "system" | "geometric" | "humanist" | "mono" | "serif";
 export type AvatarShape = "circle" | "rounded" | "square";
 
 export const pingSound = signal<PingSoundType>("default");
@@ -870,13 +783,7 @@ function applyTheme(theme: AppTheme) {
 }
 
 function applyFont(font: AppFont) {
-  const fontClasses: AppFont[] = [
-    "system",
-    "geometric",
-    "humanist",
-    "mono",
-    "serif",
-  ];
+  const fontClasses: AppFont[] = ["system", "geometric", "humanist", "mono", "serif"];
   for (const cls of fontClasses) {
     document.body.classList.remove(`font-${cls}`);
   }
@@ -900,10 +807,7 @@ function applyAccentColor(hex: string) {
     // clear override — re-apply theme defaults
     const vars = THEME_VARS[appTheme.value] || THEME_VARS.dark;
     document.documentElement.style.setProperty("--primary", vars["--primary"]);
-    document.documentElement.style.setProperty(
-      "--primary-hover",
-      vars["--primary-hover"],
-    );
+    document.documentElement.style.setProperty("--primary-hover", vars["--primary-hover"]);
     return;
   }
   document.documentElement.style.setProperty("--primary", hex);
@@ -929,10 +833,7 @@ function applyCompactMode(on: boolean) {
 }
 
 function applyMaxImageWidth(px: number) {
-  document.documentElement.style.setProperty(
-    "--max-inline-image-width",
-    `${px}px`,
-  );
+  document.documentElement.style.setProperty("--max-inline-image-width", `${px}px`);
 }
 
 // Apply saved settings on initial load (before any reactive effects)
@@ -949,10 +850,7 @@ document.body.classList.toggle("hide-scrollbars", hideScrollbars.value);
 document.body.classList.toggle("hide-avatar-borders", hideAvatarBorders.value);
 document.body.classList.toggle("reduce-motion", reduceMotion.value);
 document.body.classList.toggle("hide-timestamps", !showTimestamps.value);
-document.body.classList.toggle(
-  "hide-edited-indicator",
-  !showEditedIndicator.value,
-);
+document.body.classList.toggle("hide-edited-indicator", !showEditedIndicator.value);
 
 // ─── Hydrate signals from IDB ─────────────────────────────────────────────────
 // Called once at app startup (before rendering) to load persisted settings.
@@ -982,7 +880,7 @@ export async function initSettingsFromDb(): Promise<void> {
   customPingSound.value = await s.get<string | null>("customPingSound", null);
   blockedMessageDisplay.value = await str<BlockedMessageDisplay>(
     "blockedMessageDisplay",
-    "collapse",
+    "collapse"
   );
   appTheme.value = await str<AppTheme>("theme", "dim");
   appFont.value = await str<AppFont>("font", "default");
@@ -996,10 +894,7 @@ export async function initSettingsFromDb(): Promise<void> {
   messageFontSize.value = await num("messageFontSize", 15);
   compactMode.value = await bool("compactMode", false);
   showTimestamps.value = await bool("showTimestamps", true);
-  notificationPromptDismissed.value = await bool(
-    "notificationPromptDismissed",
-    false,
-  );
+  notificationPromptDismissed.value = await bool("notificationPromptDismissed", false);
   showEditedIndicator.value = await bool("showEdited", true);
   maxInlineImageWidth.value = await num("maxInlineImageWidth", 400);
   useSystemEmojis.value = await bool("useSystemEmojis", false);
@@ -1008,21 +903,15 @@ export async function initSettingsFromDb(): Promise<void> {
   voiceVideoFps.value = await num("vcFps", 30);
   serverNotifSettings.value = await s.get<Record<string, NotificationLevel>>(
     "serverNotifSettings",
-    {},
+    {}
   );
   channelNotifSettings.value = await s.get<Record<string, NotificationLevel>>(
     "channelNotifSettings",
-    {},
+    {}
   );
-  offlinePushServers.value = await s.get<Record<string, boolean>>(
-    "offlinePushSettings",
-    {},
-  );
+  offlinePushServers.value = await s.get<Record<string, boolean>>("offlinePushSettings", {});
   autoIdleOnUnfocus.value = await bool("autoIdleOnUnfocus", true);
-  savedStatusText.value = await s.get<string | undefined>(
-    "savedStatusText",
-    undefined,
-  );
+  savedStatusText.value = await s.get<string | undefined>("savedStatusText", undefined);
 
   _settingsLoaded = true;
 }
@@ -1081,8 +970,7 @@ effect(() => {
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("bubbleRadius", String(bubbleRadius.value));
+  if (_settingsLoaded) dbSettings.set("bubbleRadius", String(bubbleRadius.value));
   applyBubbleRadius(bubbleRadius.value);
 });
 
@@ -1092,14 +980,12 @@ effect(() => {
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("pingHighlightColor", pingHighlightColor.value);
+  if (_settingsLoaded) dbSettings.set("pingHighlightColor", pingHighlightColor.value);
   applyPingHighlightColor(pingHighlightColor.value);
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("messageFontSize", String(messageFontSize.value));
+  if (_settingsLoaded) dbSettings.set("messageFontSize", String(messageFontSize.value));
   applyMessageFontSize(messageFontSize.value);
 });
 
@@ -1109,8 +995,7 @@ effect(() => {
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("showTimestamps", String(showTimestamps.value));
+  if (_settingsLoaded) dbSettings.set("showTimestamps", String(showTimestamps.value));
   document.body.classList.toggle("hide-timestamps", !showTimestamps.value);
 });
 
@@ -1120,43 +1005,31 @@ effect(() => {
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("showEdited", String(showEditedIndicator.value));
-  document.body.classList.toggle(
-    "hide-edited-indicator",
-    !showEditedIndicator.value,
-  );
+  if (_settingsLoaded) dbSettings.set("showEdited", String(showEditedIndicator.value));
+  document.body.classList.toggle("hide-edited-indicator", !showEditedIndicator.value);
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("maxInlineImageWidth", String(maxInlineImageWidth.value));
+  if (_settingsLoaded) dbSettings.set("maxInlineImageWidth", String(maxInlineImageWidth.value));
   applyMaxImageWidth(maxInlineImageWidth.value);
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("useSystemEmojis", String(useSystemEmojis.value));
+  if (_settingsLoaded) dbSettings.set("useSystemEmojis", String(useSystemEmojis.value));
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("hideScrollbars", String(hideScrollbars.value));
+  if (_settingsLoaded) dbSettings.set("hideScrollbars", String(hideScrollbars.value));
   document.body.classList.toggle("hide-scrollbars", hideScrollbars.value);
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("hideAvatarBorders", String(hideAvatarBorders.value));
-  document.body.classList.toggle(
-    "hide-avatar-borders",
-    hideAvatarBorders.value,
-  );
+  if (_settingsLoaded) dbSettings.set("hideAvatarBorders", String(hideAvatarBorders.value));
+  document.body.classList.toggle("hide-avatar-borders", hideAvatarBorders.value);
 });
 
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("reduceMotion", String(reduceMotion.value));
+  if (_settingsLoaded) dbSettings.set("reduceMotion", String(reduceMotion.value));
   document.body.classList.toggle("reduce-motion", reduceMotion.value);
 });
 
@@ -1173,16 +1046,13 @@ effect(() => {
   if (_settingsLoaded) dbSettings.set("vcFps", String(v));
 });
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("serverNotifSettings", serverNotifSettings.value);
+  if (_settingsLoaded) dbSettings.set("serverNotifSettings", serverNotifSettings.value);
 });
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("channelNotifSettings", channelNotifSettings.value);
+  if (_settingsLoaded) dbSettings.set("channelNotifSettings", channelNotifSettings.value);
 });
 effect(() => {
-  if (_settingsLoaded)
-    dbSettings.set("offlinePushSettings", offlinePushServers.value);
+  if (_settingsLoaded) dbSettings.set("offlinePushSettings", offlinePushServers.value);
 });
 effect(() => {
   const v = autoIdleOnUnfocus.value;

@@ -33,11 +33,7 @@ interface SubMenuPanelProps {
   onClose: () => void;
   preferLeft: boolean;
   /** Called with the resolved preferLeft so nested submenus can inherit it. */
-  onOpenChild: (
-    idx: number | null,
-    anchorEl: HTMLDivElement | null,
-    preferLeft: boolean,
-  ) => void;
+  onOpenChild: (idx: number | null, anchorEl: HTMLDivElement | null, preferLeft: boolean) => void;
   openChildIdx: number | null;
   header?: ComponentChildren;
 }
@@ -71,10 +67,7 @@ function SubMenuPanel({
       resolvedPreferLeft.current = true;
     }
     left = Math.max(PAD, Math.min(left, vw - menu.offsetWidth - PAD));
-    const top = Math.max(
-      PAD,
-      Math.min(anchor.top, vh - menu.offsetHeight - PAD),
-    );
+    const top = Math.max(PAD, Math.min(anchor.top, vh - menu.offsetHeight - PAD));
 
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
@@ -91,8 +84,7 @@ function SubMenuPanel({
     >
       {header && <div className={styles.contextMenuHeader}>{header}</div>}
       {items.map((item, idx) => {
-        if (item.separator)
-          return <div key={idx} className={styles.contextMenuSeparator} />;
+        if (item.separator) return <div key={idx} className={styles.contextMenuSeparator} />;
         const hasChildren = !!item.children?.length;
         return (
           <div
@@ -105,7 +97,7 @@ function SubMenuPanel({
               onOpenChild(
                 hasChildren ? idx : null,
                 hasChildren ? itemEls.current[idx] : null,
-                resolvedPreferLeft.current,
+                resolvedPreferLeft.current
               )
             }
             onClick={(e) => {
@@ -121,9 +113,7 @@ function SubMenuPanel({
                 name={item.icon as any}
                 size={16}
                 color={item.danger ? "var(--danger)" : item.iconColor}
-                fill={
-                  item.danger || item.iconColor ? "currentColor" : undefined
-                }
+                fill={item.danger || item.iconColor ? "currentColor" : undefined}
               />
             )}
             <span>{item.label}</span>
@@ -143,13 +133,7 @@ function SubMenuPanel({
 // Renders the root menu + all open submenu levels as *siblings* in a zero-size
 // wrapper, so no submenu is ever a DOM descendant of a backdrop-filter element.
 
-export function ContextMenu({
-  x,
-  y,
-  items,
-  onClose,
-  header,
-}: ContextMenuProps) {
+export function ContextMenu({ x, y, items, onClose, header }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   const preferLeftRef = useRef(false);
@@ -167,7 +151,7 @@ export function ContextMenu({
     depth: number,
     idx: number | null,
     anchorEl: HTMLDivElement | null,
-    preferLeft: boolean,
+    preferLeft: boolean
   ) => {
     if (idx === null || !anchorEl) {
       // Close this depth and everything below it
@@ -178,10 +162,7 @@ export function ContextMenu({
     if (!parentItems) return;
     const children = parentItems[idx]?.children;
     if (!children?.length) return;
-    setSubmenuStack((s) => [
-      ...s.slice(0, depth),
-      { items: children, anchorEl, preferLeft },
-    ]);
+    setSubmenuStack((s) => [...s.slice(0, depth), { items: children, anchorEl, preferLeft }]);
   };
 
   useEffect(() => {
@@ -198,8 +179,7 @@ export function ContextMenu({
     } else {
       preferLeftRef.current = false;
     }
-    if (finalY + menu.offsetHeight > vh - PAD)
-      finalY = vh - menu.offsetHeight - PAD;
+    if (finalY + menu.offsetHeight > vh - PAD) finalY = vh - menu.offsetHeight - PAD;
     finalX = Math.max(PAD, finalX);
     finalY = Math.max(PAD, finalY);
 
@@ -232,8 +212,7 @@ export function ContextMenu({
       >
         {header && <div className={styles.contextMenuHeader}>{header}</div>}
         {items.map((item, idx) => {
-          if (item.separator)
-            return <div key={idx} className={styles.contextMenuSeparator} />;
+          if (item.separator) return <div key={idx} className={styles.contextMenuSeparator} />;
           const hasChildren = !!item.children?.length;
           return (
             <div
@@ -247,7 +226,7 @@ export function ContextMenu({
                   0,
                   hasChildren ? idx : null,
                   hasChildren ? itemEls.current[idx] : null,
-                  preferLeftRef.current,
+                  preferLeftRef.current
                 )
               }
               onClick={(e) => {
@@ -263,9 +242,7 @@ export function ContextMenu({
                   name={item.icon as any}
                   size={16}
                   color={item.danger ? "var(--danger)" : item.iconColor}
-                  fill={
-                    item.danger || item.iconColor ? "currentColor" : undefined
-                  }
+                  fill={item.danger || item.iconColor ? "currentColor" : undefined}
                 />
               )}
               <span>{item.label}</span>
@@ -304,12 +281,5 @@ export function ContextMenu({
 export function GlobalContextMenu() {
   const state = globalContextMenu.value;
   if (!state) return null;
-  return (
-    <ContextMenu
-      x={state.x}
-      y={state.y}
-      items={state.items}
-      onClose={closeContextMenu}
-    />
-  );
+  return <ContextMenu x={state.x} y={state.y} items={state.items} onClose={closeContextMenu} />;
 }

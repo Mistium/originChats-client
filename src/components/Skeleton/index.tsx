@@ -1,35 +1,16 @@
 import { h } from "preact";
 import styles from "./Skeleton.module.css";
 
-function SkeletonBase({
-  className = "",
-  style = {},
-}: {
-  className?: string;
-  style?: any;
-}) {
-  return (
-    <div className={`${styles.skeleton} ${className.trim()}`} style={style} />
-  );
+function SkeletonBase({ className = "", style = {} }: { className?: string; style?: any }) {
+  return <div className={`${styles.skeleton} ${className.trim()}`} style={style} />;
 }
 
 function SkeletonAvatar() {
   return <div className={styles.skeletonAvatar} />;
 }
 
-function SkeletonText({
-  width = "100%",
-  className = "",
-}: {
-  width?: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`${styles.skeletonText} ${className.trim()}`}
-      style={{ width }}
-    />
-  );
+function SkeletonText({ width = "100%", className = "" }: { width?: string; className?: string }) {
+  return <div className={`${styles.skeletonText} ${className.trim()}`} style={{ width }} />;
 }
 
 function SkeletonListItem() {

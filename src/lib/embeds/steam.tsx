@@ -13,10 +13,9 @@ export function SteamEmbed({ appId, originalUrl }: SteamEmbedProps) {
   useEffect(() => {
     const controller = new AbortController();
     const steamApiUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=basic,price_overview`;
-    fetch(
-      `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(steamApiUrl)}`,
-      { signal: controller.signal },
-    )
+    fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(steamApiUrl)}`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Steam API failed");
         return res.json();
@@ -39,9 +38,7 @@ export function SteamEmbed({ appId, originalUrl }: SteamEmbedProps) {
       </a>
     );
 
-  const price = data.is_free
-    ? "Free"
-    : (data.price_overview?.final_formatted ?? null);
+  const price = data.is_free ? "Free" : (data.price_overview?.final_formatted ?? null);
 
   const typeLabel =
     data.type === "game"
@@ -53,12 +50,7 @@ export function SteamEmbed({ appId, originalUrl }: SteamEmbedProps) {
           : null;
 
   return (
-    <a
-      href={originalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="steam-embed"
-    >
+    <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="steam-embed">
       {data.header_image && (
         <img
           src={proxyImageUrl(data.header_image)}
@@ -73,9 +65,7 @@ export function SteamEmbed({ appId, originalUrl }: SteamEmbedProps) {
           {price && <span className="steam-embed__price">{price}</span>}
         </div>
         <div className="steam-embed__name">{data.name}</div>
-        {data.short_description && (
-          <p className="steam-embed__desc">{data.short_description}</p>
-        )}
+        {data.short_description && <p className="steam-embed__desc">{data.short_description}</p>}
       </div>
     </a>
   );

@@ -1,9 +1,4 @@
-import type {
-  UnreadsGet,
-  UnreadsCount,
-  UnreadsAck,
-  UnreadsUpdate,
-} from "@/msgTypes";
+import type { UnreadsGet, UnreadsCount, UnreadsAck, UnreadsUpdate } from "@/msgTypes";
 import { unreadState } from "../../state/unread";
 
 export function handleUnreadsGet(msg: UnreadsGet, sUrl: string): void {

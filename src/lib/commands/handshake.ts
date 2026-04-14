@@ -27,8 +27,7 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
     channelsByServer.value = { ...channelsByServer.value, [sUrl]: [] };
   if (!messagesByServer.value[sUrl])
     messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
-  if (!usersByServer.value[sUrl])
-    usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
+  if (!usersByServer.value[sUrl]) usersByServer.value = { ...usersByServer.value, [sUrl]: {} };
   serverValidatorKeys[sUrl] = msg.val.validator_key;
 
   // these are the capabilities all servers can be expected to support
@@ -48,18 +47,14 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
 
   serverCapabilitiesByServer.value = {
     ...serverCapabilitiesByServer.value,
-    [sUrl]: Array.isArray(msg.val.capabilities)
-      ? msg.val.capabilities
-      : DEFAULT_CAPABILITIES,
+    [sUrl]: Array.isArray(msg.val.capabilities) ? msg.val.capabilities : DEFAULT_CAPABILITIES,
   };
 
   if (msg.val.roles && Array.isArray(msg.val.roles)) {
     const permissions = msg.val.roles.flatMap((r) => r.permissions || []);
     const uniquePerms = Array.from(new Set(permissions)).map((id: string) => {
       const defaultPerm = DEFAULT_PERMISSIONS.find((p) => p.id === id);
-      return (
-        defaultPerm || { id, name: id, description: "", category: "Other" }
-      );
+      return defaultPerm || { id, name: id, description: "", category: "Other" };
     });
     serverPermissionsByServer.value = {
       ...serverPermissionsByServer.value,
@@ -97,7 +92,7 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
                 ...(name ? { name } : {}),
                 ...(banner !== undefined ? { banner } : {}),
               }
-            : s,
+            : s
         );
         saveServers().catch(() => {});
       }
@@ -131,7 +126,7 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
             username: existing.crackedCredentials.username,
             password: existing.crackedCredentials.password,
           },
-          sUrl,
+          sUrl
         );
       } else {
         showCrackedAuthModal.value = sUrl;
@@ -145,7 +140,7 @@ export function handleHandshake(msg: Handshake, sUrl: string): void {
             username: existing.crackedCredentials.username,
             password: existing.crackedCredentials.password,
           },
-          sUrl,
+          sUrl
         );
       } else if (!token.value) {
         showCrackedAuthModal.value = sUrl;

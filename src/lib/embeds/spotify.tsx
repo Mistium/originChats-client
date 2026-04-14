@@ -12,10 +12,9 @@ export function SpotifyEmbed({ spotifyUrl, originalUrl }: SpotifyEmbedProps) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(
-      `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`,
-      { signal: controller.signal },
-    )
+    fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Spotify oEmbed failed");
         return res.json();

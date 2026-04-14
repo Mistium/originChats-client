@@ -21,9 +21,7 @@ async function md5(text: string): Promise<string> {
     const data = encoder.encode(text);
     const hashBuffer = await crypto.subtle.digest("SHA-1", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     return hashHex.substring(0, 32);
   } else {
     let hash = 0;
@@ -95,8 +93,7 @@ export class LocalOriginFSClass {
   }
 
   randomString(length: number): string {
-    const charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
     for (let i = 0; i < length; i++) {
       result += charset.charAt(Math.floor(Math.random() * charset.length));
@@ -184,11 +181,7 @@ export class LocalOriginFSClass {
     return data;
   }
 
-  private async writeEntry(
-    path: string,
-    entry: any,
-    op: "put" | "delete" = "put",
-  ): Promise<void> {
+  private async writeEntry(path: string, entry: any, op: "put" | "delete" = "put"): Promise<void> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
@@ -374,8 +367,7 @@ export class LocalOriginFSClass {
 
     entry[IDX.TYPE] = ext;
     entry[IDX.NAME] = name;
-    entry[IDX.LOCATION] =
-      `origin/(c) users/${this.username}/${dir.replace(/^\/|\/$/g, "")}`;
+    entry[IDX.LOCATION] = `origin/(c) users/${this.username}/${dir.replace(/^\/|\/$/g, "")}`;
     entry[IDX.EDITED] = now;
     this.entries[uuid] = entry;
     delete this.index[oldPath.toLowerCase()];

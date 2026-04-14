@@ -38,8 +38,7 @@ export function TenorEmbed({ tenorId }: TenorEmbedProps) {
         if (cancelled) return;
         if (!data?.[0]?.media?.[0]) throw new Error("Invalid Tenor response");
         const media = data[0].media[0];
-        const url =
-          media.mediumgif?.url || media.gif?.url || media.tinygif?.url;
+        const url = media.mediumgif?.url || media.gif?.url || media.tinygif?.url;
         if (!url) throw new Error("No GIF URL found");
         setGifUrl(url);
 
@@ -71,9 +70,7 @@ export function TenorEmbed({ tenorId }: TenorEmbedProps) {
     const style = cachedSize
       ? `width: ${Math.min(cachedSize.width, 400)}px; aspect-ratio: ${cachedSize.width} / ${cachedSize.height};`
       : "width: 200px; height: 150px;";
-    return (
-      <div className="embed-container tenor-embed skeleton" style={style} />
-    );
+    return <div className="embed-container tenor-embed skeleton" style={style} />;
   }
 
   const handleImageLoad = () => {

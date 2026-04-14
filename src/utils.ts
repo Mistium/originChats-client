@@ -60,7 +60,7 @@ export function avatarUrl(username: string): string {
 }
 
 function getUserAvatar(
-  user: { username: string; pfp?: string; cracked?: boolean } | string,
+  user: { username: string; pfp?: string; cracked?: boolean } | string
 ): string | undefined {
   const username = typeof user === "string" ? user : user.username;
   const pfp = typeof user === "string" ? undefined : user.pfp;
@@ -73,4 +73,3 @@ function getUserAvatar(
 
   return avatarUrl(username);
 }
-

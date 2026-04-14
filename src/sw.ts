@@ -20,14 +20,10 @@ cleanupOutdatedCaches();
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL("index.html"), {
     denylist: [/^\/api/],
-  }),
+  })
 );
 
-registerRoute(
-  /\/.*\.json$/,
-  new StaleWhileRevalidate({ cacheName: "json-cache" }),
-  "GET",
-);
+registerRoute(/\/.*\.json$/, new StaleWhileRevalidate({ cacheName: "json-cache" }), "GET");
 
 // ── Web Push ──────────────────────────────────────────────────────────────────
 
@@ -52,31 +48,25 @@ self.addEventListener("push", (event: PushEvent) => {
   };
 
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        // Don't show a push notification if the user already has a focused tab open
-        const hasFocusedTab = clientList.some(
-          (client) => (client as WindowClient).focused,
-        );
-        if (hasFocusedTab) return;
-        return self.registration.showNotification(title, options);
-      }),
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Don't show a push notification if the user already has a focused tab open
+      const hasFocusedTab = clientList.some((client) => (client as WindowClient).focused);
+      if (hasFocusedTab) return;
+      return self.registration.showNotification(title, options);
+    })
   );
 });
 
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        // Focus existing window if one is open
-        for (const client of clientList) {
-          if ("focus" in client) return (client as WindowClient).focus();
-        }
-        // Otherwise open a new window
-        return self.clients.openWindow("/");
-      }),
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Focus existing window if one is open
+      for (const client of clientList) {
+        if ("focus" in client) return (client as WindowClient).focus();
+      }
+      // Otherwise open a new window
+      return self.clients.openWindow("/");
+    })
   );
 });

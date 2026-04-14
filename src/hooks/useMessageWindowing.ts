@@ -4,10 +4,7 @@ import { messagesByServer, serverUrl } from "../state";
 const MAX_MESSAGES_IN_MEMORY = 500;
 const UNLOAD_THRESHOLD = 100;
 
-export function useMessageWindowing(
-  messageKey: string | null,
-  currentMessages: any[],
-) {
+export function useMessageWindowing(messageKey: string | null, currentMessages: any[]) {
   const sUrl = serverUrl.value;
   const overflowCount = currentMessages.length - MAX_MESSAGES_IN_MEMORY;
   const shouldUnload = overflowCount > UNLOAD_THRESHOLD;
@@ -24,11 +21,7 @@ export function useMessageWindowing(
   }, [currentMessages, shouldUnload]);
 
   const unloadDistantMessages = useCallback(
-    (
-      scrollDirection: "up" | "down",
-      scrollTop: number,
-      scrollHeight: number,
-    ) => {
+    (scrollDirection: "up" | "down", scrollTop: number, scrollHeight: number) => {
       if (currentMessages.length <= MAX_MESSAGES_IN_MEMORY) return;
 
       const messageWindow = {
@@ -39,15 +32,11 @@ export function useMessageWindowing(
       if (scrollDirection === "up" && scrollTop < 200) {
         const toUnloadCount = Math.min(
           UNLOAD_THRESHOLD,
-          currentMessages.length - MAX_MESSAGES_IN_MEMORY + 50,
+          currentMessages.length - MAX_MESSAGES_IN_MEMORY + 50
         );
         if (toUnloadCount > 0) {
           const newMessages = currentMessages.slice(toUnloadCount);
-          if (
-            sUrl &&
-            messageKey &&
-            messagesByServer.value[sUrl]?.[messageKey]
-          ) {
+          if (sUrl && messageKey && messagesByServer.value[sUrl]?.[messageKey]) {
             messagesByServer.value = {
               ...messagesByServer.value,
               [sUrl]: {
@@ -57,21 +46,14 @@ export function useMessageWindowing(
             };
           }
         }
-      } else if (
-        scrollDirection === "down" &&
-        scrollHeight - scrollTop - 800 < 200
-      ) {
+      } else if (scrollDirection === "down" && scrollHeight - scrollTop - 800 < 200) {
         const toUnloadCount = Math.min(
           UNLOAD_THRESHOLD,
-          currentMessages.length - MAX_MESSAGES_IN_MEMORY + 50,
+          currentMessages.length - MAX_MESSAGES_IN_MEMORY + 50
         );
         if (toUnloadCount > 0) {
           const newMessages = currentMessages.slice(0, -toUnloadCount);
-          if (
-            sUrl &&
-            messageKey &&
-            messagesByServer.value[sUrl]?.[messageKey]
-          ) {
+          if (sUrl && messageKey && messagesByServer.value[sUrl]?.[messageKey]) {
             messagesByServer.value = {
               ...messagesByServer.value,
               [sUrl]: {
@@ -83,7 +65,7 @@ export function useMessageWindowing(
         }
       }
     },
-    [currentMessages, sUrl, messageKey],
+    [currentMessages, sUrl, messageKey]
   );
 
   return {
