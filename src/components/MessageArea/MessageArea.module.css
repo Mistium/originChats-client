@@ -16,7 +16,7 @@
   overscroll-behavior-y: contain;
   padding: 0;
   position: relative;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .overscrollArea {

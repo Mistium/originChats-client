@@ -1,5 +1,5 @@
 import hljs from "highlight.js/lib/core";
-import { servers, threadsByServer, customEmojisByServer } from "../state";
+import { servers, threadsByServer, customEmojisByServer, useSystemEmojis } from "../state";
 import { lookupShortcode } from "./shortcodes";
 import {
   TRUSTED_DOMAINS,
@@ -9,6 +9,7 @@ import {
   proxyImageUrl as proxyImageUrlUtil,
 } from "./media-utils";
 import type { CustomEmoji } from "../types";
+import twemoji from "@twemoji/api";
 
 async function fetchEmojiFromServer(sUrl: string, emojiId: string): Promise<CustomEmoji | null> {
   try {
@@ -178,7 +179,8 @@ export function parseMarkdown(
   embedLinks: string[] = [],
   mentionCtx?: MentionContext
 ): string {
-  const cacheKey = text;
+  const useSystemEmojisFlag = useSystemEmojis.value;
+  const cacheKey = `${text}::${useSystemEmojisFlag}`;
   const cached = parseCache.get(cacheKey);
   if (cached) {
     embedLinks.push(...cached.embedLinks);
@@ -487,6 +489,15 @@ export function parseMarkdown(
     const keysToDelete = [...parseCache.keys()].slice(0, parseCache.size - MAX_CACHE_SIZE);
     keysToDelete.forEach((k) => parseCache.delete(k));
   }
+
+  if (!useSystemEmojis.value) {
+    text = twemoji.parse(text, {
+      className: "emoji",
+      size: "svg",
+      ext: ".svg",
+    }) as string;
+  }
+
   parseCache.set(cacheKey, { result: text, embedLinks: [...embedLinks] });
 
   return text;
