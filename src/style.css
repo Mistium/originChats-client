@@ -3732,6 +3732,7 @@ a {
   }
 }
 
+.custom-emoji,
 .emoji {
   height: var(--size-icon-md);
   vertical-align: middle;
@@ -9725,12 +9726,6 @@ body,
 .emoji-content {
   flex: 1;
   overflow-y: auto;
-}
-
-.custom-emoji {
-  width: var(--size-icon-md);
-  vertical-align: middle;
-  height: var(--size-icon-md);
 }
 
 .emojiOnly {
