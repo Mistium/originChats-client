@@ -13,7 +13,6 @@ import {
   threadsByServer,
   lastChannelByServer,
   DM_SERVER_URL,
-  SPECIAL_CHANNELS,
   setPendingDMAddUsername,
   blockedUsers,
   friends,

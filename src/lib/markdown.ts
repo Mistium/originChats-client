@@ -11,21 +11,6 @@ import {
 import type { CustomEmoji } from "../types";
 import twemoji from "@twemoji/api";
 
-async function fetchEmojiFromServer(sUrl: string, emojiId: string): Promise<CustomEmoji | null> {
-  try {
-    const baseUrl = sUrl.startsWith("http") ? sUrl : `https://${sUrl}`;
-    const response = await fetch(`${baseUrl}/emojis/${emojiId}`);
-    if (!response.ok) return null;
-    const emoji = await response.json();
-    return {
-      id: emoji.id,
-      name: emoji.name,
-      fileName: emoji.id,
-    };
-  } catch {
-    return null;
-  }
-}
 import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";
 import python from "highlight.js/lib/languages/python";

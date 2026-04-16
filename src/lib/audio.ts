@@ -7,13 +7,6 @@ function getAudioContext(): AudioContext {
   return audioCtx;
 }
 
-function cleanupAudioContext(): void {
-  if (audioCtx && audioCtx.state !== "closed") {
-    audioCtx.close();
-    audioCtx = null;
-  }
-}
-
 export function playPingSound(): void {
   if (document.hidden) return;
   const type = pingSound.value;
