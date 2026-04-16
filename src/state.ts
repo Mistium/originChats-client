@@ -541,25 +541,6 @@ export const recentEmojis = signal<string[]>([]);
 
 export const customEmojisByServer = signal<Record<string, Record<string, CustomEmoji>>>({});
 
-function getCustomEmojiByName(name: string): { emoji: CustomEmoji; serverUrl: string } | null {
-  const lowerName = name.toLowerCase();
-  for (const [sUrl, emojis] of Object.entries(customEmojisByServer.value)) {
-    for (const [, emoji] of Object.entries(emojis)) {
-      if (emoji.name.toLowerCase() === lowerName) {
-        return { emoji, serverUrl: sUrl };
-      }
-    }
-  }
-  return null;
-}
-
-function getCustomEmojiUrl(serverUrlStr: string, emoji: CustomEmoji): string {
-  const baseUrl = serverUrlStr.startsWith("http") ? serverUrlStr : `https://${serverUrlStr}`;
-  return `${baseUrl}/emojis/${emoji.fileName}`;
-}
-
-// ── Rotur social state ────────────────────────────────────────────────────────
-
 /** Cached custom statuses keyed by username (fetched on demand). */
 export const roturStatuses = signal<Record<string, RoturStatusUpdate>>({});
 

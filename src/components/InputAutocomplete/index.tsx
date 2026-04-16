@@ -214,7 +214,6 @@ function searchEmojis(query: string): AutocompleteItem[] {
 
 function searchCustomEmojis(query: string): AutocompleteItem[] {
   const q = query.toLowerCase();
-  const recent = recentEmojis.value;
 
   const results = emojiCache.searchCustomEmojis(q, 15);
 

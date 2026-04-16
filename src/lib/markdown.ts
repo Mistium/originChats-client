@@ -20,7 +20,7 @@ async function fetchEmojiFromServer(sUrl: string, emojiId: string): Promise<Cust
     return {
       id: emoji.id,
       name: emoji.name,
-      fileName: emoji.fileName || emoji.id,
+      fileName: emoji.id,
     };
   } catch {
     return null;
