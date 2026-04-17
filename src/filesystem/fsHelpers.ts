@@ -4,7 +4,7 @@ export async function prepareFolderEntries(
   dir: string,
   index: Record<string, string>,
   generateUUID: () => Promise<string>,
-  formatPath: (p: string) => string,
+  formatPath: (p: string) => string
 ) {
   dir = dir.replace(/\/$/, "");
   if (!dir || dir === "/") {

@@ -601,22 +601,21 @@ function RightPanel() {
     );
   }
 
+  const handleCopyContextMenu = (e: any, text: string) => {
+    e.preventDefault();
+    const menuItems: any[] = [
+      {
+        label: "Copy text",
+        icon: "Copy",
+        fn: () => navigator.clipboard.writeText(text),
+      },
+    ];
+    showContextMenu(e, menuItems);
+  };
+
   if (panelView === "search") {
     const results = searchResults.value;
     const loading = searchLoading.value;
-
-    const handleSearchContextMenu = (e: any, msg: Message) => {
-      e.preventDefault();
-      const menuItems: any[] = [];
-
-      menuItems.push({
-        label: "Copy text",
-        icon: "Copy",
-        fn: () => navigator.clipboard.writeText(msg.content),
-      });
-
-      showContextMenu(e, menuItems);
-    };
 
     const performSearch = () => {
       const query = searchQuery.trim();
@@ -686,7 +685,7 @@ function RightPanel() {
                 key={msg.id}
                 group={{ head: msg, following: [] }}
                 onClick={() => scrollToMessage(msg.id!)}
-                onContextMenu={(e: any) => handleSearchContextMenu(e, msg)}
+                onContextMenu={(e: any) => handleCopyContextMenu(e, msg.content)}
               />
             ))
           )}
@@ -713,19 +712,6 @@ function RightPanel() {
         limit: PINGS_INBOX_LIMIT,
         offset: nextOffset,
       });
-    };
-
-    const handleInboxContextMenu = (e: any, msg: any) => {
-      e.preventDefault();
-      const menuItems: any[] = [];
-
-      menuItems.push({
-        label: "Copy text",
-        icon: "Copy",
-        fn: () => navigator.clipboard.writeText(msg.content),
-      });
-
-      showContextMenu(e, menuItems);
     };
 
     const jumpToMessage = async (msg: any) => {
@@ -790,7 +776,7 @@ function RightPanel() {
             key={msg.id}
             group={{ head: msgWithTimestamp, following: [] }}
             onClick={() => jumpToMessage(msg)}
-            onContextMenu={(e: any) => handleInboxContextMenu(e, msg)}
+            onContextMenu={(e: any) => handleCopyContextMenu(e, msg.content)}
             showReply={true}
             replyUserColor={replyUserColor}
           />

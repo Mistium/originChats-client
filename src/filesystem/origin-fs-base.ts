@@ -160,7 +160,7 @@ export abstract class OriginFSBase {
       dir,
       this.index,
       this.generateUUID.bind(this),
-      this.formatPath.bind(this),
+      this.formatPath.bind(this)
     );
     for (const { subPath, entry, uuid } of entries) {
       this.entries[uuid] = entry;
