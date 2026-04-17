@@ -1,18 +1,3 @@
-/**
- * Centralised emoji rendering handler.
- *
- * All emoji display in the app should go through this module so that the
- * "Use system emojis" setting is honoured in one place.
- *
- * When system emojis are enabled:
- *   - `parseEmojisInContainer` is a no-op (raw Unicode is left in the DOM).
- *   - `emojiImgUrl` returns null so callers can render plain text instead.
- *
- * When system emojis are disabled (default):
- *   - `parseEmojisInContainer` delegates to twemoji.parse().
- *   - `emojiImgUrl` returns the CDN SVG URL for the given hexcode or Unicode char.
- */
-
 import twemoji from "@twemoji/api";
 import { useSystemEmojis } from "../state";
 
@@ -112,17 +97,6 @@ export function parseEmojisInContainer(container: HTMLElement): void {
   }, 16);
 }
 
-/**
- * Return the Twemoji CDN SVG URL for an emoji identified by its hexcode
- * (e.g. "1f600") or a raw Unicode character (e.g. "😀").
- *
- * Returns `null` when system emojis are enabled, signalling that the caller
- * should render the raw character rather than an <img>.
- *
- * @param value  Either a lowercase hex codepoint string or a raw emoji character.
- * @param isChar When `true`, `value` is treated as a raw Unicode character and
- *               `twemoji.convert.toCodePoint()` is used to derive the hexcode.
- */
 export function emojiImgUrl(value: string, isChar = false): string | null {
   if (useSystemEmojis.value) return null;
 
@@ -273,4 +247,42 @@ export function prewarmCommonEmojis(): void {
       }
     }, 1000);
   }
+}
+
+const ORIGINCHATS_PREFIX = "originChats://";
+
+export function isCustomEmoji(emoji: string): boolean {
+  return emoji.startsWith(ORIGINCHATS_PREFIX);
+}
+export function getCustomEmojiUrl(emoji: string): string | null {
+  if (!isCustomEmoji(emoji)) return null;
+  const urlPart = emoji.slice(ORIGINCHATS_PREFIX.length);
+  return `https://${urlPart}`;
+}
+
+export function formatCustomEmojiForServer(emojiId: string, serverUrl: string): string {
+  const cleanServerUrl = serverUrl.replace(/^https?:\/\//, "");
+  return `${ORIGINCHATS_PREFIX}${cleanServerUrl}/emojis/${emojiId}`;
+}
+
+export function getEmojiImageUrl(emoji: string): string | null {
+  if (isCustomEmoji(emoji)) {
+    return getCustomEmojiUrl(emoji);
+  }
+  return emojiImgUrl(emoji, true);
+}
+
+export function parseEmojisInText(text: string): string {
+  if (useSystemEmojis.value || !text) {
+    return text;
+  }
+  return twemoji.parse(text, {
+    className: "emoji",
+    folder: "svg",
+    ext: ".svg",
+    callback: (icon: string) => {
+      ensureCached(icon);
+      return dataUriCache.get(icon) || `${TWEMOJI_CDN_BASE}/${icon}.svg`;
+    },
+  }) as string;
 }

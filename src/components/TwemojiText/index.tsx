@@ -1,5 +1,5 @@
 import { useMemo } from "preact/hooks";
-import twemoji from "@twemoji/api";
+import { parseEmojisInText } from "../../lib/emoji";
 import { useSystemEmojis } from "../../state";
 
 interface TwemojiTextProps {
@@ -9,14 +9,7 @@ interface TwemojiTextProps {
 
 export function TwemojiText({ children, className }: TwemojiTextProps) {
   const html = useMemo(() => {
-    if (useSystemEmojis.value || !children) {
-      return children;
-    }
-    return twemoji.parse(children, {
-      className: "emoji",
-      size: "svg",
-      ext: ".svg",
-    }) as string;
+    return parseEmojisInText(children);
   }, [children]);
 
   if (useSystemEmojis.value) {

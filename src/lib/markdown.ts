@@ -9,7 +9,7 @@ import {
   proxyImageUrl as proxyImageUrlUtil,
 } from "./media-utils";
 import type { CustomEmoji } from "../types";
-import twemoji from "@twemoji/api";
+import { parseEmojisInText } from "./emoji";
 
 import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";
@@ -476,11 +476,7 @@ export function parseMarkdown(
   }
 
   if (!useSystemEmojis.value) {
-    text = twemoji.parse(text, {
-      className: "emoji",
-      size: "svg",
-      ext: ".svg",
-    }) as string;
+    text = parseEmojisInText(text);
   }
 
   parseCache.set(cacheKey, { result: text, embedLinks: [...embedLinks] });

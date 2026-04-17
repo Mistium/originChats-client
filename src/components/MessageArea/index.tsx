@@ -1,25 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { Fragment, type h } from "preact";
 import { useSignalEffect } from "@preact/signals";
-import { parseEmojisInContainer, emojiImgUrl } from "../../lib/emoji";
+import {
+  parseEmojisInContainer,
+  emojiImgUrl,
+  isCustomEmoji,
+  getCustomEmojiUrl,
+} from "../../lib/emoji";
 import { SkeletonMessageList } from "../Skeleton";
 import styles from "./MessageArea.module.css";
 import { addUniversalContextMenuItems } from "../../lib/link-context-menu";
 import { downloadAttachment } from "../../lib/download-attachment";
 
 const highlightTimeouts = new Set<ReturnType<typeof setTimeout>>();
-
-const getCustomEmojiUrl = (emoji: string): string | null => {
-  if (emoji.startsWith("originChats://")) {
-    const urlPart = emoji.replace("originChats://", "");
-    return `https://${urlPart}`;
-  }
-  return null;
-};
-
-const isCustomEmoji = (emoji: string): boolean => {
-  return emoji.startsWith("originChats://");
-};
 
 import {
   currentChannel,
