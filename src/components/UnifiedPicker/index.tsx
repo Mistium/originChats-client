@@ -35,7 +35,11 @@ interface SavedGif {
 interface UnifiedPickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onEmojiSelect: (emoji: string) => void;
+  onEmojiSelect: (
+    emoji: string,
+    isCustom?: boolean,
+    emojiData?: { name: string; serverUrl: string; id: string }
+  ) => void;
   onGifSelect: (gifUrl: string) => void;
   anchorRef?: { current: HTMLElement | null };
   initialTab?: "emoji" | "gif";
@@ -79,8 +83,6 @@ const EMOJI_GROUP_ICONS: Record<number, string> = {
   8: "1f3e7",
   9: "1f3c1",
 };
-
-const QUICK_REACTIONS = ["😭", "😔", "💀", "👍", "👎", "❤️", "😂", "😮", "😢", "🔥"];
 
 const DISPLAY_GROUPS = [0, 1, 3, 4, 5, 6, 7, 8, 9];
 
@@ -256,7 +258,11 @@ function EmojiPanel({
   onClose,
 }: {
   searchTerm: string;
-  onSelect: (e: string) => void;
+  onSelect: (
+    e: string,
+    isCustom?: boolean,
+    emojiData?: { name: string; serverUrl: string; id: string }
+  ) => void;
   onClose: () => void;
 }) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -307,7 +313,11 @@ function EmojiPanel({
 
   const addCustomEmoji = useCallback(
     (emoji: CustomEmojiItem) => {
-      onSelect(`:${emoji.name}:`);
+      onSelect(`:${emoji.name}:`, true, {
+        name: emoji.name,
+        serverUrl: emoji.serverUrl,
+        id: emoji.id,
+      });
       onClose();
     },
     [onSelect, onClose]
@@ -426,28 +436,6 @@ function EmojiPanel({
       },
     ];
   }, [activeCategory, customEmojiData, isServerCategory, getServerUrlFromCategory]);
-
-  const findHexcode = useCallback(
-    (emoji: string): string | null => {
-      const entry = emojis.find((e) => e.emoji === emoji);
-      return entry?.hexcode ?? null;
-    },
-    [emojis]
-  );
-
-  // Filter function for search
-  const filterItems = useCallback(
-    (items: EmojiItem[]): EmojiItem[] => {
-      if (!searchTerm.trim()) return items;
-      const query = searchTerm.toLowerCase().trim();
-      return items.filter((item) => {
-        const labelMatch = item.label.toLowerCase().includes(query);
-        const emojiMatch = item.emoji.includes(searchTerm.trim());
-        return labelMatch || emojiMatch;
-      });
-    },
-    [searchTerm]
-  );
 
   // Apply search filter to all sections
   const displaySections = useMemo(() => {

@@ -55,7 +55,7 @@ function useMenuPosition(
     }
 
     menu.style.left = `${Math.max(PAD, Math.min(left, vw - menu.offsetWidth - PAD))}px`;
-    menu.style.top  = `${Math.max(PAD, Math.min(top,  vh - menu.offsetHeight - PAD))}px`;
+    menu.style.top = `${Math.max(PAD, Math.min(top, vh - menu.offsetHeight - PAD))}px`;
     menu.style.visibility = "visible";
   }, [options.mode === "root" ? options.x : 0, options.mode === "root" ? options.y : 0]);
 
@@ -88,14 +88,21 @@ function MenuItemList({
         return (
           <div
             key={idx}
-            ref={(el) => { if (itemEls.current) itemEls.current[idx] = el; }}
+            ref={(el) => {
+              if (itemEls.current) itemEls.current[idx] = el;
+            }}
             className={[
               styles.contextMenuItem,
-              item.danger   ? styles.danger     : "",
-              hasChildren   ? styles.hasSubmenu : "",
-            ].filter(Boolean).join(" ")}
+              item.danger ? styles.danger : "",
+              hasChildren ? styles.hasSubmenu : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             onMouseEnter={() =>
-              onItemHover(hasChildren ? idx : null, hasChildren && itemEls.current ? itemEls.current[idx] : null)
+              onItemHover(
+                hasChildren ? idx : null,
+                hasChildren && itemEls.current ? itemEls.current[idx] : null
+              )
             }
             onClick={(e) => {
               if (!hasChildren) {
@@ -134,7 +141,14 @@ interface SubMenuPanelProps {
   header?: ComponentChildren;
 }
 
-function SubMenuPanel({ items, anchorEl, onClose, preferLeft, onOpenChild, header }: SubMenuPanelProps) {
+function SubMenuPanel({
+  items,
+  anchorEl,
+  onClose,
+  preferLeft,
+  onOpenChild,
+  header,
+}: SubMenuPanelProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   const { resolvedPreferLeft } = useMenuPosition(menuRef, { mode: "sub", anchorEl, preferLeft });
@@ -152,7 +166,10 @@ function SubMenuPanel({ items, anchorEl, onClose, preferLeft, onOpenChild, heade
         header={header}
         itemEls={itemEls}
         onItemHover={(idx, el) => onOpenChild(idx, el, resolvedPreferLeft.current)}
-        onItemClick={(item, e) => { item.fn(e); onClose(); }}
+        onItemClick={(item, e) => {
+          item.fn(e);
+          onClose();
+        }}
         onClose={onClose}
       />
     </div>
@@ -218,10 +235,11 @@ export function ContextMenu({ x, y, items, onClose, header }: ContextMenuProps) 
           items={items}
           header={header}
           itemEls={itemEls}
-          onItemHover={(idx, el) =>
-            openSubmenuAt(0, idx, el, resolvedPreferLeft.current)
-          }
-          onItemClick={(item, e) => { item.fn(e); onClose(); }}
+          onItemHover={(idx, el) => openSubmenuAt(0, idx, el, resolvedPreferLeft.current)}
+          onItemClick={(item, e) => {
+            item.fn(e);
+            onClose();
+          }}
           onClose={onClose}
         />
       </div>

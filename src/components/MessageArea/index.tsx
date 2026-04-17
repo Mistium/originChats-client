@@ -9,6 +9,18 @@ import { downloadAttachment } from "../../lib/download-attachment";
 
 const highlightTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
+const getCustomEmojiUrl = (emoji: string): string | null => {
+  if (emoji.startsWith("originChats://")) {
+    const urlPart = emoji.replace("originChats://", "");
+    return `https://${urlPart}`;
+  }
+  return null;
+};
+
+const isCustomEmoji = (emoji: string): boolean => {
+  return emoji.startsWith("originChats://");
+};
+
 import {
   currentChannel,
   currentThread,
@@ -18,7 +30,6 @@ import {
   replyTo,
   replyPing,
   serverUrl,
-  currentServer,
   users,
   usersByServer,
   channels,
@@ -45,18 +56,15 @@ import {
   rolesByServer,
   customEmojisByServer,
   servers,
-  serverCapabilitiesByServer,
 } from "../../state";
 
 import {
-  showAccountModal,
   rightPanelView,
   pinnedMessages,
   pinnedLoading,
   searchResults,
   searchLoading,
   mobilePanelOpen,
-  closeMobileNav,
   showContextMenu,
   showVoiceCallView,
   showError,
@@ -112,7 +120,6 @@ import {
   showActionButtons,
   hideActionButtons,
 } from "../MessageActionButtons/FloatingActionButtons";
-import { MessageEmbed } from "../MessageEmbed";
 import { WebhookBadge } from "../WebhookBadge";
 import { AttachmentPreview } from "../AttachmentPreview";
 import { openUserPopout } from "../UserPopout";
@@ -1780,20 +1787,18 @@ export function MessageArea() {
   const handleEmojiSelect = (
     emoji: string,
     isCustom?: boolean,
-    emojiData?: { name: string; serverUrl: string }
+    emojiData?: { name: string; serverUrl: string; id?: string }
   ) => {
     if (reactingToMessage) {
-      // Don't allow custom emoji reactions
-      if (isCustom) {
-        setReactingToMessage(null);
-        setShowPicker(false);
-        return;
+      let emojiToSend = emoji;
+      if (isCustom && emojiData?.serverUrl && emojiData?.id) {
+        emojiToSend = `originChats://${emojiData.serverUrl}/emojis/${emojiData.id}`;
       }
       wsSend(
         {
           cmd: "message_react_add",
           id: reactingToMessage.id,
-          emoji,
+          emoji: emojiToSend,
           channel: currentChannel.value?.name,
         },
         serverUrl.value
@@ -2157,11 +2162,6 @@ export function MessageArea() {
   };
 
   const handleReaction = (msg: Message, emoji: string) => {
-    // Don't allow custom emoji reactions (they contain colons or are URLs)
-    if (emoji.includes(":") || emoji.startsWith("http") || emoji.startsWith("originChats:")) {
-      return;
-    }
-
     // Read live state so the toggle is always accurate, even after rapid clicks
     const channelMsgs = messages.value[messageKey] || [];
     const liveMsg = channelMsgs.find((m) => m.id === msg.id);
@@ -2509,7 +2509,14 @@ export function MessageArea() {
                 setReactionModal({ emoji, users: liveUsers });
               }}
             >
-              {emojiImgUrl(emoji, true) ? (
+              {isCustomEmoji(emoji) ? (
+                <img
+                  className="reaction-emoji"
+                  src={getCustomEmojiUrl(emoji)!}
+                  alt="custom emoji"
+                  draggable={false}
+                />
+              ) : emojiImgUrl(emoji, true) ? (
                 <img
                   className="reaction-emoji"
                   src={emojiImgUrl(emoji, true)!}
@@ -2540,11 +2547,8 @@ export function MessageArea() {
 
   const isDM = serverUrl.value === DM_SERVER_URL;
 
-  // ── Server capability flags ────────────────────────────────────────────────
   const caps = serverCapabilities.value;
   const canPin = caps.includes("message_pin") && caps.includes("messages_pinned");
-  const canSearch = caps.includes("messages_search");
-  const canInbox = caps.includes("pings_get");
   const canReply = caps.includes("message_replies");
   const canReact = caps.includes("message_react_add") && caps.includes("message_react_remove");
 
@@ -3379,7 +3383,14 @@ function ReactionModal({ emoji, users, onClose }: ReactionModalProps) {
     >
       <div className="reaction-modal">
         <div className="reaction-modal-header">
-          {emojiImgUrl(emoji, true) ? (
+          {isCustomEmoji(emoji) ? (
+            <img
+              className="reaction-modal-emoji"
+              src={getCustomEmojiUrl(emoji)!}
+              alt="custom emoji"
+              draggable={false}
+            />
+          ) : emojiImgUrl(emoji, true) ? (
             <img
               className="reaction-modal-emoji"
               src={emojiImgUrl(emoji, true)!}
