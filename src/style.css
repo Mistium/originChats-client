@@ -6352,6 +6352,12 @@ pre {
   color: var(--text-dim);
 }
 
+/* Pending (optimistic) messages */
+.message-group.pending-message,
+.message-single.pending-message {
+  opacity: 0.5;
+}
+
 .guild-sidebar {
   /* background: #0a0a0c; */
   display: flex;

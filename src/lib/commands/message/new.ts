@@ -154,37 +154,42 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
     ((isThread && currentThread.value?.id === msg.thread_id) ||
       (!isThread && currentChannel.value?.name === key));
 
-  // Handle pending message confirmation for own messages
   if (isOwn) {
     pendingMessages.removeByKey(sUrl, key, msg.message.content, myUsername);
   }
 
   if (isCurrentChannel && loadedChannelsByServer[sUrl]?.has(key)) {
-    // Check if we're at the bottom (reachedNewest)
     const isAtBottom = reachedNewestByServer[sUrl]?.has(key);
 
     if (isAtBottom) {
-      // We're at the bottom, append the message normally
       messages.append(sUrl, key, msg.message as Message);
-      // Mark as reached newest since we received a new message for the current channel
       if (!reachedNewestByServer[sUrl]) reachedNewestByServer[sUrl] = new Set();
       reachedNewestByServer[sUrl].add(key);
     } else {
-      // We're not at the bottom, track missed messages instead of appending
-      if (!missedMessagesCount[sUrl]) missedMessagesCount[sUrl] = {};
-      if (!missedMessagesCount[sUrl][key]) missedMessagesCount[sUrl][key] = 0;
-      missedMessagesCount[sUrl][key]++;
+      const current = missedMessagesCount.value;
+      const serverCounts = current[sUrl] || {};
+      const wasZero = !serverCounts[key] || serverCounts[key] === 0;
+      const newCount = (serverCounts[key] || 0) + 1;
+      missedMessagesCount.value = {
+        ...current,
+        [sUrl]: {
+          ...serverCounts,
+          [key]: newCount,
+        },
+      };
       missedMessagesSignal.value++;
+      if (wasZero) missedMessagesAppearSignal.value++;
     }
   }
 
   updateLastMessage(sUrl, msg.channel, msg.message.timestamp);
 
+  const isEffectivelyViewing = isCurrentChannel && !document.hidden;
   const notifLevel = getChannelNotifLevel(sUrl, msg.channel);
   const isMuted = notifLevel === "none";
   const channelToClear = isThread ? msg.thread_id! : msg.channel;
 
-  if (!isCurrentChannel && !isMuted && !isOwn) {
+  if (!isEffectivelyViewing && !isMuted && !isOwn) {
     unreadState.incrementUnread(sUrl, channelToClear);
     renderChannelsSignal.value++;
 
@@ -199,23 +204,21 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
 
     if (isCurrentServer) renderChannelsSignal.value++;
     renderGuildSidebarSignal.value++;
-  } else if (isOwn && !isCurrentChannel) {
+  } else if (isOwn && !isEffectivelyViewing) {
     unreadState.clearChannel(sUrl, channelToClear);
-  } else if (isCurrentChannel) {
+  } else if (isEffectivelyViewing) {
     persistReadTime(sUrl, msg.channel, msg.message.timestamp);
     unreadState.clearChannel(sUrl, channelToClear);
   } else if (isMuted && sUrl === DM_SERVER_URL) {
     ensureDMServer(msg.channel, msg.message.user, msg.message.timestamp);
   }
 
-  if (!isOwn && !isMuted && !isCurrentChannel && notifLevel !== "all" && myUsername) {
+  if (!isOwn && !isMuted && !isEffectivelyViewing && notifLevel !== "all" && myUsername) {
     handlePingNotifications(msg, sUrl, channelToClear, myUsername);
   }
 
   const typing = typingUsersByServer.value[sUrl]?.[msg.channel];
   if (typing) (typing as Map<string, number>).delete(msg.message.user);
 
-  // Batch render signal at the end - this batches pending message removal
-  // with message append to prevent flicker
   renderMessagesSignal.value++;
 }
