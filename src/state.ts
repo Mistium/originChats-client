@@ -763,7 +763,7 @@ export async function initSettingsFromDb(): Promise<void> {
     return (v ?? def) as T;
   };
 
-  recentEmojis.value = await s.get<string[]>("recentEmojis", []);
+  recentEmojis.value = (await s.get<string[]>("recentEmojis", [])) ?? [];
   sendTypingIndicators.value = await bool("sendTypingIndicators", true);
   dmMessageSound.value = await bool("dmMessageSound", true);
   pingSound.value = await str<PingSoundType>("pingSound", "default");

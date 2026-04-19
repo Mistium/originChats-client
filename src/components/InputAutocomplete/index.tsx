@@ -282,7 +282,7 @@ export function useInputAutocomplete(inputId: string) {
       case "emoji": {
         const customResults = searchCustomEmojis(trigger.query);
         const systemResults = searchEmojis(trigger.query);
-        const recent = recentEmojis.value;
+        const recent = recentEmojis.value || [];
         const recentSet = new Set(recent);
         const q = trigger.query.toLowerCase();
 
@@ -347,7 +347,7 @@ export function useInputAutocomplete(inputId: string) {
       if (item.type === "emoji") {
         const key = item.hexcode || `${item.serverUrl}:${item.label}`;
         if (key) {
-          const currentRecent = recentEmojis.value;
+          const currentRecent = recentEmojis.value || [];
           const updated = [key, ...currentRecent.filter((e) => e !== key)].slice(0, 50);
           recentEmojis.value = updated;
         }

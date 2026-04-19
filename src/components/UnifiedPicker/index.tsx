@@ -303,7 +303,7 @@ function EmojiPanel({
 
   const addRecent = useCallback(
     (emoji: string) => {
-      const current = recentEmojis.value;
+      const current = recentEmojis.value || [];
       const updated = [emoji, ...current.filter((e) => e !== emoji)].slice(0, 50);
       recentEmojis.value = updated;
       onSelect(emoji);
