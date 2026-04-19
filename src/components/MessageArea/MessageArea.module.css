@@ -1266,107 +1266,6 @@
   padding: 8px;
 }
 
-.rightPanelContentMessages {
-  padding: 8px 12px;
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  max-width: 350px;
-  max-height: calc(100% - 80px);
-}
-
-.rightPanelContentMessages :global(.messageGroup) {
-  padding: var(--space-2);
-  margin-bottom: 6px;
-  border-radius: var(--radius-md);
-  background: var(--surface-light);
-  transition: background var(--anim-fast) ease;
-}
-
-.rightPanelContentMessages :global(.messageGroup):hover {
-  background: var(--surface-hover);
-}
-
-.rightPanelContentMessages :global(.messageGroup) :global(.avatar) {
-  width: var(--size-avatar-md);
-  height: var(--size-avatar-md);
-  margin-right: var(--space-2);
-  margin-top: 2px;
-  border-radius: var(--avatar-radius, 50%);
-}
-
-.rightPanelContentMessages :global(.messageHeader) {
-  margin-top: 2px;
-  margin-bottom: 4px;
-  gap: var(--space-2);
-}
-
-.rightPanelContentMessages :global(.username) {
-  font-size: var(--font-md);
-  font-weight: 600;
-}
-
-.rightPanelContentMessages :global(.timestamp) {
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.rightPanelContentMessages :global(.messageBody) {
-  font-size: var(--font-md);
-  line-height: 1.45;
-  color: var(--text);
-}
-
-.rightPanelContentMessages :global(.messageSingle) {
-  padding-left: 40px;
-}
-
-.rightPanelContentMessages :global(.messageSingle)::before {
-  left: -40px;
-  width: calc(100% + 56px);
-}
-
-.inboxMessageRow {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 8px;
-}
-
-.inboxMessageContext {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-dim);
-  background: var(--surface);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
-
-.inboxMessageContext svg {
-  opacity: 0.6;
-}
-
-.inboxContextChannel {
-  font-weight: 500;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.inboxContextTime {
-  margin-left: auto;
-  font-size: 11px;
-  opacity: 0.7;
-}
-
-.inboxMessageRow :global(.messageGroup) {
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  margin-bottom: 0;
-}
-
 .inboxPanelTotal {
   background: var(--primary);
   border-radius: 10px;
@@ -1378,29 +1277,6 @@
   min-width: 20px;
   padding: 3px 7px;
   text-align: center;
-}
-
-.inboxPanelLoadMore {
-  background: var(--surface-light);
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  margin: 8px 12px;
-  padding: 10px 16px;
-  transition: all var(--anim-fast) ease;
-  width: calc(100% - 24px);
-}
-
-.inboxPanelLoadMore:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.inboxPanelLoadMore:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 .rightPanelEmpty {
@@ -1936,13 +1812,6 @@
 
   .inboxPingCardTime {
     font-size: 12px;
-  }
-
-  .inboxPanelLoadMore {
-    margin: 16px;
-    padding: 14px 20px;
-    font-size: 15px;
-    border-radius: 12px;
   }
 
   .inboxPanelTotal {

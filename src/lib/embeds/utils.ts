@@ -1,11 +1,11 @@
 import { fetchLinkMetadata } from "./fetch-meta";
 import {
-  TRUSTED_DOMAINS,
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
   hasExtension as hasExtensionUtil,
-  proxyImageUrl as proxyImageUrlUtil,
 } from "../media-utils";
+
+export { proxyImageUrl } from "../media-utils";
 
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/;
@@ -13,12 +13,6 @@ const YOUTUBE_REGEX =
 function hasExtension(url: string, extensions: readonly string[]): boolean {
   return hasExtensionUtil(url, extensions);
 }
-
-function proxyImageUrl(url: string): string {
-  return proxyImageUrlUtil(url);
-}
-
-export { proxyImageUrl };
 
 export async function detectEmbedType(url: string) {
   const ytMatch = url.match(YOUTUBE_REGEX);

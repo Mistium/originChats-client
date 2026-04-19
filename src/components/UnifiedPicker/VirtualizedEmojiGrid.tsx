@@ -9,7 +9,7 @@ const EMOJI_PADDING = 8;
 const HEADER_HEIGHT = 28;
 const GRID_COLUMNS = 8;
 
-interface EmojiItem {
+export interface EmojiItem {
   type: "standard" | "custom";
   emoji: string;
   hexcode?: string;
@@ -330,4 +330,4 @@ export function customEmojiToItem(emoji: CustomEmojiItem): EmojiItem {
   };
 }
 
-export type { EmojiItem, EmojiSection };
+export type { EmojiSection };

@@ -32,37 +32,20 @@ function MembersListInner() {
     roles: string[];
   }>;
 
-  if (isDM) {
-    const viewRoles = currentChannel.value?.permissions?.view;
-    memberList = Object.values(users.value)
-      .filter((u) => {
-        if (!viewRoles || viewRoles.length === 0) return true;
-        const userRoles = u.roles || [];
-        return viewRoles.some((r) => userRoles.includes(r));
-      })
-      .map((u) => ({
-        username: u.username,
-        nickname: u.nickname,
-        status: u.status,
-        color: u.color || null,
-        roles: u.roles || [],
-      }));
-  } else {
-    const viewRoles = currentChannel.value?.permissions?.view;
-    memberList = Object.values(users.value)
-      .filter((u) => {
-        if (!viewRoles || viewRoles.length === 0) return true;
-        const userRoles = u.roles || [];
-        return viewRoles.some((r) => userRoles.includes(r));
-      })
-      .map((u) => ({
-        username: u.username,
-        nickname: u.nickname,
-        status: u.status,
-        color: u.color || null,
-        roles: u.roles || [],
-      }));
-  }
+  const viewRoles = currentChannel.value?.permissions?.view;
+  memberList = Object.values(users.value)
+    .filter((u) => {
+      if (!viewRoles || viewRoles.length === 0) return true;
+      const userRoles = u.roles || [];
+      return viewRoles.some((r) => userRoles.includes(r));
+    })
+    .map((u) => ({
+      username: u.username,
+      nickname: u.nickname,
+      status: u.status,
+      color: u.color || null,
+      roles: u.roles || [],
+    }));
 
   if (thread && thread.participants) {
     memberList = memberList.filter((m) => thread.participants?.includes(m.username));

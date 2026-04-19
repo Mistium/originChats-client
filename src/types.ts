@@ -93,7 +93,7 @@ interface MessageEmbedFooter {
   icon_url?: string;
 }
 
-export interface PollOption {
+interface PollOption {
   id: string;
   text: string;
   emoji?: string;
@@ -217,7 +217,7 @@ export interface Role {
   position?: number;
 }
 
-export interface SelfAssignableRole {
+interface SelfAssignableRole {
   name: string;
   description: string;
   color: string | null;

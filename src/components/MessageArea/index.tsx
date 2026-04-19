@@ -13,8 +13,6 @@ import styles from "./MessageArea.module.css";
 import { addUniversalContextMenuItems } from "../../lib/link-context-menu";
 import { downloadAttachment } from "../../lib/download-attachment";
 
-
-
 import {
   currentChannel,
   currentThread,
@@ -108,7 +106,8 @@ import {
 } from "../../lib/attachment-uploader";
 import type { PendingAttachment } from "../../lib/attachment-uploader";
 import { MessageContent } from "../MessageContent";
-import { MessageGroupRow } from "../MessageGroupRow";
+import { MessageList } from "../MessageList";
+import { groupMessages, type MessageGroup } from "../MessageList/types";
 import { pendingMessages } from "../../lib/state/pending-messages";
 import {
   FloatingActionButtons,
@@ -161,7 +160,7 @@ import { createGift, ROTUR_GIFT_URL } from "../../lib/rotur-api";
 import { VoiceCallView } from "../VoiceCallView";
 import { Header } from "../Header";
 import { startChannelLoad } from "../../lib/image-cache";
-import { formatMessageTime, formatShortDateTime, formatRelativeTimeSec } from "../../lib/date-utils";
+import { formatMessageTime, formatRelativeTimeSec } from "../../lib/date-utils";
 
 const highlightTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
@@ -182,15 +181,12 @@ function highlightMessageElement(id: string): boolean {
 
 function getThreadInfo() {
   const isThread = !!(currentChannel.value?.type === "thread" && currentThread.value);
-  const threadId = isThread ? currentThread.value!.id : null as string | null;
-  const ch = (isThread
-    ? (currentChannel.value as any).parent_channel
-    : currentChannel.value?.name) || "";
+  const threadId = isThread ? currentThread.value!.id : (null as string | null);
+  const ch =
+    (isThread ? (currentChannel.value as any).parent_channel : currentChannel.value?.name) || "";
   const messageKey = threadId || ch;
   return { isThread, threadId, ch, messageKey };
 }
-
-
 
 interface PendingImage {
   url: string;
@@ -359,34 +355,6 @@ async function sendMessage() {
   wsSend(msg);
 }
 
-interface MessageGroup {
-  head: Message;
-  following: Message[];
-}
-
-function groupMessages(messages: Message[]): MessageGroup[] {
-  const groups: MessageGroup[] = [];
-  let currentGroup: MessageGroup | null = null;
-
-  for (const msg of messages) {
-    const shouldStartNewGroup =
-      !currentGroup ||
-      msg.user !== currentGroup.head.user ||
-      msg.timestamp - currentGroup.head.timestamp >= 300 ||
-      !!msg.reply_to;
-
-    if (shouldStartNewGroup) {
-      if (currentGroup) groups.push(currentGroup);
-      currentGroup = { head: msg, following: [] };
-    } else if (currentGroup) {
-      currentGroup.following.push(msg);
-    }
-  }
-
-  if (currentGroup) groups.push(currentGroup);
-  return groups;
-}
-
 function scrollToMessage(id: string): void {
   mobilePanelOpen.value = false;
   const messageKey = currentThread.value?.id || currentChannel.value?.name;
@@ -514,13 +482,8 @@ function RightPanelInner() {
   }
 
   if (panelView === "pinned") {
-    const msgs = pinnedMessages.value;
-    const loading = pinnedLoading.value;
-    const pinnedGroups = groupMessages(msgs);
-
     const handlePinnedMessageContextMenu = (e: any, msg: Message) => {
       e.preventDefault();
-      const isOwn = msg.user === currentUser.value?.username;
       const menuItems: any[] = [];
 
       menuItems.push({
@@ -563,48 +526,17 @@ function RightPanelInner() {
             <Icon name="X" size={18} />
           </button>
         </div>
-        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
-          {!canPin ? (
-            <div className="right-panel-unsupported">
-              <Icon name="Pin" size={32} />
-              <span>This feature doesn't seem to be supported on this server.</span>
-            </div>
-          ) : loading ? (
-            <div className="right-panel-empty">
-              <div className="loading-throbber" />
-            </div>
-          ) : msgs.length === 0 ? (
-            <div className="right-panel-empty">
-              <Icon name="Pin" size={40} />
-              <span>No pinned messages</span>
-            </div>
-          ) : (
-            pinnedGroups.map((group) => (
-              <MessageGroupRow
-                key={group.head.id}
-                group={group}
-                onContextMenu={(e: any) => handlePinnedMessageContextMenu(e, group.head)}
-                translatedMessages={translatedMessages.value}
-                translatingMessageId={translatingMessageId.value}
-              />
-            ))
-          )}
-        </div>
+        <MessageList
+          messages={pinnedMessages.value}
+          mode="panel"
+          loading={pinnedLoading.value}
+          emptyIcon="Pin"
+          emptyText="No pinned messages"
+          onMessageContextMenu={handlePinnedMessageContextMenu}
+        />
       </div>
     );
   }
-
-  const handleCopyContextMenu = (e: any, text: string) => {
-    e.preventDefault();
-    const menuItems: any[] = [
-      {
-        label: "Copy text",
-        icon: "Copy",
-        fn: () => navigator.clipboard.writeText(text),
-      },
-    ];
-    showContextMenu(e, menuItems);
-  };
 
   if (panelView === "search") {
     const results = searchResults.value;
@@ -620,6 +552,12 @@ function RightPanelInner() {
         channel: currentChannel.value.name,
         query,
       });
+    };
+
+    const getSearchEmptyText = () => {
+      if (results.length === 0 && searchQuery.trim()) return "No results found";
+      if (results.length === 0) return "Enter a search term";
+      return undefined;
     };
 
     return (
@@ -657,37 +595,21 @@ function RightPanelInner() {
             {results.length} result{results.length === 1 ? "" : "s"}
           </div>
         )}
-        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
-          {!canSearch ? (
-            <div className="right-panel-unsupported">
-              <Icon name="Search" size={32} />
-              <span>This feature doesn't seem to be supported on this server.</span>
-            </div>
-          ) : loading ? (
-            <div className="right-panel-empty">
-              <div className="loading-throbber" />
-            </div>
-          ) : results.length === 0 && searchQuery.trim() ? (
-            <div className="right-panel-empty">
-              <Icon name="Search" size={40} />
-              <span>No results found</span>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="right-panel-empty">
-              <Icon name="Search" size={40} />
-              <span>Enter a search term</span>
-            </div>
-          ) : (
-            results.map((msg) => (
-              <MessageGroupRow
-                key={msg.id}
-                group={{ head: msg, following: [] }}
-                onClick={() => scrollToMessage(msg.id!)}
-                onContextMenu={(e: any) => handleCopyContextMenu(e, msg.content)}
-              />
-            ))
-          )}
-        </div>
+        {!canSearch ? (
+          <div className="right-panel-unsupported">
+            <Icon name="Search" size={32} />
+            <span>This feature doesn't seem to be supported on this server.</span>
+          </div>
+        ) : (
+          <MessageList
+            messages={results}
+            mode="panel"
+            loading={loading}
+            emptyIcon="Search"
+            emptyText={getSearchEmptyText()}
+            onMessageClick={(msg) => scrollToMessage(msg.id!)}
+          />
+        )}
       </div>
     );
   }
@@ -698,8 +620,6 @@ function RightPanelInner() {
     const loading = pingsInboxLoading.value;
     const offset = pingsInboxOffset.value;
     const hasMore = offset + msgs.length < total;
-    const currentServerData = servers.value.find((s) => s.url === serverUrl.value);
-    const serverName = currentServerData?.name || serverUrl.value;
 
     const loadMore = () => {
       if (!canInbox) return;
@@ -715,7 +635,6 @@ function RightPanelInner() {
     const jumpToMessage = async (msg: any) => {
       const { selectChannel } = await import("../../lib/actions");
       const targetChannel = channels.value.find((c: any) => c.name === msg.channel);
-
       const caps = serverCapabilities.value;
       const hasAround = caps.includes("messages_around");
       const sUrl = serverUrl.value;
@@ -730,7 +649,6 @@ function RightPanelInner() {
         jumpToMessageAround(sUrl, msg.channel, msg.id);
       } else {
         const scrollToMsg = () => highlightMessageElement(msg.id);
-
         if (!scrollToMsg()) {
           const checkInterval = setInterval(() => {
             if (scrollToMsg()) {
@@ -740,33 +658,6 @@ function RightPanelInner() {
           setTimeout(() => clearInterval(checkInterval), 5000);
         }
       }
-    };
-
-    const InboxMessageRow = ({ msg }: { msg: any }) => {
-      const msgWithTimestamp = {
-        ...msg,
-        timestamp: msg.timestamp,
-      };
-      const replyUserColor = msg.reply_to?.user
-        ? users.value[msg.reply_to.user?.toLowerCase()]?.color || undefined
-        : undefined;
-      return (
-        <div className={styles.inboxMessageRow}>
-          <div className={styles.inboxMessageContext}>
-            <Icon name="Hash" size={12} />
-            <span className={styles.inboxContextChannel}>{msg.channel}</span>
-            <span className={styles.inboxContextTime}>{formatShortDateTime(msg.timestamp)}</span>
-          </div>
-          <MessageGroupRow
-            key={msg.id}
-            group={{ head: msgWithTimestamp, following: [] }}
-            onClick={() => jumpToMessage(msg)}
-            onContextMenu={(e: any) => handleCopyContextMenu(e, msg.content)}
-            showReply={true}
-            replyUserColor={replyUserColor}
-          />
-        </div>
-      );
     };
 
     return (
@@ -785,38 +676,28 @@ function RightPanelInner() {
             <Icon name="X" size={18} />
           </button>
         </div>
-        <div className={`right-panel-content ${styles.rightPanelContentMessages}`}>
-          {!canInbox ? (
-            <div className="right-panel-unsupported">
-              <Icon name="Bell" size={32} />
-              <span>This feature doesn\'t seem to be supported on this server.</span>
-            </div>
-          ) : loading && msgs.length === 0 ? (
-            <div className="right-panel-empty">
-              <div className="loading-throbber" />
-            </div>
-          ) : msgs.length === 0 ? (
-            <div className="right-panel-empty">
-              <Icon name="BellOff" size={40} />
-              <span>No mentions yet</span>
-            </div>
-          ) : (
-            <>
-              {msgs.map((msg) => (
-                <InboxMessageRow key={msg.id || `${msg.channel}-${msg.timestamp}`} msg={msg} />
-              ))}
-              {hasMore && (
-                <button className={styles.inboxPanelLoadMore} onClick={loadMore} disabled={loading}>
-                  {loading ? "Loading..." : "Load more"}
-                </button>
-              )}
-            </>
-          )}
-        </div>
+        {!canInbox ? (
+          <div className="right-panel-unsupported">
+            <Icon name="Bell" size={32} />
+            <span>This feature doesn't seem to be supported on this server.</span>
+          </div>
+        ) : (
+          <MessageList
+            messages={msgs as any[]}
+            mode="panel"
+            showChannelContext={true}
+            showReplyPreview={true}
+            loading={loading}
+            emptyIcon="BellOff"
+            emptyText="No mentions yet"
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            onMessageClick={(msg) => jumpToMessage(msg)}
+          />
+        )}
       </div>
     );
   }
-
   return null;
 }
 
@@ -1148,21 +1029,24 @@ export function MessageArea() {
   const [activeSlashCmd, setActiveSlashCmd] = useState<SlashCommand | null>(null);
   const [slashArgs, setSlashArgs] = useState<SlashCommandArgs>({});
 
-  const activateSlashCommand = useCallback((item: { type: string; label: string }): boolean => {
-    if (item.type !== "slash") return false;
-    const sUrl = serverUrl.value;
-    const cmd = (slashCommandsByServer.read(sUrl) || []).find((c) => c.name === item.label);
-    if (!cmd) return false;
-    const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
-    if (input) {
-      input.value = "";
-      resetInputHeight();
-    }
-    autocomplete.close();
-    setActiveSlashCmd(cmd);
-    setSlashArgs({});
-    return true;
-  }, [autocomplete, setActiveSlashCmd, setSlashArgs]);
+  const activateSlashCommand = useCallback(
+    (item: { type: string; label: string }): boolean => {
+      if (item.type !== "slash") return false;
+      const sUrl = serverUrl.value;
+      const cmd = (slashCommandsByServer.read(sUrl) || []).find((c) => c.name === item.label);
+      if (!cmd) return false;
+      const input = document.getElementById("message-input") as HTMLTextAreaElement | null;
+      if (input) {
+        input.value = "";
+        resetInputHeight();
+      }
+      autocomplete.close();
+      setActiveSlashCmd(cmd);
+      setSlashArgs({});
+      return true;
+    },
+    [autocomplete, setActiveSlashCmd, setSlashArgs]
+  );
 
   const dismissSlashCmd = useCallback(() => {
     setActiveSlashCmd(null);
@@ -2163,8 +2047,6 @@ export function MessageArea() {
     return replyMsg || null;
   };
 
-
-
   const getReplyPreview = (msg: Message): string => {
     const replyMsg = getReplyMessage(msg);
     const content = replyMsg?.content || "";
@@ -2196,47 +2078,54 @@ export function MessageArea() {
     return null;
   };
 
-  function renderMessageBody(msg: Message, displayName: string, isHead: boolean, webhook: any, reactions: Record<string, string[]>, showAttachmentMenu: boolean) {
-  const hasAttachments = msg.attachments && msg.attachments.length > 0;
-  return (
-    <div className="message-group-content">
-      {(isHead || webhook) && (
-        <div className="message-header">
-          <span
-            className="username clickable"
-            style={webhook ? undefined : { color: getUserColor(msg.user) }}
-            onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
-            onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
-          >
-            {displayName}
-          </span>
-          {webhook && <WebhookBadge name={webhook.name} />}
-          <span className="timestamp">{formatMessageTime(msg.timestamp)}</span>
-        </div>
-      )}
-      <MessageContent
-        content={msg.content}
-        currentUsername={currentUser.value?.username}
-        authorUsername={msg.user}
-        messageId={msg.id}
-        pings={msg.pings}
-        messageEmbeds={msg.embeds}
-      />
-      {renderTranslation(msg)}
-      {hasAttachments && (
-        <AttachmentPreview
-          attachments={msg.attachments}
-          hasContent={!!msg.content}
-          {...(showAttachmentMenu ? { onContextMenu: handleAttachmentContextMenu } : {})}
+  function renderMessageBody(
+    msg: Message,
+    displayName: string,
+    isHead: boolean,
+    webhook: any,
+    reactions: Record<string, string[]>,
+    showAttachmentMenu: boolean
+  ) {
+    const hasAttachments = msg.attachments && msg.attachments.length > 0;
+    return (
+      <div className="message-group-content">
+        {(isHead || webhook) && (
+          <div className="message-header">
+            <span
+              className="username clickable"
+              style={webhook ? undefined : { color: getUserColor(msg.user) }}
+              onClick={(e: any) => !webhook && openUserPopout(e, msg.user)}
+              onContextMenu={(e: any) => !webhook && showUserMenu(e, msg.user)}
+            >
+              {displayName}
+            </span>
+            {webhook && <WebhookBadge name={webhook.name} />}
+            <span className="timestamp">{formatMessageTime(msg.timestamp)}</span>
+          </div>
+        )}
+        <MessageContent
+          content={msg.content}
+          currentUsername={currentUser.value?.username}
+          authorUsername={msg.user}
+          messageId={msg.id}
+          pings={msg.pings}
+          messageEmbeds={msg.embeds}
         />
-      )}
-      {msg.edited && <span className="edited-indicator">(edited)</span>}
-      {renderReactions(msg, reactions)}
-    </div>
-  );
-}
+        {renderTranslation(msg)}
+        {hasAttachments && (
+          <AttachmentPreview
+            attachments={msg.attachments!}
+            hasContent={!!msg.content}
+            {...(showAttachmentMenu ? { onContextMenu: handleAttachmentContextMenu } : {})}
+          />
+        )}
+        {msg.edited && <span className="edited-indicator">(edited)</span>}
+        {renderReactions(msg, reactions)}
+      </div>
+    );
+  }
 
-function renderGroupedMessages(group: MessageGroup) {
+  function renderGroupedMessages(group: MessageGroup) {
     const allMessages = [group.head, ...group.following];
     const headIsReply = !!group.head.reply_to;
 

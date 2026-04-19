@@ -1,0 +1,154 @@
+.messageList {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.messageList.panel {
+  padding: 8px 12px;
+  flex: 1;
+  max-width: 350px;
+  max-height: calc(100% - 80px);
+}
+
+.messageList.panel :global(.messageGroup) {
+  padding: var(--space-2);
+  margin-bottom: 6px;
+  border-radius: var(--radius-md);
+  background: var(--surface-light);
+  transition: background var(--anim-fast) ease;
+}
+
+.messageList.panel :global(.messageGroup):hover {
+  background: var(--surface-hover);
+}
+
+.messageList.panel :global(.messageGroup) :global(.avatar) {
+  width: var(--size-avatar-md);
+  height: var(--size-avatar-md);
+  margin-right: var(--space-2);
+  margin-top: 2px;
+  border-radius: var(--avatar-radius, 50%);
+}
+
+.messageList.panel :global(.messageHeader) {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  gap: var(--space-2);
+}
+
+.messageList.panel :global(.username) {
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+.messageList.panel :global(.timestamp) {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.messageList.panel :global(.messageBody) {
+  font-size: var(--font-md);
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.messageList.panel :global(.messageSingle) {
+  padding: 4px 0;
+}
+
+.messageList.panel :global(.messageSingle)::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.messageRowWithContext {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.messageContext {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.messageContext svg {
+  opacity: 0.6;
+}
+
+.contextChannel {
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contextTime {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.messageRowWithContext :global(.messageGroup) {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  margin-bottom: 0;
+}
+
+.loadMoreButton {
+  background: var(--surface-light);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 8px 12px;
+  padding: 10px 16px;
+  transition: all var(--anim-fast) ease;
+  width: calc(100% - 24px);
+}
+
+.loadMoreButton:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.loadMoreButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.emptyState {
+  align-items: center;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.emptyState span {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .loadMoreButton {
+    margin: 16px;
+    padding: 14px 20px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+}
