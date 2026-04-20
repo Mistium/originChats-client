@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { useEscapeKey } from "../../hooks/useEscapeKey";
-import { Fragment, type h } from "preact";
+import { type h } from "preact";
 import { memo } from "preact/compat";
 import { useSignalEffect } from "@preact/signals";
 import {
@@ -26,7 +26,6 @@ import {
   users,
   usersByServer,
   channels,
-  typingUsersByServer,
   sendTypingIndicators,
   DM_SERVER_URL,
   SPECIAL_CHANNELS,
@@ -129,6 +128,7 @@ import type { Message, SlashCommand } from "../../types";
 import { avatarUrl } from "../../utils";
 import { UserAvatar } from "../UserAvatar";
 import { useDisplayName, getDisplayName } from "../../lib/hooks/useDisplayName";
+import { useTypingIndicator, TypingIndicator } from "../TypingIndicator";
 import { SwipeableMessage } from "./SwipeableMessage";
 
 function MessageUsername({
@@ -1009,14 +1009,7 @@ export function MessageArea() {
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastTypingSent = useRef<number>(0);
-  const [typingUsers, setTypingUsers] = useState<
-    { username: string; displayName: string; color?: string | null }[]
-  >([]);
-  const [prevTypingUsers, setPrevTypingUsers] = useState<
-    { username: string; displayName: string; color?: string | null }[]
-  >([]);
-  const [isTypingExiting, setIsTypingExiting] = useState(false);
-  const typingExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { typingUsers, prevTypingUsers, isTypingExiting } = useTypingIndicator();
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -1145,139 +1138,6 @@ export function MessageArea() {
     lastTypingSent.current = now;
     wsSend({ cmd: "typing", channel: currentChannel.value.name });
   }, []);
-
-  const typingSubRef = useRef<{
-    unsub: (() => void) | null;
-    sUrl: string;
-    chName: string;
-    prevUsernames: string;
-  }>({ unsub: null, sUrl: "", chName: "", prevUsernames: "" });
-
-  const computeTypingUsers = useCallback((sUrl: string, chName: string) => {
-    const serverTyping = typingUsersByServer.read(sUrl);
-    if (!serverTyping || !serverTyping[chName]) {
-      typingSubRef.current.prevUsernames = "";
-      setTypingUsers([]);
-      return;
-    }
-    const map = serverTyping[chName] as Map<string, number>;
-    const now = Date.now();
-    const myName = currentUser.value?.username;
-    const typingList: {
-      username: string;
-      displayName: string;
-      color?: string | null;
-    }[] = [];
-    const newMap = new Map<string, number>();
-    let hasExpired = false;
-    for (const [user, expiry] of map.entries()) {
-      if (expiry < now) {
-        hasExpired = true;
-      } else {
-        newMap.set(user, expiry);
-        if (user !== myName) {
-          const serverUser = usersByServer.read(sUrl)?.[user.toLowerCase()];
-          typingList.push({
-            username: user,
-            displayName: getDisplayName(user),
-            color: serverUser?.color,
-          });
-        }
-      }
-    }
-    if (hasExpired) {
-      typingUsersByServer.update(sUrl, (current) => ({
-        ...current,
-        [chName]: newMap,
-      }));
-    }
-    const usernames = typingList.map((t) => t.username).join(",");
-    if (usernames !== typingSubRef.current.prevUsernames) {
-      typingSubRef.current.prevUsernames = usernames;
-      setTypingUsers(typingList);
-    }
-  }, []);
-
-  useEffect(() => {
-    const sUrl = serverUrl.value;
-    const chName = currentChannel.value?.name;
-    if (typingSubRef.current.unsub) typingSubRef.current.unsub();
-    typingSubRef.current.sUrl = sUrl || "";
-    typingSubRef.current.chName = chName || "";
-    typingSubRef.current.prevUsernames = "";
-
-    if (sUrl && chName) computeTypingUsers(sUrl, chName);
-    else setTypingUsers([]);
-
-    const typingSignal = typingUsersByServer.get(sUrl || "");
-    const unsub = typingSignal.subscribe(() => {
-      const cur = typingSubRef.current;
-      if (!cur.sUrl || !cur.chName) return;
-      const serverTyping = typingUsersByServer.read(cur.sUrl);
-      if (!serverTyping) {
-        if (cur.prevUsernames !== "") {
-          cur.prevUsernames = "";
-          setTypingUsers([]);
-        }
-        return;
-      }
-      const currentMap = serverTyping[cur.chName];
-      if (!currentMap || (currentMap as Map<string, number>).size === 0) {
-        if (cur.prevUsernames !== "") {
-          cur.prevUsernames = "";
-          setTypingUsers([]);
-        }
-        return;
-      }
-      computeTypingUsers(cur.sUrl, cur.chName);
-    });
-    typingSubRef.current.unsub = unsub;
-
-    return () => {
-      unsub();
-      typingSubRef.current.unsub = null;
-    };
-  }, [serverUrl.value, currentChannel.value?.name, computeTypingUsers]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const cur = typingSubRef.current;
-      if (!cur.sUrl || !cur.chName) return;
-      const serverTyping = typingUsersByServer.read(cur.sUrl);
-      if (!serverTyping || !serverTyping[cur.chName]) return;
-      const map = serverTyping[cur.chName] as Map<string, number>;
-      const now = Date.now();
-      let hasExpired = false;
-      for (const [, expiry] of map.entries()) {
-        if (expiry < now) {
-          hasExpired = true;
-          break;
-        }
-      }
-      if (hasExpired) computeTypingUsers(cur.sUrl, cur.chName);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [computeTypingUsers]);
-
-  // Handle typing indicator exit animation
-  useEffect(() => {
-    if (typingUsers.length === 0 && prevTypingUsers.length > 0) {
-      setIsTypingExiting(true);
-      if (typingExitTimeoutRef.current) {
-        clearTimeout(typingExitTimeoutRef.current);
-      }
-      typingExitTimeoutRef.current = setTimeout(() => {
-        setIsTypingExiting(false);
-        setPrevTypingUsers([]);
-      }, 150);
-    } else if (typingUsers.length > 0) {
-      setPrevTypingUsers(typingUsers);
-      setIsTypingExiting(false);
-      if (typingExitTimeoutRef.current) {
-        clearTimeout(typingExitTimeoutRef.current);
-      }
-    }
-  }, [typingUsers, prevTypingUsers.length]);
 
   useEffect(() => {
     return () => {
@@ -2645,49 +2505,11 @@ export function MessageArea() {
               />
             ) : (
               <div className={styles.inputWrapper}>
-                {(typingUsers.length > 0 || isTypingExiting) && prevTypingUsers.length > 0 && (
-                  <div className={styles.typingPill} data-exiting={isTypingExiting || undefined}>
-                    <div className={styles.typingPillAvatars}>
-                      {prevTypingUsers.slice(0, 3).map((u) => (
-                        <UserAvatar
-                          key={u.username}
-                          username={u.username}
-                          className={styles.typingPillAvatar}
-                          alt={u.displayName}
-                        />
-                      ))}
-                    </div>
-                    {prevTypingUsers.length <= 3 ? (
-                      <span className={styles.typingPillText}>
-                        {prevTypingUsers.map((u, i) => (
-                          <Fragment key={i}>
-                            {i > 0 &&
-                              i === prevTypingUsers.length - 1 &&
-                              prevTypingUsers.length === 2 &&
-                              " and "}
-                            {i > 0 &&
-                              i === prevTypingUsers.length - 1 &&
-                              prevTypingUsers.length > 2 &&
-                              ", and "}
-                            {i > 0 && i < prevTypingUsers.length - 1 && ", "}
-                            <span style={{ color: u.color ?? undefined }}>{u.displayName}</span>
-                          </Fragment>
-                        ))}
-                        {prevTypingUsers.length === 1 ? " is typing..." : " are typing..."}
-                      </span>
-                    ) : (
-                      <span className={styles.typingPillText}>
-                        {prevTypingUsers.slice(0, 2).map((u, i) => (
-                          <Fragment key={i}>
-                            {i > 0 && ", "}
-                            <span style={{ color: u.color ?? undefined }}>{u.displayName}</span>
-                          </Fragment>
-                        ))}
-                        {`, and ${prevTypingUsers.length - 2} others are typing...`}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <TypingIndicator
+                  typingUsers={typingUsers}
+                  prevTypingUsers={prevTypingUsers}
+                  isTypingExiting={isTypingExiting}
+                />
                 <div className={styles.plusBtnWrapper} ref={plusMenuRef}>
                   <button
                     className="icon-btn"
