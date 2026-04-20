@@ -27,9 +27,9 @@ import type { RoturAccount, RoturProfile, Server } from "../../types";
 import { formatJoinDate } from "../../lib/date-utils";
 import { isCrackedAccount } from "../../utils";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName } from "../../lib/useDisplayName";
-import { getProfile as fetchRoturProfile, followUser, unfollowUser } from "../../lib/rotur-api";
-import { toggleFollowUser } from "../../lib/follow";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
+import { getProfile as fetchRoturProfile, followUser, unfollowUser } from "../../lib/api/rotur-api";
+import { toggleFollowUser } from "../../lib/api/follow";
 import styles from "./ProfileCard.module.css";
 
 function useProfile(username: string) {

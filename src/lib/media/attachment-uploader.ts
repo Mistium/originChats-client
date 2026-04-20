@@ -1,5 +1,5 @@
-import { serverUrl, serverValidatorKeys } from "../state";
-import { generateValidator } from "./rotur-api";
+import { serverUrl, serverValidatorKeys } from "../../state";
+import { generateValidator } from "../api/rotur-api";
 
 export interface PendingAttachment {
   id: string;

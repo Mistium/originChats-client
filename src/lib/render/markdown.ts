@@ -1,15 +1,15 @@
 import hljs from "highlight.js/lib/core";
-import { servers, threadsByServer, customEmojisByServer, useSystemEmojis } from "../state";
-import { lookupShortcode } from "./shortcodes";
+import { servers, threadsByServer, customEmojisByServer, useSystemEmojis } from "../../state";
+import { lookupShortcode } from "../emoji/shortcodes";
 import {
   TRUSTED_DOMAINS,
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
   hasExtension as hasExtensionUtil,
   proxyImageUrl as proxyImageUrlUtil,
-} from "./media-utils";
-import type { CustomEmoji } from "../types";
-import { parseEmojisInText } from "./emoji";
+} from "../media/media-utils";
+import type { CustomEmoji } from "../../types";
+import { parseEmojisInText } from "../emoji/emoji";
 
 import javascript from "highlight.js/lib/languages/javascript";
 import typescript from "highlight.js/lib/languages/typescript";

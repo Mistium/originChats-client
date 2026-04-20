@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "preact/hooks";
-import { canViewInChannel } from "../../lib/permissions-utils";
+import { canViewInChannel } from "../../lib/permissions/permissions-utils";
 import { useSignal } from "@preact/signals";
 import { TwemojiText } from "../TwemojiText";
 import {
@@ -12,8 +12,8 @@ import {
   recentEmojis,
 } from "../../state";
 import { avatarUrl } from "../../utils";
-import { emojiImgUrl } from "../../lib/emoji";
-import { emojiCache } from "../../lib/emoji-data-cache";
+import { emojiImgUrl } from "../../lib/emoji/emoji";
+import { emojiCache } from "../../lib/emoji/emoji-data-cache";
 import { UserAvatar } from "../UserAvatar";
 
 type AutocompleteType = "user" | "channel" | "emoji" | "slash" | "role";

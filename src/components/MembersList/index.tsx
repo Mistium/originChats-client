@@ -1,5 +1,5 @@
 import { useMemo } from "preact/hooks";
-import { canViewInChannel } from "../../lib/permissions-utils";
+import { canViewInChannel } from "../../lib/permissions/permissions-utils";
 import { memo } from "preact/compat";
 import {
   serverUrl,
@@ -15,7 +15,7 @@ import { Icon } from "../Icon";
 import { UserContextMenu, useUserContextMenu } from "../UserContextMenu";
 import { openUserPopout } from "../UserPopout";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName } from "../../lib/useDisplayName";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
 import { MessageContent } from "../MessageContent";
 import styles from "./MembersList.module.css";
 

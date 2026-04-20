@@ -1,7 +1,7 @@
 import { signal } from "@preact/signals";
 import { useState, useEffect } from "preact/hooks";
 import { Icon } from "../Icon";
-import { emojiImgUrl } from "../../lib/emoji";
+import { emojiImgUrl } from "../../lib/emoji/emoji";
 import { useSystemEmojis } from "../../state";
 import type { Message } from "../../types";
 import styles from "./MessageActionButtons.module.css";

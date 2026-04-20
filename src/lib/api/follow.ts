@@ -1,5 +1,5 @@
 import { followUser, unfollowUser } from "./rotur-api";
-import { roturFollowing } from "../state";
+import { roturFollowing } from "../../state";
 
 export async function toggleFollowUser(
   username: string,

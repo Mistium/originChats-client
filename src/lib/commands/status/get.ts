@@ -1,6 +1,6 @@
 import type { StatusGet } from "@/msgTypes";
 import { usersByServer } from "../../../state";
-import { statusState } from "../../state";
+import { statusState } from "../../../state";
 import { renderMembersSignal } from "../../ui-signals";
 
 export function handleStatusGet(msg: StatusGet, sUrl: string): void {

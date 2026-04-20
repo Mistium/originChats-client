@@ -1,19 +1,15 @@
 import type { MessageReactAdd, MessageReactRemove } from "@/msgTypes";
-import { messagesByServer } from "../../../state";
-import { renderMessagesSignal } from "../../ui-signals";
-import { getMessageKey } from "../../message-utils";
+import { messageState, getMessageKey } from "../../../state";
 
 export function handleMessageReact(msg: MessageReactAdd | MessageReactRemove, sUrl: string): void {
   const messageKey = getMessageKey(msg);
-  const channelMessages = messagesByServer.value[sUrl]?.[messageKey];
+  const channelMessages = messageState.get(sUrl, messageKey);
   if (!channelMessages) return;
-
   const msgIndex = channelMessages.findIndex((m) => m.id === msg.id);
   if (msgIndex === -1) return;
 
   const reactUser: string = typeof msg.from === "string" ? msg.from : "";
   const reactMsg = channelMessages[msgIndex];
-
   const updatedReactions = reactMsg.reactions ? { ...reactMsg.reactions } : {};
 
   if (msg.cmd === "message_react_add") {
@@ -34,17 +30,5 @@ export function handleMessageReact(msg: MessageReactAdd | MessageReactRemove, sU
     }
   }
 
-  const updatedMsg = { ...reactMsg, reactions: updatedReactions };
-  const updatedChannelMessages = [...channelMessages];
-  updatedChannelMessages[msgIndex] = updatedMsg;
-
-  messagesByServer.value = {
-    ...messagesByServer.value,
-    [sUrl]: {
-      ...messagesByServer.value[sUrl],
-      [messageKey]: updatedChannelMessages,
-    },
-  };
-
-  renderMessagesSignal.value++;
+  messageState.update(sUrl, messageKey, msg.id, { reactions: updatedReactions });
 }

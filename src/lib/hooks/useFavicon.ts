@@ -1,5 +1,5 @@
 import { useEffect } from "preact/hooks";
-import { unreadState } from "../state";
+import { unreadState } from "../../state";
 
 const BASE_FAVICON = "/dms.png";
 const FAVICON_SIZE = 32;

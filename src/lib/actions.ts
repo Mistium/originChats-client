@@ -4,7 +4,7 @@ import {
   currentThread,
   channelsByServer,
   readTimesByServer,
-  messagesByServer,
+  messageState,
   wsConnections,
   servers,
   wsStatus,
@@ -32,10 +32,10 @@ import {
   hideVoiceCallView,
 } from "./ui-signals";
 import { wsSend } from "./ws-sender";
-import { closeWebSocket } from "./ws-connection";
+import { closeWebSocket } from "../net/connection";
 import { startMessageFetch } from "./ws-sender";
-import { saveServers, saveReadTimes } from "./persistence";
-import { session as dbSession, readTimes as dbReadTimes } from "./db";
+import { saveServers, saveReadTimes } from "./persistence/persistence";
+import { session as dbSession, readTimes as dbReadTimes } from "./persistence/db";
 import {
   getAuthRedirectUrl,
   sendFriendRequestApi,
@@ -44,13 +44,11 @@ import {
   removeFriendApi,
   blockUserApi,
   unblockUserApi,
-} from "./rotur-api";
+} from "./api/rotur-api";
 import { Channel, Thread } from "@/types";
 
-import { messageState } from "./state";
-
 function clearOtherChannels(sUrl: string, keepChannel: string): void {
-  const serverMessages = messagesByServer.value[sUrl];
+  const serverMessages = messageState.byServer.value[sUrl];
   if (!serverMessages) return;
 
   for (const channel of Object.keys(serverMessages)) {
@@ -58,7 +56,6 @@ function clearOtherChannels(sUrl: string, keepChannel: string): void {
       delete serverMessages[channel];
     }
   }
-  messagesByServer.value = { ...messagesByServer.value };
 }
 
 export function selectChannel(channel: {
@@ -166,8 +163,8 @@ export async function switchServer(url: string): Promise<boolean> {
   console.log(`[switchServer] Switching to server: ${url}`);
   const currentSUrl = serverUrl.value;
   if (currentSUrl && currentSUrl !== url) {
-    messagesByServer.value = Object.fromEntries(
-      Object.entries(messagesByServer.value).filter(([key]) => key !== currentSUrl)
+    messageState.byServer.value = Object.fromEntries(
+      Object.entries(messageState.byServer.value).filter(([key]) => key !== currentSUrl)
     );
   }
 
@@ -245,9 +242,9 @@ export function removeServer(sUrl: string): void {
 
   channelsByServer.delete(sUrl);
 
-  const newMessages = { ...messagesByServer.value };
+  const newMessages = { ...messageState.byServer.value };
   delete newMessages[sUrl];
-  messagesByServer.value = newMessages;
+  messageState.byServer.value = newMessages;
 
   usersByServer.delete(sUrl);
   currentUserByServer.delete(sUrl);

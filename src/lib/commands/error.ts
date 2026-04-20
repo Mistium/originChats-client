@@ -8,7 +8,7 @@ import {
   wsConnections,
 } from "../../state";
 import { showBanner, showCrackedAuthModal, crackedAuthError } from "../ui-signals";
-import { closeWebSocket } from "../ws-connection";
+import { closeWebSocket } from "../../net/connection";
 
 export function handleError(msg: ServerError, sUrl: string): void {
   const errText: string = msg.val || msg.message || msg.error || "The server reported an error.";

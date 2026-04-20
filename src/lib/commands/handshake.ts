@@ -1,7 +1,7 @@
 import type { Handshake } from "@/msgTypes";
 import {
   channelsByServer,
-  messagesByServer,
+  messageState,
   usersByServer,
   serverValidatorKeys,
   serverCapabilitiesByServer,
@@ -17,15 +17,15 @@ import {
   showRoturRequiredModal,
 } from "../ui-signals";
 import { reloadServerIcon } from "../../utils";
-import { saveServers } from "../persistence";
-import { authenticateServer } from "../auth";
+import { saveServers } from "../persistence/persistence";
+import { authenticateServer } from "../api/auth";
 import { wsSend } from "../ws-sender";
 import { DEFAULT_PERMISSIONS } from "../../state";
 
 export function handleHandshake(msg: Handshake, sUrl: string): void {
   if (!channelsByServer.has(sUrl)) channelsByServer.set(sUrl, []);
-  if (!messagesByServer.value[sUrl])
-    messagesByServer.value = { ...messagesByServer.value, [sUrl]: {} };
+  if (!messageState.byServer.value[sUrl])
+    messageState.byServer.value = { ...messageState.byServer.value, [sUrl]: {} };
   if (!usersByServer.read(sUrl)) usersByServer.set(sUrl, {});
   serverValidatorKeys[sUrl] = msg.val.validator_key;
 

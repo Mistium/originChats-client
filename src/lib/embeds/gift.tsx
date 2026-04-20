@@ -1,5 +1,5 @@
 import { useState, useEffect } from "preact/hooks";
-import { getGift, claimGift } from "../rotur-api";
+import { getGift, claimGift } from "../api/rotur-api";
 import { Icon } from "../../components/Icon";
 
 interface GiftEmbedProps {

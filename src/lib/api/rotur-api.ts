@@ -8,7 +8,7 @@
  * expire quickly and are not equivalent to the token.
  */
 
-import { token } from "../state";
+import { token } from "../../state";
 import type {
   RoturProfile,
   RoturGroup,
@@ -20,7 +20,7 @@ import type {
   RoturStatusUpdate,
   RoturEconomyStats,
   RoturUserStats,
-} from "../types";
+} from "../../types";
 
 // ── Configuration ────────────────────────────────────────────────────────────
 

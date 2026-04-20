@@ -5,7 +5,7 @@ import {
   channelsByServer,
   threadsByServer,
   threadMessagesByServer,
-  messagesByServer,
+  messageState,
   loadedChannelsByServer,
   reachedOldestByServer,
   usersByServer,
@@ -39,17 +39,28 @@ import {
   dismissBanner,
   upsertBanner,
   pendingCrackedCredentials,
-} from "./ui-signals";
-import { wsSend, startMessageFetch } from "./ws-sender";
+} from "../lib/ui-signals";
+import { wsSend, startMessageFetch } from "../lib/ws-sender";
+import { clearServerState } from "../net/connection";
+import {
+  setupVisibilityHandler,
+  cleanupVisibilityHandler,
+  cleanupAudioContext,
+} from "../net/visibility";
+
+export {
+  setupVisibilityHandler,
+  cleanupVisibilityHandler,
+  cleanupAudioContext,
+} from "../net/visibility";
+export { closeWebSocket } from "../net/connection";
 
 const RECONNECT_BASE_DELAY_MS = 2000;
 const RECONNECT_MAX_DELAY_MS = 30000;
 const RECONNECT_MAX_ATTEMPTS = 5;
-
-/** Stable banner IDs keyed by server URL so we can upsert them. */
 const reconnectBannerIds: Record<string, string> = {};
 
-import { generateValidator as generateValidatorApi } from "./rotur-api";
+import { generateValidator as generateValidatorApi } from "./api/rotur-api";
 import {
   handleHandshake,
   handleReady,
@@ -125,22 +136,6 @@ import {
   handleUnreadsAck,
 } from "./commands";
 
-let audioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext {
-  if (!audioCtx) {
-    audioCtx = new window.AudioContext();
-  }
-  return audioCtx;
-}
-
-export function cleanupAudioContext(): void {
-  if (audioCtx && audioCtx.state !== "closed") {
-    audioCtx.close();
-    audioCtx = null;
-  }
-}
-
 const CONNECTION_TIMEOUT = 5000;
 
 const pendingReplyFetchesByServer: Record<string, Set<string>> = {};
@@ -167,42 +162,29 @@ export function jumpToMessageAround(
   const caps = serverCapabilitiesByServer.read(sUrl) || [];
   const hasAround = caps.includes("messages_around");
   if (!hasAround) return false;
-
   const messageKey = threadId || channelName;
-  if (messagesByServer.value[sUrl]?.[messageKey]) {
-    messagesByServer.value = {
-      ...messagesByServer.value,
-      [sUrl]: {
-        ...messagesByServer.value[sUrl],
-        [messageKey]: [],
-      },
-    };
+  if (messageState.byServer.value[sUrl]?.[messageKey]) {
+    messageState.clear(sUrl, messageKey);
   }
-
   if (reachedOldestByServer[sUrl]?.has(messageKey)) {
     reachedOldestByServer[sUrl].delete(messageKey);
   }
-
   setPendingJump(sUrl, messageId, messageKey);
-
   const payload: any = {
     cmd: "messages_around",
     around: messageId,
     bounds: { above: 50, below: 50 },
   };
-
   if (threadId) {
     payload.thread_id = threadId;
   } else {
     payload.channel = channelName;
   }
-
   return wsSend(payload, sUrl);
 }
 
 function closeWebSocketInternal(url: string): void {
   clearServerState(url);
-
   if (reconnectTimeouts[url]) {
     clearTimeout(reconnectTimeouts[url]);
     delete reconnectTimeouts[url];
@@ -211,7 +193,6 @@ function closeWebSocketInternal(url: string): void {
   const bannerId = reconnectBannerIds[url] || `reconnect-${url}`;
   dismissBanner(bannerId);
   delete reconnectBannerIds[url];
-
   const conn = wsConnections[url];
   if (!conn) return;
   if (conn.socket) {
@@ -223,46 +204,6 @@ function closeWebSocketInternal(url: string): void {
   delete wsStatus[url];
 }
 
-function clearServerState(sUrl: string): void {
-  channelsByServer.delete(sUrl);
-
-  messagesByServer.value = Object.fromEntries(
-    Object.entries(messagesByServer.value).filter(([key]) => key !== sUrl)
-  );
-
-  threadsByServer.delete(sUrl);
-
-  threadMessagesByServer.delete(sUrl);
-
-  usersByServer.delete(sUrl);
-
-  currentUserByServer.delete(sUrl);
-
-  rolesByServer.delete(sUrl);
-
-  slashCommandsByServer.delete(sUrl);
-
-  typingUsersByServer.delete(sUrl);
-
-  serverCapabilitiesByServer.delete(sUrl);
-
-  serverAuthModeByServer.delete(sUrl);
-
-  delete loadedChannelsByServer[sUrl];
-  delete reachedOldestByServer[sUrl];
-  delete pendingReplyFetchesByServer[sUrl];
-
-  readTimesByServer.delete(sUrl);
-
-  if (pendingCrackedCredentials.value?.serverUrl === sUrl) {
-    pendingCrackedCredentials.value = null;
-  }
-
-  renderChannelsSignal.value++;
-  renderMessagesSignal.value++;
-  renderMembersSignal.value++;
-}
-
 export async function reconnectServer(sUrl: string): Promise<boolean> {
   if (reconnectTimeouts[sUrl]) {
     clearTimeout(reconnectTimeouts[sUrl]);
@@ -272,9 +213,7 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
   dismissBanner(bannerId);
   delete reconnectBannerIds[sUrl];
   reconnectAttempts[sUrl] = 0;
-
   clearServerState(sUrl);
-
   if (wsConnections[sUrl]) {
     const existing = wsConnections[sUrl];
     if (existing.socket) {
@@ -287,13 +226,10 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         existing.socket.removeEventListener("error", existing.errorHandler);
     }
   }
-
   wsStatus[sUrl] = "connecting";
   renderGuildSidebarSignal.value++;
-
   return new Promise((resolve) => {
     const ws = new WebSocket(`wss://${sUrl}`);
-
     let resolved = false;
     const timeout = setTimeout(() => {
       if (!resolved) {
@@ -305,7 +241,6 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         resolve(false);
       }
     }, CONNECTION_TIMEOUT);
-
     const closeHandler = () => {
       clearTimeout(timeout);
       if (!resolved) {
@@ -319,7 +254,6 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         resolve(false);
       }
     };
-
     const errorHandler = () => {
       clearTimeout(timeout);
       if (!resolved) {
@@ -330,20 +264,13 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         resolve(false);
       }
     };
-
     const openHandler = () => {
       clearTimeout(timeout);
       if (!resolved) {
         resolved = true;
-        // Remove the pre-open listeners so we don't end up with duplicates.
         ws.removeEventListener("error", errorHandler);
         ws.removeEventListener("close", closeHandler);
-        wsConnections[sUrl] = {
-          socket: ws,
-          status: "connected",
-          closeHandler,
-          errorHandler,
-        };
+        wsConnections[sUrl] = { socket: ws, status: "connected", closeHandler, errorHandler };
         wsStatus[sUrl] = "connected";
         renderGuildSidebarSignal.value++;
         ws.addEventListener("message", (event) => handleMessage(JSON.parse(event.data), sUrl));
@@ -352,14 +279,11 @@ export async function reconnectServer(sUrl: string): Promise<boolean> {
         resolve(true);
       }
     };
-
     ws.addEventListener("open", openHandler);
     ws.addEventListener("error", errorHandler);
     ws.addEventListener("close", closeHandler);
   });
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function serverLabel(sUrl: string): string {
   const server = servers.value.find((s) => s.url === sUrl);
@@ -371,10 +295,8 @@ function scheduleReconnect(sUrl: string): void {
     clearTimeout(reconnectTimeouts[sUrl]);
     delete reconnectTimeouts[sUrl];
   }
-
   const attempt = (reconnectAttempts[sUrl] || 0) + 1;
   const isCurrentServer = serverUrl.value === sUrl;
-
   if (attempt > RECONNECT_MAX_ATTEMPTS) {
     if (isCurrentServer) {
       upsertBanner(reconnectBannerIds[sUrl] || `reconnect-${sUrl}`, {
@@ -395,18 +317,13 @@ function scheduleReconnect(sUrl: string): void {
     }
     return;
   }
-
   reconnectAttempts[sUrl] = attempt;
-
   const delay =
     Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt - 1), RECONNECT_MAX_DELAY_MS) / 2;
-
   const label = serverLabel(sUrl);
-
   if (isCurrentServer) {
     const bannerId = `reconnect-${sUrl}`;
     reconnectBannerIds[sUrl] = bannerId;
-
     upsertBanner(bannerId, {
       kind: "warning",
       serverUrl: sUrl,
@@ -424,10 +341,8 @@ function scheduleReconnect(sUrl: string): void {
       },
     });
   }
-
   wsStatus[sUrl] = "connecting";
   renderGuildSidebarSignal.value++;
-
   reconnectTimeouts[sUrl] = window.setTimeout(() => {
     delete reconnectTimeouts[sUrl];
     connectToServer(sUrl, true);
@@ -439,14 +354,10 @@ export function connectToServer(sUrl: string, _manual = false): void {
     clearTimeout(reconnectTimeouts[sUrl]);
     reconnectTimeouts[sUrl] = 0;
   }
-
   clearServerState(sUrl);
-
   if (wsConnections[sUrl]) {
     const existing = wsConnections[sUrl];
     if (existing.socket) {
-      // Detach handlers BEFORE closing so the close event doesn't re-trigger
-      // scheduleReconnect on a socket we are intentionally replacing.
       if (existing.closeHandler)
         existing.socket.removeEventListener("close", existing.closeHandler);
       if (existing.errorHandler)
@@ -454,10 +365,8 @@ export function connectToServer(sUrl: string, _manual = false): void {
       if (existing.socket.readyState !== WebSocket.CLOSED) existing.socket.close();
     }
   }
-
   wsStatus[sUrl] = "connecting";
   const ws = new WebSocket(`wss://${sUrl}`);
-
   const closeHandler = () => {
     clearServerState(sUrl);
     const conn = wsConnections[sUrl];
@@ -469,7 +378,6 @@ export function connectToServer(sUrl: string, _manual = false): void {
     renderGuildSidebarSignal.value++;
     scheduleReconnect(sUrl);
   };
-
   const errorHandler = () => {
     console.error(`WebSocket error for ${sUrl}`);
     clearServerState(sUrl);
@@ -479,7 +387,6 @@ export function connectToServer(sUrl: string, _manual = false): void {
     serversAttempted.add(sUrl);
     renderGuildSidebarSignal.value++;
   };
-
   const openHandler = () => {
     console.log(`WebSocket connected to ${sUrl}`);
     const conn = wsConnections[sUrl];
@@ -491,8 +398,6 @@ export function connectToServer(sUrl: string, _manual = false): void {
     wsStatus[sUrl] = "connected";
     serversAttempted.add(sUrl);
     renderGuildSidebarSignal.value++;
-
-    // Clear any reconnect attempt counter and dismiss the reconnect banner
     if (reconnectAttempts[sUrl] && reconnectAttempts[sUrl] > 0) {
       const bannerId = reconnectBannerIds[sUrl] || `reconnect-${sUrl}`;
       dismissBanner(bannerId);
@@ -507,13 +412,7 @@ export function connectToServer(sUrl: string, _manual = false): void {
     }
     reconnectAttempts[sUrl] = 0;
   };
-
-  wsConnections[sUrl] = {
-    socket: ws,
-    status: "connecting",
-    closeHandler,
-    errorHandler,
-  };
+  wsConnections[sUrl] = { socket: ws, status: "connecting", closeHandler, errorHandler };
   ws.addEventListener("open", openHandler);
   ws.addEventListener("message", (event) => handleMessage(JSON.parse(event.data), sUrl));
   ws.addEventListener("error", errorHandler);
@@ -743,122 +642,6 @@ function handleMessage(msg: any, sUrl: string): void {
     default:
       console.debug(`[${sUrl}] Unhandled message type:`, msg.cmd || msg.type);
   }
-}
-function refreshCurrentChannel(): void {
-  const sUrl = serverUrl.value;
-  const channel = currentChannel.value;
-  if (!sUrl || !channel || isSpecialChannel(channel.name, sUrl)) return;
-
-  const conn = wsConnections[sUrl];
-  if (conn?.status !== "connected") return;
-
-  const threadId = currentThread.value?.id;
-
-  if (threadId) {
-    loadedChannelsByServer[sUrl]?.delete(threadId);
-    reachedOldestByServer[sUrl]?.delete(threadId);
-    startMessageFetch(sUrl, threadId);
-    wsSend(
-      {
-        cmd: "messages_get",
-        channel: channel.name,
-        thread_id: threadId,
-        limit: 30,
-      },
-      sUrl
-    );
-  } else {
-    loadedChannelsByServer[sUrl]?.delete(channel.name);
-    reachedOldestByServer[sUrl]?.delete(channel.name);
-    startMessageFetch(sUrl, channel.name);
-    wsSend({ cmd: "messages_get", channel: channel.name, limit: 30 }, sUrl);
-  }
-}
-
-let visibilityHandler: (() => void) | null = null;
-let autoIdleActive = false;
-let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const IDLE_DEBOUNCE_MS = 500;
-
-export function setupVisibilityHandler(): void {
-  if (visibilityHandler) return;
-
-  visibilityHandler = () => {
-    if (autoIdleOnUnfocus.value) {
-      if (document.hidden) {
-        if (idleDebounceTimer) clearTimeout(idleDebounceTimer);
-        idleDebounceTimer = setTimeout(() => {
-          if (!autoIdleOnUnfocus.value) return;
-          if (!document.hidden) return;
-          if (myStatus.value.status === "online") {
-            autoIdleActive = true;
-            const currentText = myStatus.value.text;
-            myStatus.value = { status: "idle", text: currentText };
-            for (const sUrl of Object.keys(wsConnections)) {
-              const caps = serverCapabilitiesByServer.read(sUrl) || [];
-              if (caps.includes("status_set")) {
-                wsSend(
-                  {
-                    cmd: "status_set",
-                    status: "idle",
-                    text: currentText,
-                  },
-                  sUrl
-                );
-              }
-            }
-          }
-          idleDebounceTimer = null;
-        }, IDLE_DEBOUNCE_MS);
-      } else {
-        if (idleDebounceTimer) {
-          clearTimeout(idleDebounceTimer);
-          idleDebounceTimer = null;
-        }
-        if (autoIdleActive && myStatus.value.status === "idle") {
-          autoIdleActive = false;
-          myStatus.value = { status: "online", text: savedStatusText.value };
-          for (const sUrl of Object.keys(wsConnections)) {
-            const caps = serverCapabilitiesByServer.read(sUrl) || [];
-            if (caps.includes("status_set")) {
-              wsSend(
-                {
-                  cmd: "status_set",
-                  status: "online",
-                  text: savedStatusText.value,
-                },
-                sUrl
-              );
-            }
-          }
-        }
-      }
-    }
-    if (!document.hidden) {
-      const sUrl = serverUrl.value;
-      const ch = currentChannel.value;
-      if (sUrl && ch && !isSpecialChannel(ch.name, sUrl)) {
-        const key = currentThread.value ? `thread:${currentThread.value.id}` : ch.name;
-        unreadState.clearChannel(sUrl, key);
-      }
-      refreshCurrentChannel();
-    }
-  };
-
-  document.addEventListener("visibilitychange", visibilityHandler);
-}
-
-export function cleanupVisibilityHandler(): void {
-  if (visibilityHandler) {
-    document.removeEventListener("visibilitychange", visibilityHandler);
-    visibilityHandler = null;
-  }
-  if (idleDebounceTimer) {
-    clearTimeout(idleDebounceTimer);
-    idleDebounceTimer = null;
-  }
-  autoIdleActive = false;
-  cleanupAudioContext();
 }
 
 export { wsSend } from "./ws-sender";

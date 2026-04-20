@@ -51,7 +51,7 @@ import {
   loadNotifSettings,
   loadFolders,
   loadFriendNicknames,
-} from "./lib/persistence";
+} from "./lib/persistence/persistence";
 import { OriginFSClientClass } from "./filesystem/originFSKit";
 import { LocalOriginFSClass } from "./filesystem/localOriginFSKit";
 import {
@@ -62,12 +62,12 @@ import {
 } from "./lib/websocket";
 import { cleanupWsSenderAudio } from "./lib/ws-sender";
 import { selectHomeChannel, selectChannel, switchServer, navigateFromUrl } from "./lib/actions";
-import { loadShortcodes } from "./lib/shortcodes";
-import { prewarmCommonEmojis } from "./lib/emoji";
-import { emojiCache } from "./lib/emoji-data-cache";
-import { session as dbSession, readTimes as dbReadTimes } from "./lib/db";
+import { loadShortcodes } from "./lib/emoji/shortcodes";
+import { prewarmCommonEmojis } from "./lib/emoji/emoji";
+import { emojiCache } from "./lib/emoji/emoji-data-cache";
+import { session as dbSession, readTimes as dbReadTimes } from "./lib/persistence/db";
 import { initSettingsFromDb } from "./state";
-import { validateToken, getAuthRedirectUrl, getFollowing, getStatus } from "./lib/rotur-api";
+import { validateToken, getAuthRedirectUrl, getFollowing, getStatus } from "./lib/api/rotur-api";
 import { showLoginChoiceModal } from "./lib/ui-signals";
 
 import { LandingPage } from "./components/LandingPage/LandingPage";
@@ -98,7 +98,7 @@ import { DiscoveryPage } from "./components/DiscoveryPage";
 import { OfflineScreen } from "./components/OfflineScreen";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { ThreadPanel } from "./components/ThreadPanel";
-import { useFavicon } from "./lib/useFavicon";
+import { useFavicon } from "./lib/hooks/useFavicon";
 import { UpdatePopup, updateAvailable } from "./components/UpdatePopup";
 
 const updateServiceWorker = registerSW({
@@ -371,7 +371,7 @@ function App() {
       // Add to server list if not already present
       if (!servers.value.some((s) => s.url === normalized)) {
         servers.value = [...servers.value, { name: normalized, url: normalized, icon: null }];
-        const { saveServers } = await import("./lib/persistence");
+        const { saveServers } = await import("./lib/persistence/persistence");
         await saveServers();
       }
 

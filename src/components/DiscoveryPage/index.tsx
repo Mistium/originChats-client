@@ -1,7 +1,7 @@
 import { useState, useEffect } from "preact/hooks";
 import { servers, usersByServer } from "../../state";
 import { switchServer, selectHomeChannel } from "../../lib/actions";
-import { saveServers } from "../../lib/persistence";
+import { saveServers } from "../../lib/persistence/persistence";
 import { Icon } from "../Icon";
 import { UserAvatar } from "../UserAvatar";
 

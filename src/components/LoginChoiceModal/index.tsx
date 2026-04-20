@@ -1,8 +1,8 @@
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { showLoginChoiceModal } from "../../lib/ui-signals";
-import { getAuthRedirectUrl } from "../../lib/rotur-api";
-import { session as dbSession } from "../../lib/db";
+import { getAuthRedirectUrl } from "../../lib/api/rotur-api";
+import { session as dbSession } from "../../lib/persistence/db";
 
 export function LoginChoiceModal() {
   const isOpen = showLoginChoiceModal.value;

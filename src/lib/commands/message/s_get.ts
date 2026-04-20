@@ -1,6 +1,9 @@
 import type { MessagesGet } from "@/msgTypes";
 import {
-  messagesByServer,
+  messageState,
+  getMessageKey,
+  normalizeReactions,
+  mergeAndSortMessages,
   loadedChannelsByServer,
   reachedOldestByServer,
   reachedNewestByServer,
@@ -11,12 +14,6 @@ import {
 } from "../../../state";
 import { finishMessageFetch, markChannelAsRead, markThreadAsRead } from "../../ws-sender";
 import { selectChannel } from "../../actions";
-import {
-  getMessageKey,
-  setMessages,
-  mergeAndSortMessages,
-  normalizeReactions,
-} from "../../message-utils";
 
 export function handleMessagesGet(msg: MessagesGet, sUrl: string): void {
   const messageKey = getMessageKey(msg);
@@ -25,10 +22,8 @@ export function handleMessagesGet(msg: MessagesGet, sUrl: string): void {
   if (!loadedChannelsByServer[sUrl]) loadedChannelsByServer[sUrl] = new Set();
   loadedChannelsByServer[sUrl].add(messageKey);
 
-  const existingMsgs = messagesByServer.value[sUrl]?.[messageKey] || [];
-
+  const existingMsgs = messageState.get(sUrl, messageKey);
   const newMessages = normalizeReactions(msg.messages || []);
-
   const sortedMsgs = mergeAndSortMessages(existingMsgs, newMessages);
 
   const SCROLL_UP_LIMIT = 20;
@@ -37,9 +32,8 @@ export function handleMessagesGet(msg: MessagesGet, sUrl: string): void {
     reachedOldestByServer[sUrl].add(messageKey);
   }
 
-  setMessages(sUrl, messageKey, sortedMsgs);
+  messageState.set(sUrl, messageKey, sortedMsgs);
 
-  // Mark as reached newest on initial load
   if (sortedMsgs.length > 0) {
     if (!reachedNewestByServer[sUrl]) reachedNewestByServer[sUrl] = new Set();
     reachedNewestByServer[sUrl].add(messageKey);

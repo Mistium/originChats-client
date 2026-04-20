@@ -1,5 +1,5 @@
-import { rolesByServer, usersByServer, currentUser } from "../state";
-import type { Role } from "../types";
+import { rolesByServer, usersByServer, currentUser } from "../../state";
+import type { Role } from "../../types";
 
 function getUserPermissions(serverUrl: string): string[] {
   const myServerUser =

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "preact/hooks";
 import { Icon } from "../Icon";
 import { imageViewerState } from "../../lib/ui-signals";
-import { downloadAttachment } from "../../lib/download-attachment";
+import { downloadAttachment } from "../../lib/media/download-attachment";
 import { formatExpiry } from "../../lib/date-utils";
 
 interface Attachment {

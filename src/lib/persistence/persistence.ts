@@ -10,14 +10,36 @@ import {
   serverNotifSettings,
   channelNotifSettings,
   unreadState,
-} from "../state";
-import { getOriginFS, DEFAULT_SERVERS } from "../state";
-import type { NotificationLevel } from "../state";
-import type { Server, ServerFolder } from "../types";
-import { getFriends } from "./rotur-api";
-import { loadJsonFile, saveJsonFile } from "./persistence-utils";
+  getOriginFS,
+  DEFAULT_SERVERS,
+} from "../../state";
+import type { NotificationLevel } from "../../state";
+import type { Server, ServerFolder } from "../../types";
+import { getFriends } from "../api/rotur-api";
 
 const APP_DATA = "/application data/chats@mistium";
+
+async function loadJsonFile<T>(filename: string, defaultValue: T): Promise<T> {
+  const originFS = getOriginFS();
+  if (!originFS) return defaultValue;
+  try {
+    const content = await originFS.readFileContent(`${APP_DATA}/${filename}`);
+    return JSON.parse(content) as T;
+  } catch {
+    return defaultValue;
+  }
+}
+
+async function saveJsonFile<T>(filename: string, data: T): Promise<void> {
+  const originFS = getOriginFS();
+  if (!originFS) return;
+  try {
+    await originFS.writeFile(`${APP_DATA}/${filename}`, JSON.stringify(data));
+    await originFS.commit();
+  } catch (e) {
+    console.warn(`[persistence] Failed to save ${filename}:`, e);
+  }
+}
 
 export async function loadServers(): Promise<Server[]> {
   const originFS = getOriginFS();

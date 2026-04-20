@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import type { Message } from "../../types";
+import type { Message } from "../types";
 
 type ServerUrl = string;
 type ChannelKey = string;

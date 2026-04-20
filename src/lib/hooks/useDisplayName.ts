@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "preact/hooks";
-import { friendNicknames, usersByServer, serverUrl } from "../state";
+import { friendNicknames, usersByServer, serverUrl } from "../../state";
 
 export function useDisplayName(username: string, overrideServerUrl?: string): string {
   const [displayName, setDisplayName] = useState(() => getDisplayName(username, overrideServerUrl));

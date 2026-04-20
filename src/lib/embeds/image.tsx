@@ -6,7 +6,7 @@ import {
   getCachedImageSize,
   saveImageSize,
   scheduleCleanup,
-} from "../image-cache";
+} from "../media/image-cache";
 
 export function ImageEmbed({ url }: { url: string }) {
   const initialCached = getCachedImageSync(url);

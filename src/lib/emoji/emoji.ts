@@ -1,5 +1,5 @@
 import twemoji from "@twemoji/api";
-import { useSystemEmojis } from "../state";
+import { useSystemEmojis } from "../../state";
 
 const TWEMOJI_CDN_BASE = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg";
 

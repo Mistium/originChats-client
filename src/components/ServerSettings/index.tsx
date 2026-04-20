@@ -29,7 +29,7 @@ import {
   canManageRoles,
   canManageUsers,
   canManageEmojis,
-} from "../../lib/permissions";
+} from "../../lib/permissions/permissions";
 
 import styles from "./ServerSettings.module.css";
 

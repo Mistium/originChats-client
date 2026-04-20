@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "preact/hooks";
 import { Icon } from "../Icon";
-import { favGifs as dbFavGifs } from "../../lib/db";
+import { favGifs as dbFavGifs } from "../../lib/persistence/db";
 import { formatExpiry } from "../../lib/date-utils";
 
 interface ImageResult {

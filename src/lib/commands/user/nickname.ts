@@ -1,7 +1,7 @@
 import type { NicknameUpdate, NicknameRemove, UserUpdate } from "@/msgTypes";
 import { usersByServer } from "../../../state";
 import { renderMembersSignal, renderMessagesSignal } from "../../ui-signals";
-import { normalizeUsername } from "../../state-utils";
+import { normalizeUsername } from "../../../utils";
 
 type NicknameMsg = NicknameUpdate | NicknameRemove;
 

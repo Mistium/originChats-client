@@ -1,3 +1,6 @@
+/**
+ * server-store.ts — Generic per-server signal store
+ */
 import { signal, type Signal } from "@preact/signals";
 
 export class ServerSignalStore<T> {

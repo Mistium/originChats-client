@@ -1,6 +1,6 @@
 import type { MediaServer } from "@/types";
-import { mediaServersDb } from "./db";
-import { generateValidator } from "./rotur-api";
+import { mediaServersDb } from "../persistence/db";
+import { generateValidator } from "../api/rotur-api";
 
 const DEFAULT_ROTUR_PHOTOS_CONFIG: MediaServer = {
   id: "roturphotos",

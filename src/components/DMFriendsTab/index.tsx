@@ -11,8 +11,8 @@ import {
   token,
 } from "../../state";
 import { currentDMTab, showAccountModal } from "../../lib/ui-signals";
-import { getAuthRedirectUrl } from "../../lib/rotur-api";
-import { session as dbSession } from "../../lib/db";
+import { getAuthRedirectUrl } from "../../lib/api/rotur-api";
+import { session as dbSession } from "../../lib/persistence/db";
 import {
   switchServer,
   selectChannel,
@@ -23,11 +23,17 @@ import {
   unblockUser,
   sendFriendRequest,
 } from "../../lib/actions";
-import { getMyGroups, searchGroups, joinGroup, leaveGroup, getStatus } from "../../lib/rotur-api";
+import {
+  getMyGroups,
+  searchGroups,
+  joinGroup,
+  leaveGroup,
+  getStatus,
+} from "../../lib/api/rotur-api";
 import { Icon } from "../Icon";
 import { MessageContent } from "../MessageContent";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName } from "../../lib/useDisplayName";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
 import type { RoturGroup } from "../../types";
 import { Header } from "../Header";
 

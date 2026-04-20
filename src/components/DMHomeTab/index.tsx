@@ -79,7 +79,7 @@ export function DMHomeTab() {
                 if (!existing.find((s: any) => s.url === trimmed)) {
                   servers.value = [...existing, { name: trimmed, url: trimmed, icon: null }];
                   try {
-                    const { saveServers } = await import("../../lib/persistence");
+                    const { saveServers } = await import("../../lib/persistence/persistence");
                     await saveServers();
                   } catch (err) {
                     console.error("Failed to save servers:", err);

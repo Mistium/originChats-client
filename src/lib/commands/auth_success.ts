@@ -6,14 +6,14 @@ import {
   servers,
 } from "../../state";
 import { wsSend } from "../ws-sender";
-import { readTimes as dbReadTimes } from "../db";
+import { readTimes as dbReadTimes } from "../persistence/db";
 import {
   showCrackedAuthModal,
   crackedAuthError,
   pendingCrackedCredentials,
   crackedAuthLoading,
 } from "../ui-signals";
-import { saveServers } from "../persistence";
+import { saveServers } from "../persistence/persistence";
 
 export function handleAuthSuccess(sUrl: string): void {
   const authMode = serverAuthModeByServer.read(sUrl);

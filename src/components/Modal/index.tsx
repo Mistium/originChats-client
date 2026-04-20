@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
-import { useFocusTrap } from "../../lib/useFocusTrap";
+import { useFocusTrap } from "../../lib/hooks/useFocusTrap";
 import type { VNode } from "preact";
 import type { ComponentChildren } from "preact";
 

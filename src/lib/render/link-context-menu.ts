@@ -1,5 +1,5 @@
-import type { ContextMenuItem } from "../components/ContextMenu";
-import { downloadAttachment } from "./download-attachment";
+import type { ContextMenuItem } from "../../components/ContextMenu";
+import { downloadAttachment } from "../media/download-attachment";
 
 function getLinkFromContextMenuEvent(e: MouseEvent): string | null {
   const target = e.target as HTMLElement;

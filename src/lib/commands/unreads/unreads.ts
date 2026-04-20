@@ -1,5 +1,5 @@
 import type { UnreadsGet, UnreadsCount, UnreadsAck, UnreadsUpdate } from "@/msgTypes";
-import { unreadState } from "../../state/unread";
+import { unreadState } from "../../../state";
 
 export function handleUnreadsGet(msg: UnreadsGet, sUrl: string): void {
   for (const [channel, info] of Object.entries(msg.unreads)) {

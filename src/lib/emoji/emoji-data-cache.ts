@@ -1,5 +1,5 @@
-import { customEmojisByServer, servers, serverUrl } from "../state";
-import type { CustomEmoji } from "../types";
+import { customEmojisByServer, servers, serverUrl } from "../../state";
+import type { CustomEmoji } from "../../types";
 
 export interface EmojiEntry {
   label: string;

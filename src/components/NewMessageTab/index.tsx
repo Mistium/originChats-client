@@ -3,7 +3,7 @@ import { useSignalEffect } from "@preact/signals";
 import { friends, currentUser } from "../../state";
 import { Icon } from "../Icon";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName } from "../../lib/useDisplayName";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
 import { openDMWith } from "../../lib/actions";
 import { Header } from "../Header";
 

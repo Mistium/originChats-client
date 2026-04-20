@@ -8,7 +8,7 @@ import {
 } from "../../lib/ui-signals";
 import { notificationPromptDismissed, servers } from "../../state";
 import { connectToServer } from "../../lib/websocket";
-import { enablePushForServer } from "../../lib/auth";
+import { enablePushForServer } from "../../lib/api/auth";
 import { UserAvatar } from "../UserAvatar";
 import {
   serverUrl,
@@ -69,7 +69,7 @@ import {
   deleteMediaServer,
   setMediaServerEnabled,
   generateServerId,
-} from "../../lib/media-uploader";
+} from "../../lib/media/media-uploader";
 import type { MediaServer } from "../../types";
 import {
   getProfile,
@@ -79,8 +79,8 @@ import {
   followUser,
   unfollowUser,
   getStanding,
-} from "../../lib/rotur-api";
-import { toggleFollowUser } from "../../lib/follow";
+} from "../../lib/api/rotur-api";
+import { toggleFollowUser } from "../../lib/api/follow";
 
 interface DiscoveryServer {
   name: string;
@@ -1760,7 +1760,7 @@ function NotificationsTab() {
                         [server.url]: v,
                       };
                     }
-                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                    import("../../lib/persistence/persistence").then(({ saveNotifSettings }) =>
                       saveNotifSettings().catch(() => {})
                     );
                   }}
@@ -1808,7 +1808,7 @@ function NotificationsTab() {
                         [key]: v,
                       };
                     }
-                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                    import("../../lib/persistence/persistence").then(({ saveNotifSettings }) =>
                       saveNotifSettings().catch(() => {})
                     );
                   }}
@@ -1824,7 +1824,7 @@ function NotificationsTab() {
                     const next = { ...channelNotifSettings.value };
                     delete next[key];
                     channelNotifSettings.value = next;
-                    import("../../lib/persistence").then(({ saveNotifSettings }) =>
+                    import("../../lib/persistence/persistence").then(({ saveNotifSettings }) =>
                       saveNotifSettings().catch(() => {})
                     );
                   }}
@@ -2245,7 +2245,7 @@ export function DiscoveryModal() {
       return;
     }
     servers.value = [...servers.value, newServer];
-    await (await import("../../lib/persistence")).saveServers();
+    await (await import("../../lib/persistence/persistence")).saveServers();
     close();
   };
 

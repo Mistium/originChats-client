@@ -23,7 +23,7 @@ import { showThreadPanel, renderChannelsSignal } from "../../lib/ui-signals";
 import { Icon } from "../Icon";
 import { wsSend } from "../../lib/websocket";
 import { ThreadContextMenu, useThreadContextMenu } from "../ThreadContextMenu";
-import { pendingMessages } from "../../lib/state/pending-messages";
+import { pendingMessages } from "../../state/pending-messages";
 import type { Thread } from "../../types";
 import styles from "./ThreadPanel.module.css";
 

@@ -8,10 +8,10 @@ import {
   offlinePushServers,
 } from "../../state";
 import { unreadState } from "../../state";
-import { statusState } from "../state";
+import { statusState } from "../../state";
 import { renderMembersSignal } from "../ui-signals";
 import { wsSend } from "../ws-sender";
-import { enablePushForServer } from "../auth";
+import { enablePushForServer } from "../api/auth";
 
 export function handleReady(msg: Ready, sUrl: string): void {
   currentUserByServer.set(sUrl, msg.user);

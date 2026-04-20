@@ -14,8 +14,8 @@ import { Icon } from "../Icon";
 import { useContextMenu } from "../../hooks/useContextMenu";
 import { UserAvatar } from "../UserAvatar";
 import { reloadAvatar } from "../../utils";
-import { useDisplayName } from "../../lib/useDisplayName";
-import { saveFriendNicknames } from "../../lib/persistence";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
+import { saveFriendNicknames } from "../../lib/persistence/persistence";
 import styles from "./UserContextMenu.module.css";
 
 interface UserContextMenuProps {

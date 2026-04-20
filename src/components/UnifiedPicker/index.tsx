@@ -3,9 +3,13 @@ import { memo } from "preact/compat";
 import type { TargetedInputEvent } from "preact";
 import { recentEmojis, customEmojisByServer, servers, serverUrl } from "../../state";
 import { Icon } from "../Icon";
-import { favGifs as dbFavGifs } from "../../lib/db";
-import { emojiImgUrl } from "../../lib/emoji";
-import { emojiCache, type EmojiEntry, type CustomEmojiItem } from "../../lib/emoji-data-cache";
+import { favGifs as dbFavGifs } from "../../lib/persistence/db";
+import { emojiImgUrl } from "../../lib/emoji/emoji";
+import {
+  emojiCache,
+  type EmojiEntry,
+  type CustomEmojiItem,
+} from "../../lib/emoji/emoji-data-cache";
 import type { CustomEmoji } from "../../types";
 import {
   MemoVirtualizedEmojiGrid,

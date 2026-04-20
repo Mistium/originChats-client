@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "preact/hooks";
 import { memo } from "preact/compat";
-import { emojiImgUrl } from "../../lib/emoji";
+import { emojiImgUrl } from "../../lib/emoji/emoji";
 import { useSystemEmojis } from "../../state";
-import type { CustomEmojiItem } from "../../lib/emoji-data-cache";
+import type { CustomEmojiItem } from "../../lib/emoji/emoji-data-cache";
 
 const EMOJI_SIZE = 32;
 const EMOJI_PADDING = 8;

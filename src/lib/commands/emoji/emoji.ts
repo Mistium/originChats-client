@@ -1,8 +1,8 @@
 import type { EmojiGetAll, EmojiAdd, EmojiDelete, EmojiUpdate } from "@/msgTypes";
 import type { CustomEmoji } from "../../../types";
 import { customEmojisByServer } from "../../../state";
-import { emojiCache } from "../../emoji-data-cache";
-import { invalidateCustomEmojiIndex } from "../../markdown";
+import { emojiCache } from "../../emoji/emoji-data-cache";
+import { invalidateCustomEmojiIndex } from "../../render/markdown";
 
 export function handleEmojiGetAll(msg: EmojiGetAll, sUrl: string): void {
   const emojis: Record<string, { name: string; fileName: string }> = msg.emojis || {};

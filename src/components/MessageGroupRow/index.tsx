@@ -5,7 +5,7 @@ import { UserAvatar } from "../UserAvatar";
 import { MessageContent } from "../MessageContent";
 import type { Message } from "../../types";
 import { openUserPopout } from "../UserPopout";
-import { useDisplayName, useUserColor } from "../../lib/useDisplayName";
+import { useDisplayName, useUserColor } from "../../lib/hooks/useDisplayName";
 import { Icon } from "../Icon";
 import { formatRelativeTimeShort } from "../../lib/date-utils";
 import styles from "./MessageGroupRow.module.css";

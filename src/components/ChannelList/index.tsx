@@ -27,7 +27,7 @@ import {
   clearNewThreadCount,
   token,
 } from "../../state";
-import { parseEmojisInContainer } from "../../lib/emoji";
+import { parseEmojisInContainer } from "../../lib/emoji/emoji";
 import {
   selectChannel,
   selectHomeChannel,
@@ -48,16 +48,16 @@ import {
   showThreadPanel,
   channelListWidth,
 } from "../../lib/ui-signals";
-import { unreadState } from "../../lib/state";
+import { unreadState } from "../../state";
 import { Icon } from "../Icon";
 import { voiceManager, voiceState } from "../../voice";
 import { openUserPopout } from "../UserPopout";
 import type { VoiceUser } from "../../types";
 import { avatarUrl } from "../../utils";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName } from "../../lib/useDisplayName";
-import { updateStatus, clearStatus } from "../../lib/rotur-api";
-import { saveNotifSettings } from "../../lib/persistence";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
+import { updateStatus, clearStatus } from "../../lib/api/rotur-api";
+import { saveNotifSettings } from "../../lib/persistence/persistence";
 import { ThreadContextMenu, useThreadContextMenu } from "../ThreadContextMenu";
 import { wsSend } from "../../lib/websocket";
 import { StatusSelector } from "../StatusSelector";

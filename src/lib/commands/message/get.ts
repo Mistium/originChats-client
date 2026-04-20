@@ -1,5 +1,5 @@
 import type { MessageGet } from "@/msgTypes";
-import { getMessageKey, insertMessage } from "../../message-utils";
+import { messageState, getMessageKey } from "../../../state";
 
 const pendingReplyFetchesByServer: Record<string, Set<string>> = {};
 
@@ -8,5 +8,5 @@ export function handleMessageGet(msg: MessageGet, sUrl: string): void {
   if (!channel || !message) return;
   pendingReplyFetchesByServer[sUrl]?.delete(message.id!);
   const messageKey = getMessageKey(msg);
-  insertMessage(sUrl, messageKey, message);
+  messageState.insert(sUrl, messageKey, message);
 }

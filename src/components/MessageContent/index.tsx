@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "preact/hooks";
 import { memo } from "preact/compat";
 import DOMPurify from "dompurify";
-import { parseMarkdown } from "../../lib/markdown";
-import type { MentionContext } from "../../lib/markdown";
+import { parseMarkdown } from "../../lib/render/markdown";
+import type { MentionContext } from "../../lib/render/markdown";
 import styles from "./MessageContent.module.css";
 import { detectEmbedType, isTenorOnlyMessage, proxyImageUrl } from "../../lib/embeds/utils";
 import { Embed } from "../../lib/embeds/index";
@@ -10,7 +10,7 @@ import type { EmbedInfo } from "../../lib/embeds/types";
 import { MessageEmbed } from "../MessageEmbed";
 import type { MessageEmbed as MessageEmbedType } from "../../types";
 import { users, channels, rolesByServer, serverUrl } from "../../state";
-import { getCachedImage, getCachedImageSync, scheduleCleanup } from "../../lib/image-cache";
+import { getCachedImage, getCachedImageSync, scheduleCleanup } from "../../lib/media/image-cache";
 
 const parseMemoCache = new Map<string, { html: string; embedLinks: string[] }>();
 const MAX_PARSE_CACHE = 200;

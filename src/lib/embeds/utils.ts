@@ -3,9 +3,9 @@ import {
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
   hasExtension as hasExtensionUtil,
-} from "../media-utils";
+} from "../media/media-utils";
 
-export { proxyImageUrl } from "../media-utils";
+export { proxyImageUrl } from "../media/media-utils";
 
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/;

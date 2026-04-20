@@ -5,7 +5,7 @@ import {
   VIDEO_EXTENSIONS,
   hasExtension as hasExtensionUtil,
   proxyImageUrl as proxyImageUrlUtil,
-} from "./lib/media-utils";
+} from "./lib/media/media-utils";
 
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/;
@@ -57,6 +57,10 @@ export function isCrackedAccount(username: string): boolean {
 export function avatarUrl(username: string): string {
   const bust = avatarBust.value[username];
   return `https://avatars.rotur.dev/${username}${bust ? `?v=${bust}` : ""}`;
+}
+
+export function normalizeUsername(username: string | undefined): string {
+  return (username || "").toLowerCase();
 }
 
 function getUserAvatar(

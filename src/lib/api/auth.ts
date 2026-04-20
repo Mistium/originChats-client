@@ -1,5 +1,5 @@
-import { serverValidatorKeys, serverCapabilitiesByServer } from "../state";
-import { wsSend } from "./ws-sender";
+import { serverValidatorKeys, serverCapabilitiesByServer } from "../../state";
+import { wsSend } from "../ws-sender";
 import { generateValidator as generateValidatorApi } from "./rotur-api";
 
 export async function authenticateServer(sUrl: string): Promise<void> {

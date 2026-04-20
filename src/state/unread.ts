@@ -1,5 +1,5 @@
 import { signal, computed } from "@preact/signals";
-import { pings as db } from "../db";
+import { pings as db } from "../lib/persistence/db";
 
 type Key = string;
 

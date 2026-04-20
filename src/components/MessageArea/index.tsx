@@ -8,17 +8,17 @@ import {
   emojiImgUrl,
   isCustomEmoji,
   getCustomEmojiUrl,
-} from "../../lib/emoji";
+} from "../../lib/emoji/emoji";
 import { SkeletonMessageList } from "../Skeleton";
 import styles from "./MessageArea.module.css";
-import { addUniversalContextMenuItems } from "../../lib/link-context-menu";
-import { downloadAttachment } from "../../lib/download-attachment";
+import { addUniversalContextMenuItems } from "../../lib/render/link-context-menu";
+import { downloadAttachment } from "../../lib/media/download-attachment";
 
 import {
   currentChannel,
   currentThread,
   messages,
-  messagesByServer,
+  messageState,
   currentUser,
   replyTo,
   replyPing,
@@ -74,9 +74,9 @@ import {
   highlightCodeInContainer,
   replaceShortcodes,
   convertChannelMentionsToLinks,
-} from "../../lib/markdown";
+} from "../../lib/render/markdown";
 import { selectChannel, switchServer, joinThread, selectThread } from "../../lib/actions";
-import { loadShortcodes } from "../../lib/shortcodes";
+import { loadShortcodes } from "../../lib/emoji/shortcodes";
 
 function transformCustomEmojisToUrls(text: string): string {
   return text.replace(/:[\w][\w-]*:/g, (match) => {
@@ -98,18 +98,18 @@ import { UserContextMenu, useUserContextMenu } from "../UserContextMenu";
 import { ConfirmDialog } from "../Modal";
 import { ImageViewer } from "../ImageViewer";
 import { UnifiedPicker } from "../UnifiedPicker";
-import { uploadImage, getEnabledMediaServer } from "../../lib/media-uploader";
+import { uploadImage, getEnabledMediaServer } from "../../lib/media/media-uploader";
 import {
   uploadAttachment,
   mimeTypeToAcceptString,
   isMimeTypeAllowed,
   cancelUpload,
-} from "../../lib/attachment-uploader";
-import type { PendingAttachment } from "../../lib/attachment-uploader";
+} from "../../lib/media/attachment-uploader";
+import type { PendingAttachment } from "../../lib/media/attachment-uploader";
 import { MessageContent } from "../MessageContent";
 import { MessageList } from "../MessageList";
 import { groupMessages, type MessageGroup } from "../MessageList/types";
-import { pendingMessages } from "../../lib/state/pending-messages";
+import { pendingMessages } from "../../state/pending-messages";
 import {
   FloatingActionButtons,
   showActionButtons,
@@ -128,7 +128,7 @@ import { PollCreateModal } from "../PollCreateModal";
 import type { Message, SlashCommand } from "../../types";
 import { avatarUrl } from "../../utils";
 import { UserAvatar } from "../UserAvatar";
-import { useDisplayName, getDisplayName } from "../../lib/useDisplayName";
+import { useDisplayName, getDisplayName } from "../../lib/hooks/useDisplayName";
 import { SwipeableMessage } from "./SwipeableMessage";
 
 function MessageUsername({
@@ -157,10 +157,10 @@ function MessageUsername({
   );
 }
 import { ErrorBannerStack } from "../ErrorBanner";
-import { createGift, ROTUR_GIFT_URL } from "../../lib/rotur-api";
+import { createGift, ROTUR_GIFT_URL } from "../../lib/api/rotur-api";
 import { VoiceCallView } from "../VoiceCallView";
 import { Header } from "../Header";
-import { startChannelLoad } from "../../lib/image-cache";
+import { startChannelLoad } from "../../lib/media/image-cache";
 import { formatMessageTime, formatRelativeTimeSec } from "../../lib/date-utils";
 
 const highlightTimeouts = new Set<ReturnType<typeof setTimeout>>();
@@ -902,7 +902,7 @@ export function MessageArea() {
       const sUrl = serverUrl.value;
       if (!ch || !sUrl || !messageKey) return;
 
-      const msgs = messagesByServer.value[sUrl]?.[messageKey] || [];
+      const msgs = messageState.byServer.value[sUrl]?.[messageKey] || [];
       const MAX_MSGS = 200;
       if (msgs.length <= MAX_MSGS) return;
 
@@ -928,10 +928,10 @@ export function MessageArea() {
       // Trim messages
       const newMsgs = fromStart ? msgs.slice(count) : msgs.slice(0, -count);
 
-      messagesByServer.value = {
-        ...messagesByServer.value,
+      messageState.byServer.value = {
+        ...messageState.byServer.value,
         [sUrl]: {
-          ...messagesByServer.value[sUrl],
+          ...messageState.byServer.value[sUrl],
           [messageKey]: newMsgs,
         },
       };

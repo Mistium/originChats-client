@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "preact/hooks";
 import { memo } from "preact/compat";
 import DOMPurify from "dompurify";
-import { parseMarkdown } from "../../lib/markdown";
+import { parseMarkdown } from "../../lib/render/markdown";
 import type { MessageEmbed as MessageEmbedType } from "../../types";
 import { PollEmbed } from "../PollEmbed";
 

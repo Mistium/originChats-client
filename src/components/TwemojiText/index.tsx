@@ -1,5 +1,5 @@
 import { useMemo } from "preact/hooks";
-import { parseEmojisInText } from "../../lib/emoji";
+import { parseEmojisInText } from "../../lib/emoji/emoji";
 import { useSystemEmojis } from "../../state";
 
 interface TwemojiTextProps {

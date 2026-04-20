@@ -24,12 +24,12 @@ import {
   showContextMenu,
   showInfo,
 } from "../../lib/ui-signals";
-import { unreadState } from "../../lib/state";
+import { unreadState } from "../../state";
 import { Icon, ServerIcon } from "../Icon";
 import { UserAvatar } from "../UserAvatar";
 import { reloadServerIcon } from "../../utils";
-import { useDisplayName } from "../../lib/useDisplayName";
-import { saveNotifSettings, saveFolders } from "../../lib/persistence";
+import { useDisplayName } from "../../lib/hooks/useDisplayName";
+import { saveNotifSettings, saveFolders } from "../../lib/persistence/persistence";
 import styles from "./GuildSidebar.module.css";
 
 const ITEM_HEIGHT = 48;
@@ -173,7 +173,7 @@ export function GuildSidebar() {
         setIsDropping(false);
 
         try {
-          const { saveServers } = await import("../../lib/persistence");
+          const { saveServers } = await import("../../lib/persistence/persistence");
           await saveServers();
         } catch (err) {
           console.error("Failed to save servers:", err);

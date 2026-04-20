@@ -18,8 +18,12 @@ import {
   missedMessagesCount,
 } from "../../../state";
 import { unreadState, getChannelNotifLevel } from "../../../state";
-import { messages } from "../../state/messages";
-import { pendingMessages } from "../../state/pending-messages";
+import {
+  messageState,
+  pendingMessages,
+  getMessageKey,
+  truncateForNotification,
+} from "../../../state";
 import {
   renderChannelsSignal,
   renderMessagesSignal,
@@ -29,8 +33,7 @@ import {
 } from "../../ui-signals";
 import { wsSend } from "../../ws-sender";
 import { playPingSound } from "../../audio";
-import { readTimes as dbReadTimes } from "../../db";
-import { getMessageKey, truncateForNotification } from "../../message-utils";
+import { readTimes as dbReadTimes } from "../../persistence/db";
 
 const readTimeTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
@@ -163,7 +166,7 @@ export function handleMessageNew(msg: MessageNew, sUrl: string): void {
     const isAtBottom = reachedNewestByServer[sUrl]?.has(key);
 
     if (isAtBottom) {
-      messages.append(sUrl, key, msg.message as Message);
+      messageState.append(sUrl, key, msg.message as Message);
       if (!reachedNewestByServer[sUrl]) reachedNewestByServer[sUrl] = new Set();
       const serverCounts = missedMessagesCount.read(sUrl);
       const wasZero = !serverCounts[key] || serverCounts[key] === 0;
